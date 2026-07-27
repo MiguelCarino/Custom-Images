@@ -84,6 +84,9 @@ for f in "${FILES[@]}"; do
     [[ -z "$path" ]] && continue
     path="$(echo "$path" | sed 's/[.,);:`]*$//')"
     case "$path" in *'*'*|*'<'*|*'>'*|*'…'*) continue ;; esac # globs and placeholders are not claims
+    # gitignored paths are user-created by design (e.g. config/iso.toml) —
+    # their absence in a fresh clone is not a broken reference.
+    git check-ignore -q "$path" 2>/dev/null && continue
     [[ -e "$path" ]] || note "PATH     ${f}: mentions ${path}, which does not exist"
   done < <(grep -ohE '(^|[^A-Za-z0-9_/.-])(config|lib|tools|files|research|docs|legacy)/[A-Za-z0-9._/*<>-]+' "$f" 2>/dev/null \
            | grep -oE '(config|lib|tools|files|research|docs|legacy)/[A-Za-z0-9._/*<>-]+' || true)
