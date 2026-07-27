@@ -8,8 +8,12 @@
 # Full option reference: https://osbuild.org/docs/user-guide/blueprint-reference
 # (not all blueprint options are supported by bootc-image-builder).
 
+# Do NOT ship ISOs built with a shared/known password — the unattended
+# installer puts this login on every machine the ISO boots on. The password
+# set here is only the initial one; `passwd` after install persists normally.
+# The SSH key is strongly recommended: a typo'd password can't lock you out.
 [[customizations.user]]
 name = "carino"
 password = "changeme"
-# key = "ssh-ed25519 AAAA... you@host"
-groups = ["wheel"]
+# key = "ssh-ed25519 AAAA... you@host"    # from ~/.ssh/id_ed25519.pub
+groups = ["wheel"]                        # sudo
