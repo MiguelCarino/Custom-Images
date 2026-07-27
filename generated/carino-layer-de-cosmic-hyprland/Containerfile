@@ -10,6 +10,7 @@ LABEL org.opencontainers.image.title="carino-layer-de-cosmic-hyprland" \
       org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
 
 # COPR repositories
+RUN dnf -y install 'dnf5-command(copr)'
 RUN dnf -y copr enable lionheartp/Hyprland
 
 # Packages

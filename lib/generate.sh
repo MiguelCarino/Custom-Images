@@ -133,9 +133,11 @@ emit_layer_containerfile() {
     printf '      org.opencontainers.image.description="%s" \\\n' "$description"
     printf '      org.opencontainers.image.base.name="%s"\n' "$BASE_IMAGE" # machine-readable upstream credit: the lineage belongs in a label, not in the leading token of the image name
 
-    # COPRs — enabled before install, left enabled (§4).
+    # COPRs — enabled before install, left enabled (§4). fedora-bootc ships
+    # dnf5 without the copr subcommand, so the plugin is installed first.
     if [[ -n "$coprs" ]]; then
       printf '\n# COPR repositories\n'
+      printf "RUN dnf -y install 'dnf5-command(copr)'\n"
       local copr
       for copr in $coprs; do
         printf 'RUN dnf -y copr enable %s\n' "$copr"
