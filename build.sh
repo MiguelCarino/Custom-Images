@@ -215,7 +215,7 @@ _iso_one() {
     -v "${out_dir}:/output" \
     -v /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    --type iso --local "$ref"
+    --type iso --rootfs "${ROOTFS:-ext4}" --local "$ref"
 
   # bootc-image-builder emits bootiso/install.iso; surface it at the §5 path.
   if [[ -f "${out_dir}/bootiso/install.iso" ]]; then

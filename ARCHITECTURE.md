@@ -143,7 +143,9 @@ Behavior requirements:
 - `--push` pushes only the six published images, not `carino-layer-*` intermediates.
 - `iso` runs bootc-image-builder via `sudo podman run --privileged --rm
   -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage
-  quay.io/centos-bootc/bootc-image-builder:latest --type iso --local <image-ref>`.
+  quay.io/centos-bootc/bootc-image-builder:latest --type iso --rootfs <ROOTFS>
+  --local <image-ref>` — fedora-bootc declares no default root filesystem type,
+  so `ROOTFS` (config/build.conf, default ext4) is always passed.
   The builder reads **root's** container storage while `build` runs rootless, so
   `iso` first syncs the image into root storage (`podman save | sudo podman load`)
   whenever root's copy is missing or its image ID differs from the rootless one.
