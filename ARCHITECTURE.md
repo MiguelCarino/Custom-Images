@@ -145,7 +145,11 @@ Behavior requirements:
   -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage
   quay.io/centos-bootc/bootc-image-builder:latest --type iso --rootfs <ROOTFS>
   --local <image-ref>` — fedora-bootc declares no default root filesystem type,
-  so `ROOTFS` (config/build.conf, default ext4) is always passed.
+  so `ROOTFS` (config/build.conf, default ext4) is always passed. If
+  `config/iso.toml` exists (copy of `config/iso.toml.example`, gitignored) it is
+  passed as `--config` — without it the installed system has **no user
+  accounts**, since neither the base images nor the unattended installer create
+  one, and `iso` warns accordingly.
   The builder reads **root's** container storage while `build` runs rootless, so
   `iso` first syncs the image into root storage (`podman save | sudo podman load`)
   whenever root's copy is missing or its image ID differs from the rootless one.

@@ -209,13 +209,26 @@ _iso_one() {
     podman save "$ref" | sudo podman load
   fi
 
+  # User accounts — the bootc base images ship none and the unattended
+  # installer creates none, so without config/iso.toml nobody can log in.
+  local -a cfg_mount=() cfg_flag=()
+  if [[ -f "${CONFIG_DIR}/iso.toml" ]]; then
+    cfg_mount=(-v "${CONFIG_DIR}/iso.toml:/config.toml:ro")
+    cfg_flag=(--config /config.toml)
+    info "using config/iso.toml (users etc.)"
+  else
+    warn "no config/iso.toml — the installed system will have NO user accounts;"
+    warn "copy config/iso.toml.example to config/iso.toml and set a user first."
+  fi
+
   mkdir -p "$out_dir"
   info "building ISO for ${ref} → output/${name}/install.iso (privileged, needs sudo)"
   sudo podman run --privileged --rm \
     -v "${out_dir}:/output" \
     -v /var/lib/containers/storage:/var/lib/containers/storage \
+    "${cfg_mount[@]}" \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    --type iso --rootfs "${ROOTFS:-ext4}" --local "$ref"
+    --type iso --rootfs "${ROOTFS:-ext4}" "${cfg_flag[@]}" --local "$ref"
 
   # bootc-image-builder emits bootiso/install.iso; surface it at the §5 path.
   if [[ -f "${out_dir}/bootiso/install.iso" ]]; then
