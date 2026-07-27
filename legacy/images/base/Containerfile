@@ -1,0 +1,88 @@
+# =============================================================================
+# Base Fedora bootc image
+# =============================================================================
+# This is the foundation for all derived images.
+# It sets up:
+#   - Security hardening (SELinux enforcing, firewalld)
+#   - Auto-update via bootc-fetch-apply-updates.timer
+#   - Common CLI tooling and RPM Fusion repos
+#   - A wheel-capable admin user scaffold (user created at deploy time)
+#
+# Build:
+#   podman build -t localhost/fedora-base:latest .
+#
+# Push and switch (on a running bootc host):
+#   podman push localhost/fedora-base:latest <registry>/fedora-base:latest
+#   bootc switch <registry>/fedora-base:latest
+# =============================================================================
+
+ARG FEDORA_VERSION=43
+FROM quay.io/fedora/fedora-bootc:${FEDORA_VERSION}
+
+LABEL org.opencontainers.image.title="Fedora Base bootc"
+LABEL org.opencontainers.image.description="Minimal hardened base for all custom Fedora bootc images"
+LABEL org.opencontainers.image.version="1.0"
+
+# ---------------------------------------------------------------------------
+# Enable RPM Fusion (free + nonfree) for broader package availability
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
+      "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm" \
+    && dnf clean all
+
+# ---------------------------------------------------------------------------
+# Base packages
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      # System fundamentals
+      bootc \
+      bash-completion \
+      bind-utils \
+      curl \
+      wget \
+      git \
+      vim-enhanced \
+      tmux \
+      htop \
+      rsync \
+      unzip \
+      tar \
+      gzip \
+      bzip2 \
+      xz \
+      # Network
+      NetworkManager \
+      firewalld \
+      openssh-server \
+      # Security
+      policycoreutils-python-utils \
+      audit \
+      # Hardware / firmware support
+      fwupd \
+      usbutils \
+      pciutils \
+    && dnf clean all
+
+# ---------------------------------------------------------------------------
+# Enable key services
+# ---------------------------------------------------------------------------
+RUN systemctl enable \
+      firewalld \
+      sshd \
+      auditd \
+      fwupd-refresh.timer \
+      bootc-fetch-apply-updates.timer
+
+# ---------------------------------------------------------------------------
+# Harden SSH: disable root login and password auth
+# ---------------------------------------------------------------------------
+RUN sed -i \
+      -e 's/^#\?PermitRootLogin.*/PermitRootLogin no/' \
+      -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' \
+      /etc/ssh/sshd_config
+
+# ---------------------------------------------------------------------------
+# SELinux enforcing (already default in Fedora, made explicit here)
+# ---------------------------------------------------------------------------
+RUN sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config

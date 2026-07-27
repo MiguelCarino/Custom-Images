@@ -1,0 +1,40 @@
+# =============================================================================
+# Bootstrap: Ubuntu 24.04 LTS bootc base image
+# Built from the official ubuntu:24.04 image.
+# bootc is available in Ubuntu 24.04's universe repo.
+# =============================================================================
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Enable universe repo (where bootc lives) and install base system
+RUN apt-get update \
+    && apt-get install -y software-properties-common \
+    && add-apt-repository -y universe \
+    && apt-get update \
+    && apt-get install -y \
+         bootc \
+         systemd \
+         systemd-sysv \
+         systemd-resolved \
+         systemd-timesyncd \
+         dbus \
+         udev \
+         sudo \
+         openssh-server \
+         ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Disable services that don't make sense in a container image layer
+RUN systemctl disable \
+        apt-daily.timer \
+        apt-daily-upgrade.timer \
+        motd-news.timer \
+        systemd-networkd-wait-online.service \
+    2>/dev/null || true
+
+# systemd as PID 1
+STOPSIGNAL SIGRTMIN+3
+CMD ["/lib/systemd/systemd"]

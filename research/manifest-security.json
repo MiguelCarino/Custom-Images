@@ -1,0 +1,1051 @@
+{
+  "key": "security",
+  "summary": "A merged offensive-security and digital-forensics workstation layer for authorized penetration testing, CTF play, incident response and evidence analysis. It bakes in the parts that must be system-integrated rather than user-installed: non-root packet capture (wireshark-cli ships /usr/bin/dumpcap as 0750 root:wireshark with cap_net_admin,cap_net_raw=ep plus a usbmon udev rule), raw-socket capabilities for scanners, monitor-mode/injection driver handling for USB Wi-Fi, and \u2014 the single strongest justification for an image rather than a post-install script \u2014 a default-on forensic write-blocking policy implemented as udev rules that force removable block devices read-only and suppress udisks/GNOME automount before the desktop can ever touch evidence media. Fedora's `security-lab` comp group covers the classic network/audit/recovery tooling well (aircrack-ng, sleuthkit, ewftools, dc3dd, hydra, ophcrack, dislocker, nwipe...), so this manifest is essentially that group curated down, plus RE/exploit-dev tooling, plus explicit handling of the four big Fedora gaps: Metasploit, Ghidra, ZAP/sqlmap and Volatility3/plaso, none of which are packaged. Intended user: an operator who owns the hardware, images the machine once, and needs a known-good evidence-handling posture on every boot.",
+  "packages": [
+    {
+      "name": "wireshark",
+      "why": "Qt GUI analyzer; pulls wireshark-cli. Prefer RPM over Flatpak so it uses the host's capability-enabled dumpcap."
+    },
+    {
+      "name": "wireshark-cli",
+      "why": "tshark, dumpcap, editcap, mergecap, capinfos. Ships dumpcap 0750 root:wireshark with cap_net_admin,cap_net_raw=ep, sysusers.d/wireshark.conf and 90-wireshark-usbmon.rules \u2014 this is the whole non-root-capture story."
+    },
+    {
+      "name": "tcpdump",
+      "why": "Baseline capture; scriptable, tiny, works where tshark is overkill."
+    },
+    {
+      "name": "nmap",
+      "why": "Host/service/OS discovery, NSE scripting."
+    },
+    {
+      "name": "nmap-ncat",
+      "why": "ncat \u2014 TLS-capable netcat for listeners, pivots, shell handling."
+    },
+    {
+      "name": "masscan",
+      "why": "Asynchronous internet-scale port scanning; needs CAP_NET_RAW."
+    },
+    {
+      "name": "zmap",
+      "why": "Single-packet internet-wide scanner; needs CAP_NET_RAW."
+    },
+    {
+      "name": "arp-scan",
+      "why": "Layer-2 host discovery on a switched segment."
+    },
+    {
+      "name": "netsniff-ng",
+      "why": "Zero-copy capture toolkit (trafgen, ifpps, mausezahn) for high-rate capture and packet crafting."
+    },
+    {
+      "name": "ngrep",
+      "why": "grep over live traffic / pcaps for quick triage."
+    },
+    {
+      "name": "tcpflow",
+      "why": "Reassembles TCP streams to files \u2014 recovers transferred artifacts from a pcap."
+    },
+    {
+      "name": "tcpick",
+      "why": "Stream reassembly and connection tracking from the CLI."
+    },
+    {
+      "name": "tcpreplay",
+      "why": "Replays captured traffic against a target or IDS for validation."
+    },
+    {
+      "name": "suricata",
+      "why": "IDS/IPS engine; also runs offline over a pcap to extract alerts and files. Do NOT enable the unit by default."
+    },
+    {
+      "name": "zeek-core",
+      "why": "Network-security monitor producing structured conn/dns/http/files logs \u2014 the best offline pcap-to-timeline tool in Fedora. Note the binary package is zeek-core, not zeek."
+    },
+    {
+      "name": "zeekctl",
+      "why": "Deployment/\u7ba1\u7406 wrapper for zeek instances."
+    },
+    {
+      "name": "argus",
+      "why": "Flow-record generation from live traffic or pcap."
+    },
+    {
+      "name": "argus-clients",
+      "why": "ra/racluster/rasort \u2014 query and aggregate argus flow records."
+    },
+    {
+      "name": "p0f",
+      "why": "Passive OS and application fingerprinting from captured traffic."
+    },
+    {
+      "name": "httpry",
+      "why": "Lightweight HTTP-only packet logger for triage."
+    },
+    {
+      "name": "dsniff",
+      "why": "Classic credential sniffing suite (dsniff, urlsnarf, arpspoof, dnsspoof)."
+    },
+    {
+      "name": "ettercap",
+      "why": "MITM framework for on-path testing on an authorized segment."
+    },
+    {
+      "name": "hping3",
+      "why": "Arbitrary TCP/IP packet crafting, firewall/ACL probing, traceroute variants."
+    },
+    {
+      "name": "etherape",
+      "why": "Live graphical traffic topology \u2014 fast visual sense of what a segment is doing."
+    },
+    {
+      "name": "socat",
+      "why": "Universal relay: pivots, TLS wrapping, pty handling for shells."
+    },
+    {
+      "name": "proxychains-ng",
+      "why": "Forces arbitrary tools through a SOCKS pivot."
+    },
+    {
+      "name": "sslscan",
+      "why": "Enumerates TLS ciphers/protocol versions on a target."
+    },
+    {
+      "name": "ssldump",
+      "why": "Decodes TLS handshakes from live traffic or pcap."
+    },
+    {
+      "name": "sslsplit",
+      "why": "Transparent TLS/SSL MITM proxy for authorized interception."
+    },
+    {
+      "name": "whatweb",
+      "why": "Web technology fingerprinting."
+    },
+    {
+      "name": "ffuf",
+      "why": "Fast web fuzzer \u2014 the practical stand-in for the missing dirb/wfuzz/dirbuster."
+    },
+    {
+      "name": "gobuster",
+      "why": "Directory/DNS/vhost brute-forcing in Go."
+    },
+    {
+      "name": "dnsenum",
+      "why": "DNS enumeration and zone-transfer attempts."
+    },
+    {
+      "name": "dnsmap",
+      "why": "Subdomain brute-forcing."
+    },
+    {
+      "name": "dnstracer",
+      "why": "Traces DNS delegation chains."
+    },
+    {
+      "name": "dnstop",
+      "why": "Live DNS query analysis from an interface or pcap."
+    },
+    {
+      "name": "bind-utils",
+      "why": "dig/host/nslookup \u2014 assumed present but pinned here because recon depends on dig specifically."
+    },
+    {
+      "name": "whois",
+      "why": "Registration/ASN lookups during scoping."
+    },
+    {
+      "name": "ldns",
+      "why": "drill and DNSSEC verification tooling."
+    },
+    {
+      "name": "fping",
+      "why": "Bulk ICMP sweep for scoping live hosts."
+    },
+    {
+      "name": "mtr",
+      "why": "Path analysis during network triage."
+    },
+    {
+      "name": "onesixtyone",
+      "why": "SNMP community-string scanner."
+    },
+    {
+      "name": "snmpcheck",
+      "why": "SNMP device enumeration."
+    },
+    {
+      "name": "thc-ipv6",
+      "why": "IPv6 attack/assessment toolkit \u2014 the IPv6 side is routinely unassessed."
+    },
+    {
+      "name": "firewalk",
+      "why": "Determines ACL rules permitted through a gateway."
+    },
+    {
+      "name": "nbtscan",
+      "why": "NetBIOS name/host enumeration on Windows-heavy networks."
+    },
+    {
+      "name": "hydra",
+      "why": "Network login brute-forcer across many protocols."
+    },
+    {
+      "name": "medusa",
+      "why": "Parallel network authentication brute-forcer; different protocol coverage than hydra."
+    },
+    {
+      "name": "ncrack",
+      "why": "Nmap-project network auth cracker, good RDP/SSH coverage."
+    },
+    {
+      "name": "john",
+      "why": "Password cracker. IMPORTANT: Fedora ships core John 1.9.0 (only john, unshadow, unafs, unique, mailer) \u2014 NOT jumbo, so none of the *2john format converters are present. See unavailable."
+    },
+    {
+      "name": "hashcat",
+      "why": "GPU-accelerated hash cracking; needs an OpenCL/HIP/CUDA runtime from the hardware layer plus render/video group membership."
+    },
+    {
+      "name": "ophcrack",
+      "why": "Rainbow-table LM/NTLM cracking (tables not included)."
+    },
+    {
+      "name": "pdfcrack",
+      "why": "PDF password recovery \u2014 common in both CTF and evidence work."
+    },
+    {
+      "name": "chntpw",
+      "why": "Offline Windows SAM/registry password reset and hive inspection."
+    },
+    {
+      "name": "bkhive",
+      "why": "Extracts the syskey bootkey from a SYSTEM hive for offline hash dumping."
+    },
+    {
+      "name": "cmospwd",
+      "why": "Recovers/clears BIOS passwords on seized hardware."
+    },
+    {
+      "name": "sshpass",
+      "why": "Non-interactive SSH auth in harnesses and loops."
+    },
+    {
+      "name": "aircrack-ng",
+      "why": "802.11 capture/injection/cracking suite; airmon-ng, airodump-ng, aireplay-ng."
+    },
+    {
+      "name": "kismet",
+      "why": "Wireless sniffing, rogue-AP detection, long-run RF survey with its own capture daemons."
+    },
+    {
+      "name": "hcxtools",
+      "why": "Converts and manipulates PMKID/EAPOL captures into hashcat/john formats."
+    },
+    {
+      "name": "reaver",
+      "why": "WPS PIN attack."
+    },
+    {
+      "name": "pixiewps",
+      "why": "Offline WPS pixie-dust attack; pairs with reaver."
+    },
+    {
+      "name": "cowpatty",
+      "why": "WPA-PSK dictionary attack against captured handshakes."
+    },
+    {
+      "name": "macchanger",
+      "why": "MAC randomization on the test interface."
+    },
+    {
+      "name": "iw",
+      "why": "nl80211 control \u2014 required to set monitor mode and channel manually when airmon-ng misbehaves."
+    },
+    {
+      "name": "hostapd",
+      "why": "Rogue/evil-twin AP and WPA-Enterprise testing rigs."
+    },
+    {
+      "name": "bluez-tools",
+      "why": "Bluetooth device enumeration and inspection."
+    },
+    {
+      "name": "ubertooth",
+      "why": "BLE sniffing with Ubertooth One hardware; ships its own udev rules for device access."
+    },
+    {
+      "name": "radare2",
+      "why": "Reverse-engineering framework, CLI disassembler/debugger."
+    },
+    {
+      "name": "radare2-devel",
+      "why": "Headers for building r2 plugins (r2ghidra etc.) locally."
+    },
+    {
+      "name": "rizin",
+      "why": "Maintained r2 fork; cleaner API, better scripting."
+    },
+    {
+      "name": "iaito",
+      "why": "Qt GUI frontend for rizin \u2014 the packaged Cutter equivalent in Fedora."
+    },
+    {
+      "name": "capstone",
+      "why": "Disassembly engine used by nearly every RE/forensics tool."
+    },
+    {
+      "name": "python3-capstone",
+      "why": "Python bindings for scripted disassembly."
+    },
+    {
+      "name": "gdb",
+      "why": "Debugger for exploit development and crash triage."
+    },
+    {
+      "name": "gdb-gef",
+      "why": "GEF exploit-dev frontend for gdb \u2014 heap views, checksec, ROP helpers."
+    },
+    {
+      "name": "ltrace",
+      "why": "Library-call tracing for malware/behavioral analysis."
+    },
+    {
+      "name": "strace",
+      "why": "Syscall tracing for dynamic analysis."
+    },
+    {
+      "name": "checksec",
+      "why": "Reports RELRO/NX/PIE/canary on target binaries."
+    },
+    {
+      "name": "patchelf",
+      "why": "Rewrites interpreter/RPATH when re-hosting extracted binaries."
+    },
+    {
+      "name": "python3-pwntools",
+      "why": "Exploit-development framework \u2014 the CTF standard library."
+    },
+    {
+      "name": "python3-ROPGadget",
+      "why": "ROP gadget discovery (exact case: python3-ROPGadget)."
+    },
+    {
+      "name": "nasm",
+      "why": "Shellcode assembly."
+    },
+    {
+      "name": "binutils",
+      "why": "objdump/readelf/strings \u2014 the floor of any binary triage."
+    },
+    {
+      "name": "elfutils",
+      "why": "eu-readelf/eu-strip for ELF inspection."
+    },
+    {
+      "name": "binwalk",
+      "why": "Firmware signature scanning, entropy analysis and extraction."
+    },
+    {
+      "name": "squashfs-tools",
+      "why": "unsquashfs for firmware images pulled apart by binwalk."
+    },
+    {
+      "name": "cabextract",
+      "why": "Extracts Microsoft CAB payloads found in samples and installers."
+    },
+    {
+      "name": "p7zip",
+      "why": "Wide archive coverage for evidence container extraction."
+    },
+    {
+      "name": "unrar",
+      "why": "RAR extraction (RPM Fusion nonfree) \u2014 common in sample sets."
+    },
+    {
+      "name": "cpio",
+      "why": "initramfs and archive unpacking during firmware work."
+    },
+    {
+      "name": "flashrom",
+      "why": "SPI flash dump/reflash for hardware and firmware forensics."
+    },
+    {
+      "name": "sleuthkit",
+      "why": "Core filesystem forensics: fls, icat, mmls, fsstat, tsk_recover, blkls."
+    },
+    {
+      "name": "sleuthkit-devel",
+      "why": "Headers \u2014 Autopsy and custom tooling link against libtsk."
+    },
+    {
+      "name": "ewftools",
+      "why": "ewfacquire/ewfverify/ewfmount/ewfexport \u2014 E01 imaging and read-only mounting. Note: the tools are in ewftools, NOT in libewf."
+    },
+    {
+      "name": "libewf",
+      "why": "EWF library that sleuthkit and ewftools link against."
+    },
+    {
+      "name": "afftools",
+      "why": "AFF (Advanced Forensic Format) container handling \u2014 affuse, affinfo."
+    },
+    {
+      "name": "afflib",
+      "why": "AFF library backing afftools and TSK's AFF support."
+    },
+    {
+      "name": "dc3dd",
+      "why": "DoD DC3 forensic dd fork: hashing on the fly, progress, error handling, log output."
+    },
+    {
+      "name": "dcfldd",
+      "why": "Enhanced dd with multiple simultaneous hashes and verification \u2014 the other standard imager."
+    },
+    {
+      "name": "ddrescue",
+      "why": "Recovers images from failing media with a mapfile for resumable passes."
+    },
+    {
+      "name": "testdisk",
+      "why": "Partition-table repair and PhotoRec file carving (photorec ships in this package)."
+    },
+    {
+      "name": "foremost",
+      "why": "Header/footer/structure-based file carving."
+    },
+    {
+      "name": "extundelete",
+      "why": "Recovers deleted files from ext3/ext4 journals."
+    },
+    {
+      "name": "gpart",
+      "why": "Guesses lost partition tables on damaged evidence disks."
+    },
+    {
+      "name": "gparted",
+      "why": "GUI partition inspection for triage \u2014 used read-only here; the write-block rules keep it from touching evidence."
+    },
+    {
+      "name": "dislocker",
+      "why": "Mounts BitLocker volumes read-only \u2014 essential for modern Windows evidence and otherwise a hard blocker."
+    },
+    {
+      "name": "libesedb",
+      "why": "esedbexport/esedbinfo \u2014 parses ESE databases (Windows Search, SRUM, NTDS.dit, Exchange)."
+    },
+    {
+      "name": "xmount",
+      "why": "Converts/exposes forensic images as virtual raw or VDI/VMDK devices without rewriting them."
+    },
+    {
+      "name": "guestfs-tools",
+      "why": "guestfish/virt-cat/virt-ls to inspect disk images offline without loop-mounting them on the host \u2014 the safest way to browse evidence."
+    },
+    {
+      "name": "qemu-img",
+      "why": "Format conversion and probing of VM disk evidence (qcow2/vmdk/vhdx)."
+    },
+    {
+      "name": "ntfs-3g",
+      "why": "NTFS read-only mounting of evidence volumes."
+    },
+    {
+      "name": "ntfsprogs",
+      "why": "ntfsinfo, ntfscluster, ntfsundelete \u2014 NTFS metadata forensics."
+    },
+    {
+      "name": "exfatprogs",
+      "why": "exFAT inspection (fsck/dump) for cards and removable media."
+    },
+    {
+      "name": "hfsplus-tools",
+      "why": "HFS+ handling for macOS evidence."
+    },
+    {
+      "name": "hfsutils",
+      "why": "Legacy HFS access for older Mac media."
+    },
+    {
+      "name": "apfs-fuse",
+      "why": "Read-only APFS access \u2014 the only practical route to modern macOS volumes on Linux."
+    },
+    {
+      "name": "cryptsetup",
+      "why": "LUKS/dm-crypt handling; also builds read-only dm mappings over evidence."
+    },
+    {
+      "name": "lvm2",
+      "why": "Activates LVM volume groups on evidence disks (activate read-only)."
+    },
+    {
+      "name": "mdadm",
+      "why": "Assembles RAID arrays from seized member disks, read-only."
+    },
+    {
+      "name": "sg3_utils",
+      "why": "Low-level SCSI/ATA commands: HPA/DCO detection, sanitize status, device identity for the chain-of-custody record."
+    },
+    {
+      "name": "hdparm",
+      "why": "Reads/ sets device read-only flag, detects HPA, reports identity \u2014 directly part of write-block verification."
+    },
+    {
+      "name": "smartmontools",
+      "why": "SMART health of evidence media before imaging \u2014 documents whether a drive is dying."
+    },
+    {
+      "name": "lsof",
+      "why": "Identifies what has an evidence device or file open before detach."
+    },
+    {
+      "name": "nwipe",
+      "why": "Verified media sanitization (DBAN successor) for wiping target disks between engagements."
+    },
+    {
+      "name": "scrub",
+      "why": "Pattern-based overwrite of disks/files to standards."
+    },
+    {
+      "name": "wipe",
+      "why": "Secure file-level deletion of working copies."
+    },
+    {
+      "name": "yara",
+      "why": "Signature matching over files and memory dumps \u2014 the connective tissue of malware triage."
+    },
+    {
+      "name": "yara-devel",
+      "why": "Headers for building yara-linked tooling/python modules."
+    },
+    {
+      "name": "python3-yara",
+      "why": "YARA bindings for scripted scanning pipelines."
+    },
+    {
+      "name": "clamav",
+      "why": "On-demand AV scanning of evidence sets (clamscan)."
+    },
+    {
+      "name": "clamd",
+      "why": "Scanning daemon \u2014 much faster for bulk evidence than repeated clamscan startup."
+    },
+    {
+      "name": "clamav-freshclam",
+      "why": "Signature updater. Do NOT bake clamav-data into the image; it is large and stale on day one."
+    },
+    {
+      "name": "ssdeep",
+      "why": "Fuzzy hashing (CTPH) for near-duplicate sample identification."
+    },
+    {
+      "name": "python3-ssdeep",
+      "why": "Fuzzy-hash bindings for triage scripts."
+    },
+    {
+      "name": "python3-oletools",
+      "why": "olevba/oleid/rtfobj \u2014 OLE/Office macro and RTF exploit analysis."
+    },
+    {
+      "name": "python3-pefile",
+      "why": "PE header/import/section parsing for Windows sample triage."
+    },
+    {
+      "name": "perl-Image-ExifTool",
+      "why": "exiftool \u2014 metadata extraction across effectively every file type. Package name is perl-Image-ExifTool, not exiftool."
+    },
+    {
+      "name": "exiv2",
+      "why": "Image metadata inspection/manipulation."
+    },
+    {
+      "name": "steghide",
+      "why": "Steganography detection/extraction \u2014 routine in CTF, occasional in casework."
+    },
+    {
+      "name": "sqlitebrowser",
+      "why": "GUI inspection of SQLite artifacts (browser history, app databases, iOS/Android backups)."
+    },
+    {
+      "name": "sqlite-tools",
+      "why": "sqlite3 CLI for scripted artifact queries and recovery."
+    },
+    {
+      "name": "ghex",
+      "why": "GTK hex editor for manual structure inspection."
+    },
+    {
+      "name": "bless",
+      "why": "Large-file-capable hex editor \u2014 handles multi-GB images better than ghex."
+    },
+    {
+      "name": "hexedit",
+      "why": "Terminal hex editor for headless/console work."
+    },
+    {
+      "name": "lnav",
+      "why": "Log navigator with automatic format detection and SQL queries \u2014 front line of IR log review."
+    },
+    {
+      "name": "jq",
+      "why": "Zeek/Suricata JSON output is unusable without it."
+    },
+    {
+      "name": "python3-scapy",
+      "why": "Packet crafting and pcap manipulation in Python."
+    },
+    {
+      "name": "python3-impacket",
+      "why": "SMB/Kerberos/MSRPC toolkit \u2014 the Windows-network testing backbone (secretsdump, psexec, ntlmrelayx)."
+    },
+    {
+      "name": "python3-dpkt",
+      "why": "Fast pcap parsing for custom analysis scripts."
+    },
+    {
+      "name": "python3-pyshark",
+      "why": "Python wrapper over tshark for dissector-accurate scripted analysis."
+    },
+    {
+      "name": "python3-cryptography",
+      "why": "Crypto primitives for tooling and CTF scripts."
+    },
+    {
+      "name": "python3-pycryptodomex",
+      "why": "The other crypto library half of CTF/tooling scripts depend on."
+    },
+    {
+      "name": "python3-construct",
+      "why": "Declarative binary parsing \u2014 used to build ad-hoc artifact parsers."
+    },
+    {
+      "name": "python3-requests",
+      "why": "Baseline HTTP for web tooling and custom exploit scripts."
+    },
+    {
+      "name": "python3-pip",
+      "why": "Needed because Volatility3, plaso and sqlmap are not packaged."
+    },
+    {
+      "name": "pipx",
+      "why": "The correct way to install Volatility3/sqlmap/plaso per-user on an immutable image without touching /usr."
+    },
+    {
+      "name": "python3-virtualenv",
+      "why": "Isolated environments for tool-specific dependency sets."
+    },
+    {
+      "name": "python3-devel",
+      "why": "Building native Python extensions (yara-python variants, libyal bindings) at analysis time."
+    },
+    {
+      "name": "gcc-c++",
+      "why": "Compiling exploits, PoCs and out-of-tree tooling on the box."
+    },
+    {
+      "name": "scanmem",
+      "why": "Live process memory scanning/patching \u2014 game-hacking origin, useful for runtime analysis."
+    },
+    {
+      "name": "rkhunter",
+      "why": "Rootkit indicator scanning on a mounted evidence root or the live host."
+    },
+    {
+      "name": "chkrootkit",
+      "why": "Second-opinion rootkit checks; different signature set from rkhunter."
+    },
+    {
+      "name": "unhide",
+      "why": "Detects hidden processes/ports \u2014 classic live-response rootkit check."
+    },
+    {
+      "name": "lynis",
+      "why": "System hardening audit for the assessment side of engagements."
+    },
+    {
+      "name": "aide",
+      "why": "File-integrity baselining of an evidence root or a monitored host."
+    },
+    {
+      "name": "openscap-scanner",
+      "why": "OSCAP compliance/vulnerability scanning."
+    },
+    {
+      "name": "scap-security-guide",
+      "why": "Ships the actual SCAP profiles (CIS, STIG) openscap needs."
+    },
+    {
+      "name": "setools-console",
+      "why": "seinfo/sesearch \u2014 needed to reason about SELinux denials when forensic tools hit policy, and to analyze policy on evidence systems."
+    },
+    {
+      "name": "flawfinder",
+      "why": "Static source scanning for C/C++ during code review engagements."
+    },
+    {
+      "name": "usbguard",
+      "why": "USB device authorization policy \u2014 relevant both as a hardening tool and to control what plugs into the analysis box. Ship it, do NOT enable it by default."
+    },
+    {
+      "name": "usbutils",
+      "why": "lsusb for documenting attached evidence and adapters."
+    },
+    {
+      "name": "pciutils",
+      "why": "lspci for hardware inventory in the case record."
+    },
+    {
+      "name": "lshw",
+      "why": "Full hardware inventory for chain-of-custody documentation."
+    },
+    {
+      "name": "dmidecode",
+      "why": "SMBIOS/firmware identity of seized hardware."
+    },
+    {
+      "name": "usbsniff",
+      "why": "USB traffic capture support alongside wireshark's usbmon interface."
+    },
+    {
+      "name": "keepassxc",
+      "why": "Credential vault for engagement secrets \u2014 findings and client credentials should not live in a text file."
+    },
+    {
+      "name": "gnupg2",
+      "why": "Signing evidence hashes and encrypting deliverables/reports."
+    },
+    {
+      "name": "openssl",
+      "why": "Certificate inspection, hashing, and ad-hoc crypto during assessment."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "metasploit-framework",
+      "alternative": "Not in Fedora or RPM Fusion. Best fit for an atomic host: run it in a container \u2014 `podman run -it --rm --network host docker.io/metasploitframework/metasploit-framework` \u2014 or a distrobox/toolbox. The upstream `msfinstall` omnibus script writes to /opt and is a poor fit for bootc (it will land in /var/opt and be untracked). Do not bake it."
+    },
+    {
+      "name": "ghidra",
+      "alternative": "Flatpak `org.ghidra_sre.Ghidra` (community-maintained, tracks upstream releases). Alternative: unpack the upstream NSA zip into /opt at build time and ship a JDK (java-25-openjdk / java-latest-openjdk are the only OpenJDK packages in F44; Ghidra's supported JDK is version-sensitive, verify before pinning). iaito+rizin is the packaged partial substitute but has no decompiler of comparable quality without r2ghidra, which is also unpackaged."
+    },
+    {
+      "name": "zaproxy",
+      "alternative": "Flatpak `org.zaproxy.ZAP` \u2014 this is the right delivery mechanism: JVM app, fast-moving, add-on marketplace writes to the user's home."
+    },
+    {
+      "name": "burpsuite",
+      "alternative": "Proprietary, no RPM, no Flathub package. Upstream .sh installer into the user's home, or run the JAR. Keep it out of the image entirely."
+    },
+    {
+      "name": "sqlmap",
+      "alternative": "`pipx install sqlmap` or `git clone https://github.com/sqlmapproject/sqlmap` \u2014 it is a self-contained Python tree with no packaged dependencies. A COPR exists intermittently but none is reliably maintained for F44."
+    },
+    {
+      "name": "volatility3",
+      "alternative": "`pipx install volatility3` (PyPI package `volatility3`). Symbol tables (ISF files) must be fetched separately and are large \u2014 put them in /var, not the image. This is the single most-felt gap versus SIFT/CAINE."
+    },
+    {
+      "name": "volatility (v2)",
+      "alternative": "Dead upstream, Python 2 only. Use volatility3; for old profiles run the legacy image in a container."
+    },
+    {
+      "name": "autopsy",
+      "alternative": "Not packaged. Upstream ships a Linux .zip that needs a specific JDK plus a matching sleuthkit-java build; the packaged sleuthkit does not include the Java bindings. Realistic options: run Autopsy in a container/VM, or accept CLI sleuthkit + a timeline built by hand. Do not attempt to bake it."
+    },
+    {
+      "name": "plaso / log2timeline",
+      "alternative": "Not packaged, and its libyal dependency chain (libbde, libvshadow, libregf, libpff, libevtx, libolecf, libscca, libfvde, libqcow, libvmdk, dfvfs, dfwinreg) is ALSO absent from Fedora \u2014 only libewf and libesedb exist. Use the upstream container image `log2timeline/plaso` via podman. Building plaso from pip on Fedora is a multi-hour dependency fight; do not put it in the Containerfile."
+    },
+    {
+      "name": "libbde / libvshadow / libregf / libpff / libevtx / libolecf / libscca / libfvde",
+      "alternative": "None packaged. dislocker covers BitLocker (libbde's job) and libesedb covers ESE. For VSS, registry, PST and EVTX parsing use the plaso container or pip-installed libyal wheels. This is the deepest structural gap versus a dedicated DFIR distro."
+    },
+    {
+      "name": "bulk_extractor",
+      "alternative": "Not packaged. Build from upstream source (needs afflib + libewf, both of which ARE present, so a local build is realistic) or run in a container."
+    },
+    {
+      "name": "scalpel",
+      "alternative": "Not in Fedora. foremost and photorec (in testdisk) cover carving; scalpel's advantage is configurable header/footer rules, which foremost's config file approximates."
+    },
+    {
+      "name": "regripper",
+      "alternative": "Not packaged. Perl tree from GitHub; drop into /usr/local or run from home. Registry hives can otherwise be read with chntpw (limited) \u2014 there is no good packaged answer."
+    },
+    {
+      "name": "john-the-ripper-jumbo",
+      "alternative": "Fedora's `john` is core 1.9.0 with only 5 binaries \u2014 no zip2john, rar2john, keepass2john, ssh2john, office2john, and far fewer formats. Alternatives: build jumbo from upstream (openwall/john), use a container, or lean on hashcat which is fully packaged and covers most modern hashes. This trips people up constantly; document it."
+    },
+    {
+      "name": "nikto",
+      "alternative": "Not packaged. Perl, self-contained: git clone and run, or container. ffuf/whatweb/sslscan cover overlapping ground."
+    },
+    {
+      "name": "wfuzz / dirb / dirbuster",
+      "alternative": "None packaged. ffuf and gobuster ARE packaged and are strictly better; also means no bundled wordlists \u2014 see notes."
+    },
+    {
+      "name": "wapiti",
+      "alternative": "`pipx install wapiti3`, or use ZAP's active scanner instead."
+    },
+    {
+      "name": "netexec (formerly crackmapexec)",
+      "alternative": "Not packaged. `pipx install netexec`. python3-impacket IS packaged and provides the underlying primitives."
+    },
+    {
+      "name": "responder",
+      "alternative": "Not packaged. git clone from lgandx/Responder; it is a plain Python tree. Needs ports 445/137/139 free \u2014 conflicts with any running samba."
+    },
+    {
+      "name": "bettercap",
+      "alternative": "Not packaged. Upstream Go binary release, or `go install`. ettercap + dsniff cover the classic MITM cases."
+    },
+    {
+      "name": "mitmproxy",
+      "alternative": "Not packaged in F44. `pipx install mitmproxy`, or Flatpak-less container. sslsplit is the packaged transparent-MITM alternative but is not an interactive proxy."
+    },
+    {
+      "name": "wifite / wifite2",
+      "alternative": "Not packaged. git clone; it is an orchestration layer over aircrack-ng, reaver, pixiewps and hcxtools \u2014 all of which ARE packaged, so it works once cloned."
+    },
+    {
+      "name": "hcxdumptool",
+      "alternative": "Not packaged even though hcxtools is. Build from upstream (ZerBea/hcxdumptool) \u2014 it must match the hcxtools version. Without it, PMKID capture falls back to airodump-ng + hcxpcapngtool."
+    },
+    {
+      "name": "mdk4",
+      "alternative": "Not packaged. Upstream build; aireplay-ng covers deauth/injection basics."
+    },
+    {
+      "name": "netdiscover",
+      "alternative": "Not packaged. arp-scan (packaged) does the same ARP discovery job."
+    },
+    {
+      "name": "veracrypt",
+      "alternative": "Not in Fedora (licensing). Upstream RPM from veracrypt.fr, or use cryptsetup which supports TrueCrypt/VeraCrypt volumes natively via `cryptsetup --type tcrypt --veracrypt` \u2014 prefer that and skip the external RPM entirely."
+    },
+    {
+      "name": "safecopy / magicrescue / srm",
+      "alternative": "Not packaged. ddrescue covers safecopy, foremost/photorec cover magicrescue, wipe/scrub cover srm."
+    },
+    {
+      "name": "gvm / openvas",
+      "alternative": "Not packaged. Greenbone's container stack via podman-compose is the only sane route; a vulnerability-management server does not belong baked into a workstation image anyway."
+    },
+    {
+      "name": "crunch / cewl / hash-identifier",
+      "alternative": "Not packaged. crunch and cewl are trivial upstream builds/clones; hashid is `pipx install hashid`."
+    },
+    {
+      "name": "snort3",
+      "alternative": "Not packaged. suricata is packaged and is the better-supported choice on Fedora; zeek-core covers the analysis-log use case."
+    },
+    {
+      "name": "frida",
+      "alternative": "Not packaged. `pipx install frida-tools` \u2014 works fine on Fedora; needs no image-level integration."
+    },
+    {
+      "name": "rtl8812au / rtl88xxau kernel driver",
+      "alternative": "Not in Fedora or RPM Fusion. COPR required \u2014 see the copr field. On a bootc image the akmod MUST be built at image-build time against the exact kernel being shipped; there is no post-install DKMS path on an immutable host."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "udev",
+      "detail": "FORENSIC WRITE-BLOCK (the core justification for this image). Ship /usr/lib/udev/rules.d/60-forensic-writeblock.rules, ordered BEFORE udisks (which uses 80-udisks2.rules) so the flags are set before anything can act on the device:\n\n# Force removable/external block devices read-only and hide from udisks\nACTION==\"remove\", GOTO=\"forensic_end\"\nSUBSYSTEM!=\"block\", GOTO=\"forensic_end\"\nTEST==\"/etc/forensics/writeblock-disabled\", GOTO=\"forensic_end\"\nKERNEL!=\"sd*|sr*|nvme*|mmcblk*|loop*\", GOTO=\"forensic_end\"\n# only external transports - never the internal system disk\nENV{ID_BUS}!=\"usb|ieee1394\", ENV{ID_USB_DRIVER}!=\"uas|usb-storage\", GOTO=\"forensic_end\"\nATTR{ro}=\"1\"\nRUN+=\"/usr/sbin/blockdev --setro /dev/%k\"\nENV{UDISKS_IGNORE}=\"1\"\nENV{UDISKS_AUTO}=\"0\"\nENV{UDISKS_SYSTEM}=\"1\"\nENV{UDISKS_FILESYSTEM_SHARED}=\"0\"\nLABEL=\"forensic_end\"\n\nThree points that matter: (1) ATTR{ro}=\"1\" alone is unreliable because partition devices appear as separate uevents and some drivers reset the flag, hence the belt-and-braces RUN+= blockdev --setro, which must match partitions too (the KERNEL glob covers sd*1 etc.); (2) the ID_BUS guard is mandatory \u2014 an unguarded rule will read-only the boot disk on the next `udevadm trigger` and brick the box; (3) the TEST== guard against /etc/forensics/writeblock-disabled gives an operator escape hatch (`touch` the file then `udevadm control --reload && udevadm trigger --subsystem-match=block`) without rebuilding the image. Ship a /usr/bin/writeblock on|off|status wrapper that manages that flag file, reloads udev and prints `lsblk -o NAME,RO,SIZE,MODEL` so the operator can prove the state in the case notes."
+    },
+    {
+      "kind": "udev",
+      "detail": "USB capture: wireshark-cli already installs /usr/lib/udev/rules.d/90-wireshark-usbmon.rules, which grants the `wireshark` group access to /dev/usbmon* so USB traffic can be captured without root. Nothing to add \u2014 but do not let a custom rules file shadow it, and note the package's %post `udevadm trigger --subsystem-match=usbmon` is explicitly skipped on rpm-ostree/bootc systems, so the trigger happens at first boot instead."
+    },
+    {
+      "kind": "udev",
+      "detail": "Hardware tool access: ubertooth ships its own rules; for HackRF/RTL-SDR-class devices and for Ubertooth, the operator account must be in `plugdev`/`dialout` as the shipped rules expect. Verify group ownership in the rules files rather than assuming \u2014 Fedora's rules generally use uaccess/TAG+=\"uaccess\" which grants the physically-logged-in session, which is what you want on a single-operator workstation."
+    },
+    {
+      "kind": "group",
+      "detail": "CRITICAL BUILD-ORDER BUG: wireshark-cli ships /usr/bin/dumpcap as mode 0750, owner root:wireshark, with file capabilities cap_net_admin,cap_net_raw=ep. The `wireshark` group is created by /usr/lib/sysusers.d/wireshark.conf \u2014 i.e. by systemd-sysusers at FIRST BOOT, not by an rpm scriptlet. If dnf installs wireshark-cli in a container where that group does not yet exist, rpm falls back to root:root and non-root capture silently breaks. In the Containerfile run `groupadd -r wireshark || true` (or `systemd-sysusers`) BEFORE `dnf install wireshark`, then verify with `getcap /usr/bin/dumpcap && ls -l /usr/bin/dumpcap` as a build-time assertion. Add the operator to the wireshark group at provisioning (useradd -G wireshark, or a /usr/lib/sysusers.d drop-in / systemd-sysusers snippet if you create the user in the image)."
+    },
+    {
+      "kind": "setcap",
+      "detail": "Raw-socket scanners are not capability-enabled by Fedora. In the Containerfile: `setcap cap_net_raw,cap_net_admin+eip /usr/bin/masscan /usr/bin/zmap /usr/sbin/arp-scan /usr/sbin/hping3` (verify paths after install; hping3 and arp-scan land in /usr/sbin). Restrict who can use them by chgrp'ing to a `netraw` group and mode 0750 rather than leaving them world-executable with caps. Note: file capabilities are stored in the security.capability xattr \u2014 confirm your build pipeline and the bootc/ostree commit preserve xattrs, otherwise every capability in the image (including dumpcap's) is silently dropped."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "Add `systemd.gpt_auto=0`. systemd-gpt-auto-generator will otherwise discover partitions on an attached evidence disk that match the Discoverable Partitions Spec and generate mount units for them \u2014 a write to evidence before any operator action. This is a real and under-appreciated automount vector that the udisks flags do NOT cover."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "Optional for memory acquisition: `iomem=relaxed` if you intend to use /dev/mem-based acquisition tooling. Weigh it \u2014 it lowers a hardening boundary. LiME is the better route and needs an out-of-tree module built at image time; if you skip both, memory acquisition on this host is limited to hibernation/crash images."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "If shipping an out-of-tree Wi-Fi injection driver from COPR, either enroll a MOK and sign the akmod at build time, or the image only works with Secure Boot off. Kernel lockdown in integrity mode will refuse the unsigned module. Decide this explicitly; it is the most common reason a 'monitor mode' image fails on first boot."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Disable GNOME/GTK automount at the dconf system level \u2014 /etc/dconf/db/local.d/00-forensics:\n[org/gnome/desktop/media-handling]\nautomount=false\nautomount-open=false\nautorun-never=true\n\nand LOCK it so the desktop UI cannot re-enable it \u2014 /etc/dconf/db/local.d/locks/forensics:\n/org/gnome/desktop/media-handling/automount\n/org/gnome/desktop/media-handling/automount-open\n/org/gnome/desktop/media-handling/autorun-never\n\nThen run `dconf update` in the Containerfile (the compiled /etc/dconf/db/local binary must exist in the image; dconf update at build time is required, it will not happen on its own at boot). This is defence-in-depth: ENV{UDISKS_IGNORE} already hides the device, and the dconf lock stops a well-meaning operator from clicking automount back on. On non-GNOME desktops the equivalent knob differs (Thunar volman, KDE device_automounter_kcm) \u2014 if the DE layer is not GNOME this file is inert and you need the DE-specific equivalent; flag it to the desktop layer owner."
+    },
+    {
+      "kind": "config-file",
+      "detail": "udisks2 policy hardening: drop /etc/polkit-1/rules.d/10-forensics-udisks.rules denying org.freedesktop.udisks2.filesystem-mount and filesystem-mount-system for non-root on devices flagged UDISKS_SYSTEM, so a desktop file manager cannot mount evidence even if a rule is missed. Keep filesystem-mount-other-seat denied too."
+    },
+    {
+      "kind": "config-file",
+      "detail": "NetworkManager must not touch monitor-mode interfaces \u2014 /etc/NetworkManager/conf.d/99-forensics-unmanaged.conf:\n[keyfile]\nunmanaged-devices=interface-name:*mon;interface-name:mon*;interface-name:prism*\n\nWithout this, NM will attempt to associate/scan on the interface airmon-ng just created and injection quietly fails or the interface flaps. `airmon-ng check kill` is the manual workaround; baking the config is the point of an image."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Evidence mount conventions: create /evidence (read-only working root) and /cases at build time via /usr/lib/tmpfiles.d/forensics.conf, and ship an /etc/fstab-less helper that mounts with the correct forensic flags \u2014 `mount -o ro,noload,noatime,nodev,noexec,nosuid` for ext (noload skips journal replay, which IS a write), `-o ro,norecovery` for XFS/Btrfs, `-o ro,show_sys_files,streams_interface=windows` for ntfs-3g. Journal replay on mount is the classic accidental evidence modification; the flag differs per filesystem, so a wrapper script is worth more than documentation."
+    },
+    {
+      "kind": "limits",
+      "detail": "/etc/security/limits.d/90-security-tools.conf: `* soft nofile 1048576` / `* hard nofile 1048576` \u2014 masscan and zmap open enormous numbers of descriptors and fail confusingly at the default 1024/524288. Also raise memlock for hashcat's pinned host buffers: `* hard memlock unlimited`."
+    },
+    {
+      "kind": "sysctl",
+      "detail": "/etc/sysctl.d/90-security-lab.conf: `net.ipv4.ip_forward=1` (needed for MITM/relay work \u2014 set it, but be aware it weakens the host as a router), `net.ipv4.conf.all.send_redirects=0`, and raise `net.core.rmem_max=268435456` / `net.core.rmem_default` so high-rate capture with netsniff-ng/tcpdump does not drop frames. Consider `kernel.perf_event_paranoid=1` for profiling-based analysis."
+    },
+    {
+      "kind": "group",
+      "detail": "Create supplementary groups at image build and add the operator: `wireshark` (capture), `render` and `video` (hashcat GPU access via /dev/dri/render*), `disk` only if you accept that it bypasses the write-block story (prefer NOT adding it \u2014 forensic imaging should be an explicit sudo action, logged). Use sysusers.d drop-ins so groups exist deterministically in the image."
+    },
+    {
+      "kind": "selinux",
+      "detail": "Keep SELinux enforcing. Label the evidence tree so tools can work without a blanket permissive domain: `semanage fcontext -a -t public_content_rw_t '/evidence(/.*)?'` and `/cases(/.*)?`, then restorecon. Expect denials from tools that mmap large images from unusual paths and from container-run tools (plaso/Metasploit) bind-mounting evidence \u2014 use `:z`/`:Z` on podman mounts rather than disabling SELinux. Ship setools-console so the operator can actually diagnose these; a forensic box that gets set permissive on day two is worse than one that never enforced."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Explicitly DISABLE/mask what would otherwise write to or scan attached media: suricata.service, clamd@*.service and usbguard.service should be installed-but-disabled (a running usbguard will block the investigator's own write-blocker/adapters at the worst moment). Do NOT enable clamav-freshclam.service in an air-gapped lab profile; enable it only in the IR profile. Consider masking `systemd-udisks2` automount paths is not possible \u2014 the udev flags are the supported mechanism, so rely on those rather than masking udisks2 (masking it breaks the desktop file manager entirely)."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Ship a first-boot oneshot `forensics-verify.service` that asserts the posture and logs it: getcap /usr/bin/dumpcap non-empty, group wireshark exists and owns dumpcap, /usr/lib/udev/rules.d/60-forensic-writeblock.rules present, `dconf read /org/gnome/desktop/media-handling/automount` == false. On an evidence-handling machine, the write-block state must be provable, not assumed \u2014 this output goes in the case notes."
+    },
+    {
+      "kind": "mime",
+      "detail": "Associate .pcap/.pcapng with wireshark and .E01/.dd/.raw/.img with a no-op or a read-only inspector so a double-click in the file manager never launches something that opens the image read-write. Ship /usr/share/applications/mimeapps.list defaults plus a small XDG mime XML for application/x-ewf. Cheap, and it closes the last accidental-write path that goes through the desktop."
+    },
+    {
+      "kind": "other",
+      "detail": "Wordlists: no packaged rockyou/SecLists in Fedora, and password tooling is useless without them. Either fetch SecLists at image build into /usr/share/wordlists (adds ~1 GB and makes the image self-contained \u2014 good for air-gapped work), or ship a fetch script and keep them in /var. Decide deliberately; hydra/john/hashcat/ffuf/gobuster all assume a wordlist path exists."
+    },
+    {
+      "kind": "other",
+      "detail": "Hashcat needs a working OpenCL/ROCm/CUDA runtime that is hardware-specific and does NOT belong here \u2014 declare the dependency and let the hardware layer provide it. Verify at build with `hashcat -I` only if the builder has a GPU; otherwise document that `hashcat -I` on first boot is the operator's smoke test."
+    }
+  ],
+  "risks": [
+    "The write-block udev rule is the highest-risk item in this entire catalog. A rule missing the ID_BUS/transport guard will set the internal system disk read-only on the next udevadm trigger and render the machine unbootable-to-usable. Test it in a VM with a passthrough USB stick AND verify the boot disk stays writable before shipping. Ship the /usr/bin/writeblock escape hatch in the same commit as the rule, never after.",
+    "Write-blocking in software is NOT a forensic write blocker. ATTR{ro}/blockdev --setro stops the block layer, but it does not stop firmware-level writes, does not survive a rule ordering mistake, and is not court-defensible on its own. Anything destined for evidentiary use still needs a hardware write blocker. The image reduces accidental modification; it does not replace the hardware. Say this in the image documentation or someone will assume otherwise.",
+    "dumpcap group-ownership failure is silent. If the Containerfile installs wireshark before creating the wireshark group, dumpcap ends up root:root, capture works only as root, and the operator will 'fix' it by running Wireshark as root \u2014 which is the exact thing the capability design exists to prevent. Assert it at build time.",
+    "File capabilities (security.capability xattr) must survive the container build, the OCI layer, and the ostree commit. Some build backends and some tar/copy steps drop xattrs. If they are dropped, dumpcap, masscan and zmap all lose privileges with no error message beyond permission-denied at runtime. Verify with getcap inside a booted instance, not just inside the build container.",
+    "Out-of-tree Wi-Fi drivers on an immutable image are fragile by construction: the akmod must be rebuilt for every kernel bump, which means the image build must pin the kernel and rebuild the module in lockstep. A kernel update that ships without a matching module leaves the operator with no monitor mode and no in-place fix. Budget for this or use an in-tree-supported adapter (ath9k_htc, mt7612u/mt76x2u, rt2800usb) and skip the COPR entirely.",
+    "Secure Boot plus an unsigned akmod equals a non-functional driver. Either sign with an enrolled MOK at build time or document that Secure Boot must be disabled \u2014 do not leave it to be discovered at 2am during an engagement.",
+    "The DFIR half is meaningfully thinner than the offensive half. Volatility3, plaso, Autopsy, bulk_extractor, regripper and the entire libyal family beyond libewf/libesedb are absent. A realistic assessment: Fedora gives you excellent acquisition and filesystem-layer forensics (sleuthkit, ewftools, dc3dd, dislocker, testdisk) and poor artifact-parsing/timelining. Plan on podman-running the plaso and Autopsy containers as a first-class part of the workflow, not a fallback.",
+    "john being core-only (no jumbo) will surprise anyone coming from Kali. zip2john/rar2john/keepass2john/ssh2john do not exist on this image. hashcat covers most of it but the workflow differs; document the substitution explicitly.",
+    "ip_forward=1, capability-enabled scanners and MITM tooling make this host a genuinely dangerous machine on any network it touches. It should not be the daily driver, should not auto-join corporate Wi-Fi, and firewalld defaults should be reviewed \u2014 the shared desktop layer's assumptions about a friendly network do not hold here.",
+    "Legal/operational: several packaged tools (ettercap, sslsplit, dsniff, responder-class tooling, aircrack-ng) are unlawful to point at systems you do not own or have written authorization to test. The image cannot enforce that. If this image is distributed, an at-login banner stating authorized-use-only is a cheap and worthwhile addition.",
+    "Size and build time. guestfs-tools drags in the libguestfs appliance, wireshark/iaito/sqlitebrowser/gparted pull Qt and GTK stacks, and zeek is not small. If the DE layer is not already Qt-based, iaito+sqlitebrowser alone add a few hundred MB. Consider splitting a 'security-min' (CLI only, no Qt/GTK, no guestfs) variant.",
+    "clamav-data is deliberately excluded \u2014 do not add it. It is ~350 MB, stale the moment the image is built, and freshclam replaces it anyway. If someone adds it to 'make scanning work offline', the image grows and the signatures are still wrong.",
+    "Enabling usbguard by default will lock the operator out of their own write blocker, forensic bridge or Wi-Fi adapter on first plug. Ship it disabled; a policy has to be generated on the actual hardware.",
+    "SELinux denials from container-run forensic tools bind-mounting /evidence are near-certain. Without a documented :z/:Z convention, the first workaround anyone reaches for is setenforce 0, which undermines the hardening posture the rest of this layer establishes."
+  ],
+  "copr": [
+    "melmorabity/8812au \u2014 akmod-8812au for RTL8812AU/21AU USB Wi-Fi with monitor mode and frame injection; the most consistently maintained Fedora COPR for this chipset. Must be built into the image at build time (akmod, not dkms) against the pinned kernel.",
+    "sketchybinary/RTL8812AU \u2014 aircrack-ng's RTL8812AU/8814AU fork packaged as RPM; alternative to melmorabity if you need the 8814AU variant.",
+    "ublue-os/akmods \u2014 prebuilt akmods including RTL8812AU/21AU and RTL8814AU, built specifically for bootc/ostree image workflows; the path of least resistance for a Fedora bootc image since the kmods are already matched to Fedora kernels.",
+    "krabs/kmod-88XX \u2014 kmod-rtl8812au as an alternative source if the above lag a kernel bump.",
+    "(none needed for the security tooling itself) \u2014 every tool in the packages list above comes from the fedora/updates repos; no COPR is required for userspace. COPR here is exclusively about out-of-tree Wi-Fi drivers."
+  ],
+  "flatpaks": [
+    "org.ghidra_sre.Ghidra \u2014 Ghidra. Fast-moving JVM app with a version-sensitive JDK requirement; Flatpak isolates that completely and is far better than unpacking the NSA zip into /opt on an immutable host.",
+    "org.zaproxy.ZAP \u2014 OWASP ZAP. JVM app with an add-on marketplace that writes at runtime; ideal Flatpak candidate and the direct Burp alternative called for.",
+    "re.rizin.cutter \u2014 Cutter (rizin GUI). Ships newer rizin than Fedora and can carry the rz-ghidra decompiler plugin (re.rizin.cutter.plugin.rz-ghidra), which the packaged iaito cannot. Consider shipping Cutter as Flatpak and dropping iaito from the RPM list to save the Qt pull, if the DE layer is not already Qt.",
+    "org.wireshark.Wireshark \u2014 NOT recommended. Listed only to be explicit: the Flatpak cannot use the host's capability-enabled dumpcap, so live capture is crippled. Use the RPM.",
+    "io.github.mahmoudk1000.OpenSCAP-style GUI / scap-workbench \u2014 scap-workbench is not on Flathub; skip, the CLI openscap-scanner is packaged."
+  ],
+  "external": [
+    {
+      "name": "Metasploit Framework",
+      "method": "podman container (docker.io/metasploitframework/metasploit-framework) run with --network host, or distrobox. Explicitly avoid the upstream msfinstall omnibus script \u2014 it targets /opt which is /var/opt on bootc and produces an untracked, un-updatable install."
+    },
+    {
+      "name": "Volatility3",
+      "method": "pipx install volatility3 (per-user, into ~/.local). ISF symbol tables fetched separately at runtime into /var or ~/.cache \u2014 never baked."
+    },
+    {
+      "name": "plaso / log2timeline",
+      "method": "podman container log2timeline/plaso. Its libyal dependency chain is unpackaged in Fedora; do not attempt a pip build in the Containerfile."
+    },
+    {
+      "name": "Autopsy",
+      "method": "Upstream .zip + matching JDK + sleuthkit Java bindings, or run in a container/VM. Not viable to bake cleanly."
+    },
+    {
+      "name": "sqlmap",
+      "method": "pipx install sqlmap, or git clone https://github.com/sqlmapproject/sqlmap (self-contained Python, no build step)."
+    },
+    {
+      "name": "john the ripper jumbo",
+      "method": "git clone https://github.com/openwall/john && ./configure && make \u2014 needs gcc/openssl-devel, both available. Or use a container. Provides the *2john converters the Fedora package lacks."
+    },
+    {
+      "name": "SecLists / rockyou wordlists",
+      "method": "git clone https://github.com/danielmiessler/SecLists into /usr/share/wordlists at image build (self-contained, ~1 GB) or fetch to /var on first run. No packaged equivalent exists."
+    },
+    {
+      "name": "hcxdumptool",
+      "method": "Build from https://github.com/ZerBea/hcxdumptool at image build; must version-match the packaged hcxtools. Needed for PMKID capture."
+    },
+    {
+      "name": "bulk_extractor",
+      "method": "Build from upstream \u2014 afflib and libewf are both packaged, so this is one of the few unpackaged forensics tools that builds cleanly in the Containerfile."
+    },
+    {
+      "name": "nikto",
+      "method": "git clone https://github.com/sullo/nikto \u2014 plain Perl, runs in place."
+    },
+    {
+      "name": "netexec, responder, wifite, mitmproxy, wapiti, hashid",
+      "method": "pipx install (netexec, mitmproxy, wapiti3, hashid) or git clone (Responder, wifite2). All are pure-Python and belong in the operator's home, not the image."
+    },
+    {
+      "name": "bettercap",
+      "method": "Upstream Go release binary or `go install github.com/bettercap/bettercap@latest` (golang is packaged)."
+    },
+    {
+      "name": "regripper",
+      "method": "git clone from keydet89/RegRipper3.0 \u2014 Perl tree, run in place."
+    },
+    {
+      "name": "LiME (memory acquisition kernel module)",
+      "method": "Build against the pinned kernel at image build time from https://github.com/504ensicsLabs/LiME. Requires the same MOK-signing consideration as the Wi-Fi akmods."
+    }
+  ],
+  "services": [
+    "clamav-freshclam.service \u2014 enable ONLY in a network-connected IR profile; leave disabled in an air-gapped analysis profile. Never bake clamav-data.",
+    "forensics-verify.service \u2014 custom oneshot, enabled: asserts write-block rules, dumpcap capabilities/group and dconf automount state at boot and logs the result for the case record.",
+    "systemd-sysusers.service \u2014 already enabled in the base, but noted because it is what actually creates the wireshark group at first boot from wireshark-cli's sysusers.d drop-in.",
+    "suricata.service \u2014 install but DO NOT enable. It is used offline against pcaps here; a live IDS on an analysis workstation is noise.",
+    "clamd@scan.service \u2014 install but DO NOT enable by default; start on demand for bulk evidence scanning.",
+    "usbguard.service \u2014 install but DO NOT enable. An unpolicied usbguard blocks the operator's own write blockers and adapters.",
+    "zeek / zeekctl \u2014 no unit enabled; zeek is used offline against pcaps, not as a live sensor on this box.",
+    "auditd.service \u2014 expected from the base layer; if the base does not enable it, enable it here, since audit logs of who touched what evidence are part of the point."
+  ],
+  "notes": [
+    "The Fedora comp group `security-lab` exists and is a very good starting point \u2014 verified with `dnf group info security-lab`. It pulls ~150 packages including ArpON, afftools, bkhive, cmospwd, cowpatty, dislocker, dnsmap, etherape, firewalk, flawfinder, pdfcrack, sslscan/sslsplit/ssldump, unhide, scanmem, tcpick, usbsniff and hfsutils. Consider `dnf group install security-lab --exclude=...` as the base of this layer instead of the explicit list, then add the RE/exploit-dev packages on top. Downside: it also drags in mutt, irssi, mcabber, screen, telnet, httrack, siege, sipp, uperf and other things unrelated to this purpose, plus default-editor and security-menus. My recommendation is the explicit list above \u2014 it is auditable and each entry has a stated reason \u2014 but the group is the right cross-check that nothing obvious was missed.",
+    "Belongs in the SHARED desktop layer, not here: flatpak and the portal stack (needed to deliver Ghidra/ZAP/Cutter), podman and podman-compose (needed for the Metasploit/plaso/Autopsy containers \u2014 this purpose is unusually dependent on containers, so make sure the shared layer actually provides them), distrobox/toolbox, git, vim-enhanced/neovim, tmux, htop, wget2/curl, python3 base, and the dconf/GNOME machinery that the automount lock relies on. The write-block story specifically needs udisks2, gvfs and dconf from the desktop layer to be present but configured as described \u2014 coordinate that with the desktop layer owner, because a desktop-layer change to media-handling defaults would silently undo the forensic posture.",
+    "Also shared-layer: GPU compute runtimes (rocm-opencl / intel-compute-runtime / CUDA) that hashcat needs. Hardware-specific, belongs in the hardware layer, but this purpose is the main consumer \u2014 flag the dependency so it does not get dropped.",
+    "Consider splitting this purpose in two if the catalog allows: `security-offensive` (scanners, wireless, web, exploit-dev, cracking) and `security-forensics` (imaging, filesystem forensics, carving, malware triage, the write-block integration). They share maybe 20% of packages, and the write-block udev policy is actively hostile to some offensive workflows (plugging in a USB stick to exfil test data becomes read-only). If they stay merged, the /usr/bin/writeblock toggle is not optional \u2014 it is the mechanism that makes the merge tolerable.",
+    "Two image profiles worth considering off the same manifest: an air-gapped analysis profile (freshclam disabled, wordlists baked, no network services) and a connected IR profile (freshclam enabled, wordlists fetched). The difference is a handful of systemctl preset lines, not a different package set.",
+    "Open question: does the base bootc image ship /usr/sbin/blockdev (util-linux-core vs util-linux)? The write-block RUN+= depends on it. Verify util-linux (not just util-linux-core) is present, and add it to packages if the base only has core.",
+    "Open question: which desktop layer will this pair with? The dconf automount lock is GNOME-specific. For COSMIC/Hyprland/XFCE the automount disable mechanism differs entirely (or does not exist, in which case the udev UDISKS_IGNORE flags are doing all the work \u2014 which is acceptable but should be a conscious decision, and forensics-verify.service should check the right thing per DE).",
+    "Open question: is an operator user created in the image, or at provisioning? That determines whether the wireshark/render group membership is a sysusers.d drop-in in this layer or a provisioning-time concern. If provisioning-time, this layer should ship a documented `usermod -aG wireshark,render <user>` step rather than silently assuming it happened.",
+    "zeek is packaged as `zeek-core` (plus zeekctl, zeek-devel, zeek-zkg) \u2014 there is no bare `zeek` package name. Easy to get wrong in a Containerfile and it fails the whole dnf transaction.",
+    "ewf tools are in `ewftools`; `libewf` is the library only and contains no binaries. Verified by file listing \u2014 libewf ships no /usr/bin at all. Another easy manifest error.",
+    "exiftool is `perl-Image-ExifTool`. `foremost`, `dc3dd`, `dcfldd`, `hashcat`, `aircrack-ng` and `hydra` are all in the main fedora repo, NOT RPM Fusion \u2014 RPM Fusion is only needed here for `unrar`. Worth knowing if a non-RPM-Fusion variant of this image is ever wanted.",
+    "If image size becomes a problem, the biggest single win is dropping guestfs-tools (libguestfs appliance). The tradeoff is losing the safest offline image-browsing method, so drop it last, after Qt GUIs."
+  ],
+  "size_note": "Roughly 2.5\u20133.5 GB installed on top of a desktop layer, before wordlists. Dominated by: guestfs-tools/libguestfs (the appliance is several hundred MB and is the single largest item), the Qt6 stack if not already present from the DE (wireshark GUI, iaito, sqlitebrowser, okteta pull it \u2014 ~300\u2013400 MB), hashcat's OpenCL kernel sources and hashcat itself, zeek-core, suricata, and the java-free-but-still-large RE tooling (radare2 + rizin + capstone duplicated across both). The CLI-only subset (no wireshark GUI, no iaito, no sqlitebrowser, no gparted, no guestfs-tools) lands closer to 900 MB\u20131.2 GB. Deliberately excluded from the total: clamav-data (~350 MB, stale on build), Ghidra/ZAP/Cutter (Flatpak, out of the image), Volatility3 ISF symbol tables (fetched to /var), and SecLists wordlists (~1 GB if baked \u2014 decide explicitly, it roughly doubles the CLI-only footprint but makes air-gapped work possible)."
+}

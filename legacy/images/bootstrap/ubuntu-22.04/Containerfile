@@ -1,0 +1,40 @@
+# =============================================================================
+# Bootstrap: Ubuntu 22.04 LTS bootc base image
+# Built from the official ubuntu:22.04 image.
+#
+# bootc is NOT in Ubuntu 22.04's standard repos.
+# It is installed from the ubuntu-containers PPA maintained by Canonical's
+# containers team: https://launchpad.net/~ubuntu-containers/+archive/ubuntu/containers
+# =============================================================================
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Enable the ubuntu-containers PPA and install bootc
+RUN apt-get update \
+    && apt-get install -y software-properties-common curl gpg \
+    && add-apt-repository -y ppa:ubuntu-containers/containers \
+    && apt-get update \
+    && apt-get install -y \
+         bootc \
+         systemd \
+         systemd-sysv \
+         systemd-resolved \
+         dbus \
+         udev \
+         sudo \
+         openssh-server \
+         ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Disable services that don't make sense in a container image layer
+RUN systemctl disable \
+        apt-daily.timer \
+        apt-daily-upgrade.timer \
+        motd-news.timer \
+    2>/dev/null || true
+
+STOPSIGNAL SIGRTMIN+3
+CMD ["/lib/systemd/systemd"]

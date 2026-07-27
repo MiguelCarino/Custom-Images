@@ -1,0 +1,417 @@
+{
+  "key": "imagenology",
+  "summary": "A radiology / medical-imagenology reading and PACS-client workstation. It gives a radiologist or imaging technologist a complete DICOM stack baked into the OS: the DCMTK and GDCM command-line toolkits for C-ECHO/C-FIND/C-MOVE/C-STORE against any PACS, a Python DICOM/analysis stack (pydicom, pynetdicom, GDCM bindings, nibabel, numpy/scipy/scikit-image) for scripting, anonymisation and QA, format converters for nuclear-medicine and neuro workflows (dcm2niix, xmedcon), and network-forensics tooling (tshark has a DICOM dissector, stunnel for DICOM-TLS to legacy modalities). It also carries the diagnostic-display calibration chain \u2014 ArgyllCMS + DisplayCAL + colord + ddcutil \u2014 because a reading workstation is only as good as its greyscale response, and that chain needs udev/group/kernel-module integration that cannot be bolted on after the fact. The actual viewers (Weasis, Aliza MS, InVesalius) come as Flatpaks, and the heavyweight research viewers (3D Slicer, ITK-SNAP, MITK, plastimatch, ANTs) come from a single COPR that is live for fedora-44. Explicitly not a PACS server \u2014 that is the sibling pacs-server profile.",
+  "packages": [
+    {
+      "name": "dcmtk",
+      "why": "Core DICOM CLI toolkit: storescu/storescp/findscu/movescu/echoscu/dcmdump/dcmconv/dcmj2k. 3.6.9-5.fc44, ~41 MiB installed. This is the whole PACS-client surface."
+    },
+    {
+      "name": "gdcm",
+      "why": "Grassroots DICOM library 3.0.24 (the shared libs live here; there is no separate gdcm-libs package in Fedora)."
+    },
+    {
+      "name": "gdcm-applications",
+      "why": "gdcmanon, gdcmconv, gdcmdump, gdcminfo, gdcmimg, gdcmpdf, gdcmgendir \u2014 anonymisation, transfer-syntax conversion, DICOMDIR generation."
+    },
+    {
+      "name": "python3-gdcm",
+      "why": "GDCM Python bindings. Gives pydicom JPEG / JPEG-LS / JPEG 2000 / RLE pixel decompression without any pip wheels \u2014 important on an immutable image."
+    },
+    {
+      "name": "python3-pydicom",
+      "why": "DICOM parsing/writing from Python; the base of every scripted anonymisation or QA workflow."
+    },
+    {
+      "name": "python3-pynetdicom",
+      "why": "DICOM networking in Python (SCU/SCP). Note: this is now packaged in Fedora \u2014 the existing medical.conf installs it via pip, which is no longer necessary."
+    },
+    {
+      "name": "python3-pydicom-data",
+      "why": "Offline pydicom test datasets, so pydicom's dataset-fetching tests/examples work on an air-gapped clinical machine."
+    },
+    {
+      "name": "python3-nibabel",
+      "why": "NIfTI / Analyze / MINC / PAR-REC access \u2014 the bridge between DICOM and neuro/research formats."
+    },
+    {
+      "name": "dcm2niix",
+      "why": "The de-facto DICOM\u2192NIfTI converter (Chris Rorden). Replaces the pip-only dicom2nifti."
+    },
+    {
+      "name": "xmedcon",
+      "why": "medcon CLI + xmedcon GTK viewer. Handles nuclear-medicine formats DCMTK does not (Interfile, ECAT, Analyze, gated SPECT)."
+    },
+    {
+      "name": "InsightToolkit",
+      "why": "The real ITK (4.13.3) medical image processing library. WARNING: the Fedora package literally named 'itk' is [incr Tk], a Tcl/Tk extension \u2014 not ITK. Do not install it."
+    },
+    {
+      "name": "python3-vtk",
+      "why": "VTK 9.5 Python bindings for MPR/volume-rendering scripting. Heavy: drags in vtk (211 MiB), opencascade (~110 MiB) and gdal-libs \u2014 roughly 500 MiB of the total. Drop it if 3D scripting is not needed."
+    },
+    {
+      "name": "python3-numpy",
+      "why": "Pixel-array math underneath pydicom/SimpleITK."
+    },
+    {
+      "name": "python3-scipy",
+      "why": "Filtering, interpolation, resampling for image QA."
+    },
+    {
+      "name": "python3-matplotlib",
+      "why": "Plotting for dose reports, ROC/QA curves, GSDF conformance plots."
+    },
+    {
+      "name": "python3-pillow",
+      "why": "Image I/O for pydicom pixel handlers and report generation."
+    },
+    {
+      "name": "python3-scikit-image",
+      "why": "Segmentation/morphology/registration primitives for image QA and phantom analysis."
+    },
+    {
+      "name": "python3-opencv",
+      "why": "Fast 2D image ops, template matching, phantom/TG-18 pattern detection."
+    },
+    {
+      "name": "python3-h5py",
+      "why": "HDF5 I/O \u2014 used by ISMRMRD raw MR data and most research pipelines."
+    },
+    {
+      "name": "python3-imageio",
+      "why": "Generic multi-format image reader used by scikit-image and conversion scripts."
+    },
+    {
+      "name": "python3-tifffile",
+      "why": "BigTIFF / OME-TIFF \u2014 the pathology and whole-slide side of imagenology."
+    },
+    {
+      "name": "python3-pandas",
+      "why": "Tabular handling of worklists, dose-report SR extracts and QA logs."
+    },
+    {
+      "name": "python3-pip",
+      "why": "Needed for the pip-only pieces (SimpleITK, itk, pyorthanc) if the COPR route is not taken. See risks about clobbering RPM-owned numpy."
+    },
+    {
+      "name": "argyllcms",
+      "why": "3.4.1 \u2014 dispcal/dispread/dispwin/spotread. The measurement and calibration engine for diagnostic displays. ~51 MiB. See risks: it is X11-only."
+    },
+    {
+      "name": "DisplayCAL",
+      "why": "3.9.16 \u2014 GUI front-end to ArgyllCMS; the practical way to target a DICOM GSDF (Part 14) tone response and to produce a verification report. Note the capitalisation: 'displaycal'/'dispcalGUI' do not resolve."
+    },
+    {
+      "name": "colord",
+      "why": "Required, not optional, for colorimeter access: colord ships /usr/lib/udev/rules.d/69-cd-sensors.rules covering 29 colorimeter USB IDs. ArgyllCMS itself ships no udev rules in Fedora, so without colord the instrument nodes have no permissions at all."
+    },
+    {
+      "name": "colord-extra-profiles",
+      "why": "Reference ICC profiles for verification against known targets."
+    },
+    {
+      "name": "ddcutil",
+      "why": "2.2.1 \u2014 DDC/CI control of the monitor's internal LUT, brightness and backlight hours. This is the only calibration path that survives a Wayland session (see risks). Ships its own uaccess udev rules and i2c-dev modules-load drop-in."
+    },
+    {
+      "name": "i2c-tools",
+      "why": "i2cdetect/i2cdump for debugging DDC/CI bus problems on multi-head diagnostic setups."
+    },
+    {
+      "name": "wireshark-cli",
+      "why": "tshark has a native DICOM dissector \u2014 the fastest way to debug a failing C-MOVE or a modality with a broken association negotiation. ~93 MiB; see risks about PHI in captures."
+    },
+    {
+      "name": "tcpdump",
+      "why": "Lightweight capture when tshark is too heavy; feeds tshark -r offline."
+    },
+    {
+      "name": "socat",
+      "why": "DICOM association relaying/port-forwarding during modality bring-up."
+    },
+    {
+      "name": "stunnel",
+      "why": "Wraps DICOM associations in TLS for modalities that predate DICOM-TLS support \u2014 a very common real-world hospital requirement."
+    },
+    {
+      "name": "nmap-ncat",
+      "why": "Quick DICOM port reachability checks before blaming the AE title."
+    },
+    {
+      "name": "httpie",
+      "why": "DICOMweb / Orthanc REST (QIDO-RS, WADO-RS, STOW-RS) from the shell."
+    },
+    {
+      "name": "jq",
+      "why": "Parsing DICOMweb JSON responses and Orthanc REST output."
+    },
+    {
+      "name": "samba-client",
+      "why": "Modalities and CD/DVD import stations still hand off studies over SMB shares."
+    },
+    {
+      "name": "cifs-utils",
+      "why": "mount.cifs for those shares."
+    },
+    {
+      "name": "nfs-utils",
+      "why": "NFS-mounted study archives, which is what most departmental storage actually is."
+    },
+    {
+      "name": "autofs",
+      "why": "Automount modality/archive shares on demand so a dead NFS server does not hang boot on a clinical machine."
+    },
+    {
+      "name": "age",
+      "why": "Simple modern file encryption for transporting de-identified studies off the workstation."
+    },
+    {
+      "name": "gnupg2",
+      "why": "Signing/encrypting study exports where the receiving site already uses PGP."
+    },
+    {
+      "name": "python3-cryptography",
+      "why": "Backing library for scripted encryption and for DICOM-TLS certificate handling in Python tooling."
+    },
+    {
+      "name": "zbar",
+      "why": "zbarimg/zbarcam \u2014 reading accession-number and patient-wristband barcodes from a USB camera or scanned requisition, a routine front-desk imagenology task."
+    },
+    {
+      "name": "policycoreutils-python-utils",
+      "why": "semanage/restorecon, needed at build time to label the DICOM spool and any PHI data directory (see integration)."
+    },
+    {
+      "name": "java-25-openjdk-headless",
+      "why": "ONLY needed if you add the dcm4che CLI toolkit (see external). Weasis does NOT need it \u2014 its RPM bundles a private JRE. Critical: java-21-openjdk-headless, which the current medical.conf installs, DOES NOT EXIST in Fedora 44 (only java-25-openjdk and java-latest-openjdk are available) \u2014 that line breaks the build today."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "weasis",
+      "alternative": "Not in any Fedora repo. Best on bootc: Flathub io.github.nroduit.Weasis (this DOES now exist \u2014 the repo's comment saying otherwise is stale). Otherwise the upstream RPM https://github.com/nroduit/Weasis/releases/download/v4.7.1/weasis-4.7.1-1.x86_64.rpm (57.6 MB, relocatable PREFIXES=/opt, bundles its own JRE)."
+    },
+    {
+      "name": "java-21-openjdk-headless",
+      "alternative": "Removed from Fedora 44 \u2014 repoquery for java-21-openjdk / java-17-openjdk returns nothing; only java-25-openjdk and java-latest-openjdk exist. Use java-25-openjdk-headless, or drop it entirely since Weasis bundles a runtime."
+    },
+    {
+      "name": "gdcm-libs",
+      "alternative": "No such subpackage in Fedora; the shared libraries are inside the main 'gdcm' package."
+    },
+    {
+      "name": "itk (as ITK)",
+      "alternative": "The Fedora package 'itk' is [incr Tk], an object-oriented Tk extension \u2014 summary confirms it. Use 'InsightToolkit' (4.13.3) from Fedora, 'InsightToolkit5' (5.4.6) or 'InsightToolkit6' from COPR mhough/neurofedora, or pip 'itk' 5.4.6 (wheels build fine on py3.14)."
+    },
+    {
+      "name": "ants (as ANTs)",
+      "alternative": "The Fedora package 'ants' is a puzzle game ('Guide the insects safely home before they drop of the cliff'), NOT Advanced Normalization Tools. Real ANTs 2.6.5 is in COPR mhough/neurofedora as 'ANTs'."
+    },
+    {
+      "name": "SimpleITK / python3-SimpleITK",
+      "alternative": "COPR mhough/neurofedora ships python3-simpleitk 2.5.5 (preferred). Fallback: pip SimpleITK \u2014 verified to resolve a cp311-abi3 wheel on Fedora 44's Python 3.14."
+    },
+    {
+      "name": "orthanc",
+      "alternative": "Not in Fedora. COPR mrceresa/orthanc_epel is dead (zero active chroots). Use the upstream container image (docker.io/jodogne/Orthanc) or the official LSB binaries; for pure client use, pip 'pyorthanc' 1.23.0 plus httpie against the REST API is enough."
+    },
+    {
+      "name": "3dslicer / Slicer",
+      "alternative": "COPR mhough/neurofedora ships 3dslicer 5.12.1 for fedora-44-x86_64, plus 3dslicer-totalsegmentator/-dmri/-igt/-elastix extensions. Not on Flathub. Avoid the upstream tarball on bootc \u2014 it installs into /opt."
+    },
+    {
+      "name": "itksnap",
+      "alternative": "COPR mhough/neurofedora, itksnap 4.4.0~beta2 (Qt6). No Fedora or Flathub package."
+    },
+    {
+      "name": "mitk",
+      "alternative": "COPR mhough/neurofedora, mitk 2026.06 (Qt6). No Fedora package."
+    },
+    {
+      "name": "ginkgocadx",
+      "alternative": "Not packaged anywhere; upstream has had no release since 2016 and the wxWidgets 2.x build no longer compiles. Use the Aliza MS Flatpak (com.github.AlizaMedicalImaging.AlizaMS) as the closest lightweight Qt DICOM viewer."
+    },
+    {
+      "name": "aeskulap",
+      "alternative": "Dropped from Fedora years ago (unmaintained GTK2). None. Use Weasis or Aliza MS."
+    },
+    {
+      "name": "horos / osirix",
+      "alternative": "macOS-only, no Linux port exists and none is planned. Closest functional equivalents: Weasis (Flatpak), Aliza MS (Flatpak), InVesalius (Flatpak) for 3D reconstruction, 3D Slicer (COPR) for advanced work."
+    },
+    {
+      "name": "amide",
+      "alternative": "Not packaged in Fedora 44. Upstream source build (GTK3) only; for PET/SPECT fusion prefer 3D Slicer or xmedcon."
+    },
+    {
+      "name": "dicomscope",
+      "alternative": "Not packaged; OFFIS reference viewer is effectively abandoned. None."
+    },
+    {
+      "name": "dcm4che",
+      "alternative": "Not in Fedora. Upstream binary zip from https://github.com/dcm4che/dcm4che/releases (dcm4che-<ver>-bin.zip), unpacked to /usr/lib/dcm4che with wrappers in /usr/bin; needs java-25-openjdk-headless."
+    },
+    {
+      "name": "python3-highdicom",
+      "alternative": "COPR mhough/neurofedora (python3-highdicom 0.28.0), or pip highdicom."
+    },
+    {
+      "name": "python3-dicomweb-client",
+      "alternative": "COPR mhough/neurofedora (python3-dicomweb-client 0.61.0), or pip dicomweb-client."
+    },
+    {
+      "name": "python3-dipy / python3-nilearn",
+      "alternative": "COPR mhough/neurofedora (python3-dipy 1.12.1, python3-nilearn 0.13.1). Fedora only ships python3-nibabel and python3-nitime."
+    },
+    {
+      "name": "python3-pylibjpeg / -libjpeg / -openjpeg",
+      "alternative": "pip (all verified installable on py3.14). Largely redundant if python3-gdcm is installed, which already covers pydicom's compressed transfer syntaxes."
+    },
+    {
+      "name": "python3-dicom2nifti",
+      "alternative": "Use the dcm2niix RPM for the CLI path; pip dicom2nifti if the Python API is genuinely needed."
+    },
+    {
+      "name": "ddcui",
+      "alternative": "Not in Fedora (only the ddcutil CLI). None packaged; use ddcutil from the shell or the GNOME/KDE brightness integrations."
+    },
+    {
+      "name": "mricron / mricrogl",
+      "alternative": "COPR mhough/neurofedora (mricron 1.2.20250101, mricrogl 1.2.20260104)."
+    },
+    {
+      "name": "dispcalGUI",
+      "alternative": "Renamed upstream. Use the 'DisplayCAL' package (exact capitalisation)."
+    },
+    {
+      "name": "termshark",
+      "alternative": "Not in Fedora 44. Use wireshark-cli (tshark) directly."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "udev",
+      "detail": "Colorimeter access is the load-bearing one. colord ships /usr/lib/udev/rules.d/69-cd-sensors.rules with 29 instrument USB IDs (i1Display, i1Pro, DTP94, ColorMunki, Spyder, Huey\u2026). Verified: the rules end with `ENV{COLORD_SENSOR_KIND}==\"*?\", GROUP=\"colord\"` \u2014 GROUP, NOT TAG+=\"uaccess\". So a user running dispcal/DisplayCAL directly (which is how you calibrate a diagnostic display; the colord daemon path is not used) gets EACCES unless they are in the colord group. Either add operators to `colord` via a sysusers/nsswitch drop-in, or ship /usr/lib/udev/rules.d/70-argyll-uaccess.rules re-tagging those same idVendor/idProduct pairs with TAG+=\"uaccess\". Fedora's argyllcms package ships no udev rules of its own \u2014 verified from its file list."
+    },
+    {
+      "kind": "udev",
+      "detail": "ddcutil handles itself correctly and needs no additions: /usr/lib/udev/rules.d/60-ddcutil-i2c.rules contains `SUBSYSTEM==\"i2c-dev\", KERNEL==\"i2c-[0-9]*\", ATTRS{class}==\"0x030000\", TAG+=\"uaccess\"` and the same for `SUBSYSTEM==\"dri\", KERNEL==\"card[0-9]*\"`. Do not strip it."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "Not a kernel command-line arg but a kernel-module one: ddcutil ships /usr/lib/modules-load.d/ddcutil.conf containing `i2c-dev`. Without that module the monitor's internal LUT is unreachable and hardware calibration is impossible. Preserve it, and verify it survives any initramfs/module trimming in the build."
+    },
+    {
+      "kind": "group",
+      "detail": "Two supplementary groups define who can do diagnostic work: `colord` (colorimeter device nodes, per the rule above) and `wireshark` (dumpcap capability for DICOM packet capture \u2014 deliberately restricted, see risks). Create membership declaratively with /usr/lib/sysusers.d/ + a /etc/security or SSSD-side group mapping rather than useradd in the Containerfile, since /etc is merged but useradd at build time is fragile."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Ship a hardened DICOM receiver unit rather than telling users to run storescp by hand: dicom-receive.service running `/usr/bin/storescp --output-directory /var/spool/dicom --sort-on-study-uid st --aetitle <SITE_AET> --fork 11112`, with ProtectSystem=strict, ReadWritePaths=/var/spool/dicom, PrivateTmp=yes, NoNewPrivileges=yes, DynamicUser or a dedicated dicom user, LimitNOFILE=65536 (a single CT study is thousands of objects on separate associations). Pair with a firewalld service XML for 11112/tcp."
+    },
+    {
+      "kind": "systemd",
+      "detail": "/var is populated from the image ONLY on first install and is never updated by `bootc upgrade`. The current Containerfile's `RUN mkdir -p /var/spool/dicom && chmod 1777` therefore creates a directory that (a) may not exist on upgraded systems and (b) is world-writable. Replace with /usr/lib/tmpfiles.d/dicom.conf: `d /var/spool/dicom 0770 root dicom -` (and 0770, not 1777 \u2014 see risks)."
+    },
+    {
+      "kind": "mime",
+      "detail": "No custom MIME XML is needed: verified that shared-mime-info already defines `application/dicom` with the DICM-at-offset-128 magic, which is what matters because clinical DICOM files are usually extensionless (IM_0001, DICOMDIR). What is missing is the default-application binding. Do NOT run `xdg-mime default` in the Containerfile as the current image does \u2014 there is no session, no XDG_CURRENT_DESKTOP, and it writes to /usr/local. Instead write /usr/share/applications/mimeapps.list with a literal `[Default Applications]` / `application/dicom=io.github.nroduit.Weasis.desktop` (or the RPM's weasis-Weasis.desktop) and run update-desktop-database."
+    },
+    {
+      "kind": "config-file",
+      "detail": "The current /etc/weasis/dicom-config.properties is not a path Weasis 4.x reads. Verified from the 4.7.1 RPM manifest: config lives at /opt/weasis/lib/app/conf/{base.json,base-shell.json,dicomizer.json} plus /opt/weasis/lib/app/Weasis.cfg, and per-user preferences under ~/.weasis. Site PACS nodes should be injected into base.json (or via a WEASIS_ pref-dir pointed at /etc/weasis by the .desktop Exec / a profile.d drop-in), otherwise the config file is inert and the audit rule watching it fires never."
+    },
+    {
+      "kind": "selinux",
+      "detail": "Label the study store so a confined receiver can write it and nothing else can: `semanage fcontext -a -t var_spool_t '/var/spool/dicom(/.*)?'` at build time (writes into /etc/selinux, which bootc does carry), plus a restorecon in the tmpfiles/first-boot path. If PHI lives on a separate LUKS volume (recommended), give it its own fcontext entry rather than relying on default_t."
+    },
+    {
+      "kind": "other",
+      "detail": "Weasis-on-bootc specifics, verified by inspecting the 4.7.1 RPM header: it is relocatable (PREFIXES=/opt), installs 437 files under /opt/weasis including a private JRE at /opt/weasis/lib/runtime, and requires only /bin/sh and xdg-utils. fedora-bootc:44 has a real /opt plus an empty /usr/lib/opt, i.e. the modern 'ostree commit content in /opt' model, so /opt content is carried into the image \u2014 but the RPM's %post runs `xdg-desktop-menu install` and `xdg-mime install`, which land in /usr/local/share. On this base /usr/local is a real directory inside /usr (not the old /var/usrlocal symlink), so it survives, but it is fragile. Copy /opt/weasis/lib/weasis-Weasis.desktop and weasis-Weasis-MimeInfo.xml explicitly into /usr/share/applications and /usr/share/mime/packages instead of relying on the scriptlet. Or sidestep all of it with the Flatpak."
+    },
+    {
+      "kind": "sysctl",
+      "detail": "Bulk C-MOVE of a 4000-slice CT over a hospital LAN benefits from net.core.rmem_max / wmem_max raised to 16 MiB and net.ipv4.tcp_rmem/wmem tuned; DCMTK opens one association per object in some SCP configurations, so also raise fs.file-max and net.ipv4.ip_local_port_range. Ship as /usr/lib/sysctl.d/60-dicom.conf."
+    },
+    {
+      "kind": "limits",
+      "detail": "LimitNOFILE=65536 on the receiver unit and a /usr/lib/systemd/system/user@.service.d drop-in raising the user session limit \u2014 Weasis holding a full multi-series study open plus an OS-level thumbnail cache routinely exceeds the 1024 default."
+    },
+    {
+      "kind": "other",
+      "detail": "Audit: replace the current `-w /etc/weasis -p rwa` rule (a path Weasis does not use) with rules that actually track PHI access \u2014 `-w /var/spool/dicom -p rwa -k dicom_phi`, `-a always,exit -F arch=b64 -S openat -F dir=/var/lib/dicom -F success=1 -k dicom_phi`, and a watch on the anonymisation tools `-w /usr/bin/gdcmanon -p x -k dicom_anon`. This is the part that a compliance auditor will actually ask to see."
+    }
+  ],
+  "risks": [
+    "WAYLAND BREAKS SOFTWARE DISPLAY CALIBRATION. Verified from the package metadata: argyllcms links libX11, libXext, libXinerama, libXrandr, libXss and libXxf86vm \u2014 and no Wayland client library at all. dispwin loads the calibration curve through XRandR/XF86VidMode gamma ramps; XWayland does not forward those to the real output, so under a Wayland session dispcal will appear to run and the correction will silently not be applied. For a workstation whose entire point is a calibrated greyscale ramp this is disqualifying. Two honest options: (a) run an X11 session for calibration work, or (b) go hardware-only \u2014 measure with ArgyllCMS/DisplayCAL and write the correction into the monitor's internal LUT over DDC/CI with ddcutil or the vendor tool, which is what proper diagnostic monitors (Eizo RadiForce, Barco, JVC) are designed for anyway. This should drive the DE choice for this purpose more than anything else in the manifest.",
+    "JAVA/SWING TOOLING IS XWAYLAND-ONLY. Weasis is a Swing application, and JDK 21/25 have no Wayland backend (Project Wakefield is not GA), so Weasis always runs through XWayland. Practical consequence for radiology: XWayland does not do fractional scaling natively, so on a 4K/5MP diagnostic panel at a non-integer scale the compositor upscales a low-res surface and you read blurred pixels. Use integer scaling only, or an X11 session. The same applies to MRIcroGL (Qt5/Lazarus). By contrast 3D Slicer 5.12, ITK-SNAP 4.4 and MITK 2026.06 from the neurofedora COPR are all Qt6 (verified from their requires) and are Wayland-native given qt6-qtwayland.",
+    "THE CURRENT PROFILE DOES NOT BUILD ON FEDORA 44. medical.conf installs java-21-openjdk-headless, which no longer exists \u2014 repoquery for 'java-*-openjdk' on F44 returns only java-25-openjdk and java-latest-openjdk. The dnf install will fail outright. It is also unnecessary: the Weasis RPM bundles its own JRE at /opt/weasis/lib/runtime.",
+    "WEASIS IS PINNED THREE MINOR VERSIONS BEHIND. WEASIS_VERSION=4.3.0 in medical.conf; upstream latest is 4.7.1 (released 2026-07-09). Also, the 'Weasis Flatpak is not yet on Flathub' comment is now false \u2014 io.github.nroduit.Weasis exists on Flathub and is the lower-risk delivery path on an atomic image.",
+    "PIP INTO THE SYSTEM SITE-PACKAGES CLOBBERS RPM CONTENT. fedora-bootc:44 ships no EXTERNALLY-MANAGED marker, so `pip3 install SimpleITK itk highdicom` succeeds \u2014 and drags in numpy 2.5.1, pillow 12.3.0 and pydicom 3.0.2 on top of the RPM-owned python3-numpy/python3-pillow/python3-pydicom, leaving unowned files in /usr that rpm will fight with on every rebase. Use the neurofedora COPR RPMs instead, or `pip install --no-deps`, or an isolated venv under /usr/lib/imagenology-venv with a wrapper on PATH.",
+    "1777 ON THE PHI SPOOL DIRECTORY IS A REAL DATA-PROTECTION DEFECT. The current Containerfile does `chmod 1777 /var/spool/dicom`. The sticky bit stops users deleting each other's files; it does not stop them READING each other's files. Every study any technologist receives is world-readable to every logged-in account. Use 0770 root:dicom and rely on the group, plus POSIX ACLs if per-user isolation is needed.",
+    "PACKET CAPTURES OF DICOM CONTAIN PHI IN CLEARTEXT. Unencrypted DICOM carries full patient demographics and pixel data. Installing wireshark-cli on a clinical machine means anyone in the wireshark group can silently exfiltrate identified studies to a .pcap. Keep the wireshark group empty by default, audit dumpcap execution, and consider gating it behind a separate 'imagenology-debug' image variant rather than the standard reading workstation.",
+    "NONE OF THIS SOFTWARE IS CLEARED FOR PRIMARY DIAGNOSIS. Weasis, Aliza MS, InVesalius, 3D Slicer and ITK-SNAP all ship with 'not for diagnostic use' / 'research use only' notices; the certified builds are separate commercial products. Baking them into an OS image confers no FDA/CE/MDR status, and an unvalidated calibration chain does not satisfy AAPM TG-18 / DIN 6868-157 acceptance testing. This image is legitimate for review, teaching, research, planning and QA \u2014 it is not a substitute for a validated primary-read workstation, and the docs should say so plainly.",
+    "SIZE. The full package list resolves cleanly in fedora-bootc:44 but is 484 packages / ~2 GiB installed. python3-vtk alone accounts for ~500 MiB once vtk, opencascade and gdal-libs come along; wireshark-cli is 93 MiB; llvm-libs 140 MiB arrives via mesa. Adding the neurofedora viewers (3dslicer, mitk, itksnap) pushes it well past 3 GiB. On a bootc image that is a real cost on every pull and rollback slot.",
+    "COPR SUPPLY-CHAIN EXPOSURE. mhough/neurofedora is a single-maintainer COPR carrying 225 packages including 3D Slicer and MITK. It is genuinely active and has live fedora-44-x86_64/aarch64 chroots, but it is not Fedora-signed content and has no security-response process. Acceptable for research tooling; think twice before putting it on a machine that touches identified patient data. Pin by NEVRA and re-verify each rebase.",
+    "AUDIT AND CONFIG RULES CURRENTLY POINT AT NOTHING. The `-w /etc/weasis` audit rule and the COPY of dicom-config.properties both target a path Weasis 4.x never reads (its config is /opt/weasis/lib/app/conf/*.json). The image therefore looks compliant and audits nothing. Fix before anyone relies on it."
+  ],
+  "copr": [
+    "mhough/neurofedora \u2014 THE key find for this purpose. Verified live for fedora-44-x86_64 and fedora-44-aarch64 (chroot list confirmed via the Copr API), 225 packages. Directly queried and confirmed resolvable on F44: 3dslicer 5.12.1 (plus 3dslicer-totalsegmentator, -dmri, -igt, -elastix, -monailabel, -openigtlink extensions), itksnap 4.4.0~beta2, mitk 2026.06, plastimatch 1.10.0, ANTs 2.6.5 (the real Advanced Normalization Tools), InsightToolkit5 5.4.6 and InsightToolkit6, python3-simpleitk 2.5.5, python3-highdicom 0.28.0, python3-dicomweb-client 0.61.0, python3-dipy 1.12.1, python3-nilearn 0.13.1, elastix 5.3.1, c3d 1.4.6, dicomanonymizer 2.0.0, mricron 1.2.20250101, mricrogl 1.2.20260104. Also carries afni, mrtrix3, freesurfer-common, connectome-workbench, niftyreg, python3-monai, python3-nnunetv2, ismrmrd, paraview and vmtk. This single repo replaces almost every pip install and every 'not packaged, build from source' entry in the current profile.",
+    "mrceresa/orthanc_epel \u2014 DO NOT USE. Surfaced in a Copr search for Orthanc but the project has zero active chroots (the API returns an empty chroot_repos map); it is an abandoned EPEL-era effort. Get Orthanc from the upstream container image instead."
+  ],
+  "flatpaks": [
+    "io.github.nroduit.Weasis \u2014 Weasis, 'Free medical DICOM viewer'. Confirmed present on Flathub today (the repo's TODO comment saying it is not is out of date). Strongly preferred over the upstream RPM on an atomic image: it avoids the /opt-on-ostree question entirely, avoids the xdg-desktop-menu/xdg-mime scriptlet writing into /usr/local at build time, and lets the viewer update on the clinical team's schedule instead of the OS rebase schedule. Runs under XWayland (Swing).",
+    "com.github.AlizaMedicalImaging.AlizaMS \u2014 Aliza MS, a fast Qt DICOM viewer with good MPR/3D and excellent handling of weird vendor SOP classes. This is the practical stand-in for the dead Ginkgo CADx and for Horos-style quick review.",
+    "br.gov.cti.invesalius \u2014 InVesalius, 3D medical imaging reconstruction and segmentation (surgical planning, 3D-print prep from CT). No Fedora package exists; Flatpak is the only sane delivery.",
+    "net.displaycal.DisplayCAL \u2014 available, but prefer the RPM here. DisplayCAL needs raw USB access to the colorimeter and needs to drive ArgyllCMS binaries against the real display; the sandboxed build makes both awkward, and the whole point of baking this image is to get the udev/group side right on the host.",
+    "org.deidentifier.arx \u2014 ARX Data Anonymization Tool. Not DICOM-specific (it is tabular/statistical de-identification with k-anonymity), but genuinely useful for the research-export side of a radiology department that publishes cohort metadata alongside de-identified pixel data."
+  ],
+  "external": [
+    {
+      "name": "Weasis 4.7.1",
+      "method": "Upstream RPM from GitHub releases: https://github.com/nroduit/Weasis/releases/download/v4.7.1/weasis-4.7.1-1.x86_64.rpm (57.6 MB). Header verified: relocatable with PREFIXES=/opt, 437 files under /opt/weasis, Requires only /bin/sh + xdg-utils, bundles a private JRE at /opt/weasis/lib/runtime (so no system Java needed). Its %post calls `xdg-desktop-menu install` and `xdg-mime install`. On bootc either install with `rpm -i --prefix=/usr/lib/weasis` and hand-place the .desktop, or just use the Flatpak. Verify the .sha256 sibling asset in production builds; the current Containerfile does not."
+    },
+    {
+      "name": "dcm4che toolkit",
+      "method": "Upstream zip from https://github.com/dcm4che/dcm4che/releases (dcm4che-<ver>-bin.zip). Unpack to /usr/lib/dcm4che and drop wrappers in /usr/bin. Requires java-25-openjdk-headless. Gives storescu/getscu/findscu with far better DICOMweb, STOW-RS and modern transfer-syntax support than DCMTK, plus dcm2dcm/emf2sf. All CLI \u2014 no XWayland concern."
+    },
+    {
+      "name": "Orthanc (client-side / local test node)",
+      "method": "Container image docker.io/jodogne/Orthanc or jodogne/orthanc-plugins, run as a rootless podman quadlet. Not baked into the image \u2014 a reading workstation should not be a PACS. Use it for offline study staging and for testing C-STORE/DICOMweb config before pointing at the hospital PACS."
+    },
+    {
+      "name": "pip: SimpleITK, itk, highdicom, dicomweb-client, pyorthanc, dicognito, deid, pylibjpeg{,-libjpeg,-openjpeg}",
+      "method": "All verified to resolve wheels on Fedora 44's Python 3.14 in the fedora-bootc container (itk 5.4.6, SimpleITK 2.5.5, highdicom 0.28.0, dicomweb-client 0.61.0, pyorthanc 1.23.0, dicognito 0.19.0, deid 0.4.12). pydicom-seg is the one that FAILS to build. Prefer the neurofedora COPR RPMs where they exist; if pip is used, isolate it in a venv \u2014 see risks."
+    },
+    {
+      "name": "Monitor vendor QA/calibration tools (Eizo RadiCS, Barco QAWeb, JVC)",
+      "method": "Vendor-supplied, usually .deb or a proprietary installer, and usually the only route to a DIN 6868-157 / AAPM TG-18 conformance report that a regulator will accept. Not redistributable, so they cannot be baked in \u2014 install into a distrobox or document as a post-install step, and note that some require the display's USB QA sensor (another udev/group case)."
+    },
+    {
+      "name": "3D Slicer / ITK-SNAP / MITK upstream tarballs",
+      "method": "Only if the neurofedora COPR is judged unacceptable. All three ship self-contained tarballs that install under /opt, which is exactly the pattern to avoid on bootc. Prefer the COPR, or a distrobox with a mutable filesystem."
+    }
+  ],
+  "services": [
+    "dicom-receive.service \u2014 custom hardened storescp unit listening on 11112/tcp, writing sorted studies to /var/spool/dicom. Ship enabled only if the site actually wants the workstation to be a C-STORE destination; otherwise ship it disabled and document `systemctl enable --now`.",
+    "colord.service \u2014 shipped by the colord package, D-Bus activated. Needed for instrument enumeration and for the DE to apply the ICC profile at login. Do not mask it.",
+    "auditd.service \u2014 must be enabled for the PHI audit rules to do anything; also needs `auditctl -e 2` (immutable) considered for a clinical machine.",
+    "firewalld.service \u2014 with a custom /usr/lib/firewalld/services/dicom.xml (11112/tcp) so the receiver port is declarative rather than a runtime `--add-port`.",
+    "systemd-tmpfiles-setup.service \u2014 carries /usr/lib/tmpfiles.d/dicom.conf, which is what actually creates /var/spool/dicom on every boot (as opposed to the current Containerfile mkdir, which does not survive bootc upgrades)."
+  ],
+  "size_note": "Measured with `dnf install --assumeno` inside quay.io/fedora/fedora-bootc:44. A lean core (DCMTK, GDCM + apps, pydicom/pynetdicom/gdcm/nibabel, dcm2niix, xmedcon, numpy/scipy/matplotlib/pillow, the full calibration chain argyllcms+DisplayCAL+colord+ddcutil+i2c-tools, network/PACS debug minus wireshark, samba/cifs/nfs/autofs, age/gnupg2) resolves to 180 packages, 216 MiB download, 907 MiB installed. The full list above \u2014 adding python3-vtk, InsightToolkit, python3-opencv, python3-scikit-image, python3-pandas, python3-h5py/imageio/tifffile and wireshark-cli \u2014 is 484 packages, 554 MiB download, ~2 GiB installed. What dominates: vtk 211 MiB (pulled by python3-vtk, and it drags opencascade-foundation 63 MiB + opencascade-modeling 47 MiB + gdal-libs 35 MiB behind it), llvm-libs 140 MiB (via mesa, likely already in the desktop layer), wireshark-cli 93 MiB, python3-vtk 69 MiB, python3-scipy 65 MiB, vxl 54 MiB (via InsightToolkit), argyllcms 51 MiB, python3-wxpython4 51 MiB (via DisplayCAL), dcmtk 41 MiB. If size matters, dropping python3-vtk alone is worth roughly 500 MiB \u2014 but note that dropping it and InsightToolkit together only reclaimed ~20 MiB in the measured build, because opencv-viz pulls vtk back in; you have to drop python3-opencv as well to actually shed it. Layering the neurofedora viewers (3dslicer, mitk, itksnap) on top adds several hundred MiB more and would push the image past 3 GiB \u2014 consider a separate `imagenology-research` variant.",
+  "notes": [
+    "BELONGS IN THE SHARED DESKTOP LAYER, not here: flatpak + xdg-desktop-portal (needed for the three viewer Flatpaks), shared-mime-info and desktop-file-utils (needed at build time for the application/dicom association \u2014 verified that shared-mime-info already defines application/dicom with DICM-at-128 magic, so no custom MIME XML is required), xdg-utils (also a hard Requires of the Weasis RPM), xorg-x11-server-Xwayland (verified present in Fedora 44; mandatory here because Weasis is Swing), qt6-qtwayland (so the Qt6 viewers from COPR run natively), firewalld, audit, podman, and the whole PipeWire/GStreamer stack.",
+    "DE-SPECIFIC COLOUR MANAGEMENT belongs in de/*.conf, not here: gnome-color-manager (GNOME) and colord-kde (KDE) both exist in Fedora 44 and provide the session-side ICC profile application. This manifest carries only the DE-agnostic engine (colord + argyllcms + DisplayCAL + ddcutil).",
+    "LibreOffice and Inkscape are in the current medical.conf FLATPAKS list. They are general-purpose office/vector tools, not imagenology-specific \u2014 move them to the workstation/desktop layer. Only ARX (org.deidentifier.arx) has a specific claim to this purpose.",
+    "The existing pacs-server.conf profile already covers the server side. Keep the split: this image is a CLIENT. If someone wants a local Orthanc for staging, run it as a rootless podman quadlet rather than blurring the two profiles.",
+    "Fedora group check: `dnf group list --available` surfaces nothing medical. The closest are 'engineering-and-scientific' and 'python-science', both too broad and both pulling large unrelated dependency sets. Enumerate packages explicitly \u2014 no groups are worth using for this purpose.",
+    "python3-pynetdicom is now in Fedora proper, so it should move from PIP_PACKAGES into the RPM list. Same for nibabel (python3-nibabel exists). That leaves PIP_PACKAGES with only itk and SimpleITK \u2014 and both of those are better sourced from mhough/neurofedora (InsightToolkit5 5.4.6, python3-simpleitk 2.5.5). The pip path can be eliminated entirely, which is a meaningful win for an immutable image.",
+    "OPEN QUESTION \u2014 GSDF conformance. DisplayCAL exposes a DICOM Part-14 GSDF tone-response target, which is the right calibration curve for a reading workstation. But I found no DICOM/GSDF-specific .ti1 measurement set in the Fedora DisplayCAL package (its ref/ directory has ISO 12646, ISO 14861 and the verify_* sets, nothing DICOM), and ArgyllCMS's dispcal documentation has no DICOM or GSDF mention at all. So: calibration to a GSDF curve, yes; a TG-18 / DIN 6868-157 conformance REPORT that an acceptance test would accept, not from this stack. Confirm with the physics/QA team before promising it, and expect the vendor QA tool to still be needed.",
+    "OPEN QUESTION \u2014 /opt on bootc. I verified fedora-bootc:44 has a real /opt plus an empty /usr/lib/opt (the 'new model' the shipped rpm-ostree tmpfiles drop-in describes), which means /opt content should be composed into the image rather than stranded in /var/opt. I did not verify this end-to-end through an actual `bootc install` + upgrade cycle. Since Weasis is the only /opt consumer here and a Flatpak exists, the cheap answer is to use the Flatpak and not find out the hard way.",
+    "OPEN QUESTION \u2014 which DE. This manifest deliberately does not choose one, but the calibration and Java findings constrain it hard: full software calibration needs X11 gamma ramps, and Weasis needs XWayland with integer scaling. A Wayland-only DE (COSMIC, Hyprland) is workable ONLY if the site commits to hardware calibration via ddcutil/vendor tools. Worth stating explicitly in docs/medical-workstation.md so the choice is made deliberately rather than discovered at acceptance testing.",
+    "Consider splitting into two images: `imagenology` (the ~900 MiB core \u2014 reading, PACS client, calibration) and `imagenology-research` (adds VTK/ITK/opencv plus the neurofedora COPR viewers, 3 GiB+). Clinical reading rooms and research groups have genuinely different update-risk tolerances, and the COPR supply-chain exposure only belongs on the research side.",
+    "The docs file needs correcting alongside the config: it documents `/etc/weasis/dicom-config.properties` as the site configuration path, which Weasis 4.x does not read. It also documents dcmj2kloss/dcmdrle without noting these are DCMTK's, and the `weasis \"dicom:get -w \u2026\"` invocation should be re-checked against 4.7's CLI."
+  ]
+}

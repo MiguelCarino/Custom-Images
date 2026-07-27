@@ -1,0 +1,38 @@
+# =============================================================================
+# Orthanc Podman Quadlet
+# /etc/containers/systemd/orthanc.container
+#
+# podman-systemd-generator converts this into orthanc.service at boot.
+# Docs: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html
+# =============================================================================
+
+[Unit]
+Description=Orthanc DICOM PACS Server
+After=network-online.target postgresql.service orthanc-db-init.service
+Requires=postgresql.service
+
+[Container]
+# Official Orthanc image — includes DICOMweb, GDCM, and PostgreSQL plugins
+Image=docker.io/orthancteam/orthanc:latest
+
+# Expose DICOM and REST API ports
+PublishPort=4242:4242
+PublishPort=127.0.0.1:8042:8042
+
+# Mount config and storage from the host
+Volume=/etc/orthanc:/etc/orthanc:ro,Z
+Volume=/var/lib/orthanc:/var/lib/orthanc/db:Z
+
+# Pass PostgreSQL connection via environment
+# Override these in a drop-in: /etc/containers/systemd/orthanc.container.d/
+EnvironmentFile=-/etc/orthanc/orthanc.env
+
+# Container restart policy
+AutoUpdate=registry
+
+[Service]
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=default.target

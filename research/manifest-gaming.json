@@ -1,0 +1,447 @@
+{
+  "key": "gaming",
+  "summary": "A Steam/Proton gaming workstation layer for a Fedora 44 bootc image. It bakes the pieces that genuinely need to live on the host: the multilib (i686) Mesa/Vulkan stack that Proton and 32-bit titles require, Steam's controller udev rules, GameMode with its polkit/group/limits plumbing, gamescope with CAP_SYS_NICE, the MangoHud and vkBasalt Vulkan layers in both 64- and 32-bit form, Wine + winetricks/protontricks for Lutris and Bottles prefixes, controller/peripheral tooling (AntiMicroX, evtest, linuxconsoletools, Solaar, libratbag/Piper, OpenRGB), GPU tuning and telemetry (CoreCtrl, radeontop, nvtop), and a small, defensible emulation set (RetroArch, Dolphin, ScummVM). Everything fast-moving or proprietary \u2014 Heroic, ProtonUp-Qt, modern PCSX2/RPCS3/Duckstation, Bottles \u2014 is pushed to Flathub. Target user is someone who owns the image and wants a machine that is correct for gaming at first boot, not one that needs a post-install script.",
+  "packages": [
+    {
+      "name": "steam",
+      "why": "RPM Fusion nonfree (1.0.0.87 from rpmfusion-nonfree-steam). Multilib; pulls steam-devices plus the whole i686 mesa/vulkan set as hard deps. See notes for the Flatpak-vs-RPM call."
+    },
+    {
+      "name": "steam-devices",
+      "why": "THE critical piece. Ships /usr/lib/udev/rules.d/60-steam-input.rules and 60-steam-vr.rules. Install it even if Steam itself is a Flatpak \u2014 Flatpaks cannot install host udev rules, so Steam Input for DualSense/Steam Controller/Xbox pads is broken without this on the host."
+    },
+    {
+      "name": "lutris",
+      "why": "0.5.22. Non-Steam game/installer runner. Note it does NOT pull 32-bit libs itself; it depends on system wine + the multilib stack being present."
+    },
+    {
+      "name": "gamescope",
+      "why": "3.16.25. Micro-compositor for resolution/upscaling/HDR and framerate limiting. Needs a manual setcap \u2014 see integration."
+    },
+    {
+      "name": "mangohud",
+      "why": "0.8.3~rc1. Vulkan/OpenGL overlay layer."
+    },
+    {
+      "name": "mangohud.i686",
+      "why": "Separate multilib subpackage. Without it the overlay silently does nothing in 32-bit titles (a very common complaint). Verified installable alongside x86_64."
+    },
+    {
+      "name": "vkBasalt",
+      "why": "Post-processing Vulkan layer (CAS/FXAA/SMAA). NOTE the name is case-sensitive \u2014 'vkbasalt' does not resolve."
+    },
+    {
+      "name": "vkBasalt.i686",
+      "why": "32-bit layer for 32-bit Vulkan games."
+    },
+    {
+      "name": "gamemode",
+      "why": "1.8.2. Ships sysusers.d (creates the gamemode group), polkit rules keyed on that group, /etc/security/limits.d/10-gamemode.conf ('@gamemode - nice -10'), and a user unit. Default gamemode.ini already sets desiredgov=performance and disable_splitlock=1."
+    },
+    {
+      "name": "gamemode.i686",
+      "why": "Provides /usr/lib/libgamemodeauto.so.0 so 32-bit games can auto-opt-in. Verified co-installable with the x86_64 build (both present on the test host, no file conflict)."
+    },
+    {
+      "name": "goverlay",
+      "why": "GUI for MangoHud/vkBasalt config. Optional but it makes the two layers above discoverable."
+    },
+    {
+      "name": "wine",
+      "why": "11.0. Metapackage for Lutris/Bottles prefixes. Heavy \u2014 see size_note and risks; droppable if all launchers are Flatpak."
+    },
+    {
+      "name": "wine-core.i686",
+      "why": "32-bit Wine. Mandatory for any pre-2015 Windows game under Lutris. 624 MiB installed."
+    },
+    {
+      "name": "wine-dxvk",
+      "why": "2.7.1. D3D9/10/11 -> Vulkan for system Wine prefixes. Proton bundles its own copy; this is for Lutris/Bottles."
+    },
+    {
+      "name": "wine-dxvk-d3d8",
+      "why": "D3D8 translation subpackage \u2014 needed for older titles."
+    },
+    {
+      "name": "wine-dxvk-d3d9",
+      "why": "D3D9 translation subpackage."
+    },
+    {
+      "name": "wine-dxvk-d3d10",
+      "why": "D3D10 translation subpackage."
+    },
+    {
+      "name": "wine-dxvk-dxgi",
+      "why": "DXGI subpackage; required for the DXVK d3d10/11 paths to be picked up."
+    },
+    {
+      "name": "wine-mono",
+      "why": ".NET replacement inside prefixes \u2014 many installers refuse to run without it."
+    },
+    {
+      "name": "wine-pulseaudio",
+      "why": "Audio backend for Wine prefixes (PipeWire's pulse shim handles it)."
+    },
+    {
+      "name": "wine-opencl",
+      "why": "OpenCL passthrough; a handful of titles and tools need it."
+    },
+    {
+      "name": "winetricks",
+      "why": "20260125. Prefix verb installer \u2014 Lutris shells out to it."
+    },
+    {
+      "name": "protontricks",
+      "why": "1.14.0. Same for Steam/Proton prefixes; the standard tool for modding Steam games."
+    },
+    {
+      "name": "innoextract",
+      "why": "Extracts InnoSetup installers (GOG). Lutris/Bottles installer scripts call it."
+    },
+    {
+      "name": "cabextract",
+      "why": "Hard dep of winetricks; extracts MS cabinets."
+    },
+    {
+      "name": "7zip",
+      "why": "Archive handling for game installers and mod packs (p7zip is gone in F44; the name is now 7zip)."
+    },
+    {
+      "name": "antimicrox",
+      "why": "3.6.0. Maps gamepad input to keyboard/mouse for games with no native pad support."
+    },
+    {
+      "name": "evtest",
+      "why": "Diagnosing which /dev/input node a controller landed on \u2014 the single most useful tool when a pad 'does not work'."
+    },
+    {
+      "name": "jstest-gtk",
+      "why": "Graphical joystick test/calibration."
+    },
+    {
+      "name": "linuxconsoletools",
+      "why": "jstest/jscal/ffmvforce/fftest \u2014 force-feedback testing and axis calibration for wheels and older pads."
+    },
+    {
+      "name": "solaar",
+      "why": "Logitech Unifying/Bolt receiver management (wireless mice/keyboards, G-series)."
+    },
+    {
+      "name": "solaar-udev",
+      "why": "The udev rules half of Solaar. Without it Solaar needs root to talk to receivers."
+    },
+    {
+      "name": "libratbag-ratbagd",
+      "why": "Gaming-mouse configuration daemon (DPI, profiles, onboard memory). Ships ratbagd.service."
+    },
+    {
+      "name": "piper",
+      "why": "GTK frontend for ratbagd."
+    },
+    {
+      "name": "openrgb",
+      "why": "1.0~rc2. RGB peripheral/board control. Ships openrgb.service but NO udev rules \u2014 see integration."
+    },
+    {
+      "name": "i2c-tools",
+      "why": "Required companion for OpenRGB's SMBus/DDC paths and for motherboard RGB detection."
+    },
+    {
+      "name": "ddcutil",
+      "why": "Monitor brightness/input-source switching over DDC/CI \u2014 genuinely useful on a multi-input gaming display."
+    },
+    {
+      "name": "corectrl",
+      "why": "1.5.2. AMD GPU fan curves, power limits, per-application profiles. Ships polkit actions but needs a rule to avoid a password prompt per launch."
+    },
+    {
+      "name": "radeontop",
+      "why": "AMD GPU utilization telemetry."
+    },
+    {
+      "name": "nvtop",
+      "why": "GPU process/utilization monitor; works for AMD, Intel and NVIDIA."
+    },
+    {
+      "name": "vulkan-tools",
+      "why": "vulkaninfo \u2014 first thing you run when a game says 'no Vulkan device'."
+    },
+    {
+      "name": "mesa-demos",
+      "why": "glxinfo/glxgears for GL-side diagnosis. Also a Lutris dependency path (glx-utils)."
+    },
+    {
+      "name": "kernel-tools",
+      "why": "cpupower, for verifying that GameMode's governor switch actually took effect."
+    },
+    {
+      "name": "retroarch",
+      "why": "1.22.0. Multi-system emulation frontend; earns its place as the one emulator that covers a dozen systems from a single RPM."
+    },
+    {
+      "name": "dolphin-emu",
+      "why": "2503a. GameCube/Wii. Current upstream version, unlike PCSX2 \u2014 this one is worth taking as an RPM."
+    },
+    {
+      "name": "scummvm",
+      "why": "Point-and-click classics; small, stable, no Wine prefix needed."
+    },
+    {
+      "name": "legendary",
+      "why": "CLI Epic Games Store client. Useful headlessly and as a Heroic backend reference."
+    },
+    {
+      "name": "minigalaxy",
+      "why": "Lightweight GOG client; small and does not need Electron."
+    },
+    {
+      "name": "mesa-vulkan-drivers.i686",
+      "why": "32-bit Vulkan ICDs \u2014 the single hardest requirement for Proton. Pulled automatically by the steam RPM; list it explicitly if you go the Flatpak-Steam route but still want native 32-bit Wine to work."
+    },
+    {
+      "name": "vulkan-loader.i686",
+      "why": "32-bit loader; same rationale."
+    },
+    {
+      "name": "mesa-dri-drivers.i686",
+      "why": "32-bit GL drivers for older OpenGL titles under Wine."
+    },
+    {
+      "name": "mesa-libGL.i686",
+      "why": "32-bit GL runtime."
+    },
+    {
+      "name": "mesa-libEGL.i686",
+      "why": "32-bit EGL runtime."
+    },
+    {
+      "name": "dxvk-native",
+      "why": "2.7.1. For native Linux source-ports that link DXVK directly. Marginal \u2014 include only if you care about that niche."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "heroic-games-launcher",
+      "alternative": "Flatpak com.heroicgameslauncher.hgl. Fast-moving Electron app, not in Fedora or any trustworthy F44 COPR."
+    },
+    {
+      "name": "protonup-qt",
+      "alternative": "Flatpak net.davidotek.pupgui2. COPRs exist (coffeeicus/ProtonUp-Qt-Copr, apicalshark/ProtonUp-Qt) but are personal builds; Flathub is the upstream-blessed channel."
+    },
+    {
+      "name": "umu-launcher",
+      "alternative": "Upstream RPM from github.com/Open-Wine-Components/umu-launcher releases. COPR search returned only Nobara/personal repos with no maintained F44 x86_64 project."
+    },
+    {
+      "name": "vkd3d-proton",
+      "alternative": "none \u2014 and note plain 'vkd3d' is also gone from F44. D3D12 translation ships inside Proton and inside the Lutris/Bottles runners; there is no system package to bake."
+    },
+    {
+      "name": "xone",
+      "alternative": "COPR manhdv/xone (has a fedora-44-x86_64 chroot, verified via COPR API). Out-of-tree kernel module for the Xbox Wireless Adapter \u2014 see risks re: akmods on bootc."
+    },
+    {
+      "name": "xpadneo",
+      "alternative": "COPR shdwchn10/xpadneo (fedora-44 x86_64/aarch64/ppc64le chroots verified). Improves Xbox One/Series Bluetooth pads (rumble, correct axis mapping)."
+    },
+    {
+      "name": "lact",
+      "alternative": "Upstream RPM from github.com/ilya-zlobintsev/LACT releases. No maintained F44 COPR found. CoreCtrl (packaged) covers most of the same AMD ground."
+    },
+    {
+      "name": "sc-controller",
+      "alternative": "none. Use Steam Input via steam-devices; sc-controller is effectively unmaintained."
+    },
+    {
+      "name": "steamtinkerlaunch",
+      "alternative": "git clone + make install into ~/.local \u2014 unsuitable for an immutable image, leave it to the user."
+    },
+    {
+      "name": "gamescope-session / steamos-session",
+      "alternative": "none in Fedora. The Big Picture-on-boot session is Bazzite-specific packaging; replicate by hand or pull from ublue-os repos."
+    },
+    {
+      "name": "rpcs3",
+      "alternative": "Flatpak net.rpcs3.RPCS3"
+    },
+    {
+      "name": "ppsspp",
+      "alternative": "Flatpak org.ppsspp.PPSSPP"
+    },
+    {
+      "name": "duckstation",
+      "alternative": "Flatpak org.duckstation.DuckStation"
+    },
+    {
+      "name": "melonds",
+      "alternative": "Flatpak net.kuribo64.melonDS"
+    },
+    {
+      "name": "azahar",
+      "alternative": "Flatpak io.github.azahar_emu.Azahar (the maintained Citra successor; citra itself is gone)"
+    },
+    {
+      "name": "xemu",
+      "alternative": "Flatpak app.xemu.xemu"
+    },
+    {
+      "name": "flycast",
+      "alternative": "Flatpak org.flycast.Flycast"
+    },
+    {
+      "name": "cemu",
+      "alternative": "Flatpak info.cemu.Cemu"
+    },
+    {
+      "name": "yuzu / ryujinx",
+      "alternative": "none \u2014 both upstreams are dead. Do not ship."
+    },
+    {
+      "name": "joycond / hid-nintendo userspace",
+      "alternative": "none packaged; modern kernels handle Switch Pro pads in-tree via hid-nitro/hid-nintendo, so this is largely obsolete."
+    },
+    {
+      "name": "inputplumber",
+      "alternative": "none in Fedora; Bazzite builds it themselves. Only relevant for handheld PCs."
+    },
+    {
+      "name": "mesa-va-drivers",
+      "alternative": "Renamed/dropped in F44 \u2014 only mesa-va-drivers-freeworld (RPM Fusion) exists. This belongs in the multimedia shared layer regardless, not here."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "udev",
+      "detail": "steam-devices installs 60-steam-input.rules + 60-steam-vr.rules under /usr/lib/udev/rules.d/. These grant uaccess to Valve/Sony/Microsoft HID devices so Steam Input can take exclusive control. This is the #1 reason to bake the image rather than rely on Flatpak Steam alone \u2014 a Flatpak cannot place these on the host."
+    },
+    {
+      "kind": "group",
+      "detail": "gamemode ships /usr/lib/sysusers.d/gamemode.conf ('g gamemode - -'), which creates the group at image build. The image MUST also add the default/deployed user to it \u2014 via a %post useradd -aG, a systemd-sysusers member drop-in, or a first-boot unit. Without membership, GameMode's polkit rules do not match and the governor switch silently fails."
+    },
+    {
+      "kind": "limits",
+      "detail": "gamemode ships /etc/security/limits.d/10-gamemode.conf containing '@gamemode - nice -10'. It is group-scoped, so it is inert until the group membership above is done. Verify it survives your bootc /etc handling (package-owned /etc files are fine, but confirm nothing overwrites limits.d)."
+    },
+    {
+      "kind": "systemd",
+      "detail": "gamemoded is a USER unit (/usr/lib/systemd/user/gamemoded.service). Enable it image-wide at build time with `systemctl --global enable gamemoded.service` \u2014 `systemctl enable` (system scope) will fail."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Enable ratbagd.service (system scope) for libratbag/Piper. Leave openrgb.service disabled by default \u2014 the SMBus probing it does can hang or corrupt state on some boards; make it opt-in."
+    },
+    {
+      "kind": "setcap",
+      "detail": "Fedora's gamescope RPM does NOT set file capabilities (verified against its file list). Add `setcap 'CAP_SYS_NICE=eip' /usr/bin/gamescope` in the Containerfile so gamescope can take realtime scheduling priority. podman build has CAP_SETFCAP by default, so this works at build time and persists in the image \u2014 one of the cleanest justifications for baking."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "split-lock: GameMode already handles this at runtime (gamemode.ini default disable_splitlock=1, applied via /usr/libexec/procsysctl -> /proc/sys/kernel/split_lock_mitigate, gated on the gamemode polkit rule). If you want it unconditionally off, add `split_lock_detect=off` via /usr/lib/bootc/kargs.d/10-gaming.toml. Prefer the GameMode path \u2014 it is scoped to when a game is actually running."
+    },
+    {
+      "kind": "sysctl",
+      "detail": "vm.max_map_count: DO NOTHING. Verified on a live F44 host \u2014 /usr/lib/sysctl.d/10-map-count.conf already sets it to 1048576, which is the value Fedora adopted for exactly this reason. Adding a drop-in is cargo-cult at this point."
+    },
+    {
+      "kind": "systemd",
+      "detail": "esync needs a high file-descriptor ceiling. systemd's DefaultLimitNOFILE soft limit is still 1024. Ship /usr/lib/systemd/system.conf.d/10-gaming-nofile.conf and the matching user.conf.d with `DefaultLimitNOFILE=1024:524288`. Steam raises its own limit, but Lutris/Bottles/native Wine launches from a terminal or .desktop do not."
+    },
+    {
+      "kind": "udev",
+      "detail": "OpenRGB's Fedora RPM ships NO udev rules (verified \u2014 its file list has none). Add /usr/lib/udev/rules.d/60-openrgb.rules from upstream so RGB peripherals are usable without root, and a /usr/lib/modules-load.d/openrgb.conf loading i2c-dev for motherboard/GPU SMBus control."
+    },
+    {
+      "kind": "config-file",
+      "detail": "CoreCtrl ships polkit ACTIONS but no RULES \u2014 every launch prompts for a password otherwise. Add /usr/share/polkit-1/rules.d/90-corectrl.rules granting org.corectrl.helper.init and org.corectrl.helperkiller.init to the wheel (or a dedicated) group."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Consider a /usr/share/gamemode/gamemode.ini override or /etc/gamemode.ini setting inhibit_screensaver=1 (already default), and think hard before setting renice/softrealtime \u2014 Fedora ships them off deliberately and turning them on without matching limits.d entries just produces log noise."
+    },
+    {
+      "kind": "mime",
+      "detail": "The steam RPM registers the steam:// URL scheme handler and .desktop entries. If you go Flatpak-only for Steam, the Flatpak registers its own \u2014 do not install both, or steam:// links become ambiguous."
+    },
+    {
+      "kind": "other",
+      "detail": "Multilib: bootc's dnf must resolve i686 packages from the x86_64 repo (Fedora has had no separate i386 repo since F31 \u2014 `--forcearch=i686` 404s, verified). Arch-qualified specs like `dnf install mangohud.i686` work correctly."
+    },
+    {
+      "kind": "systemd",
+      "detail": "GameMode's performance governor and power-profiles-daemon fight over the same knob. Pick one: either mask power-profiles-daemon, or accept that ppd will re-assert its policy. tuned and ppd also conflict with each other \u2014 do not ship both enabled."
+    }
+  ],
+  "risks": [
+    "Wine is the dominant cost and may be pure waste. wine-core is 1355 MiB (x86_64) + 624 MiB (i686) installed \u2014 roughly 2 GiB of the image. If Steam is the only real target and Lutris/Bottles run as Flatpaks with their own bundled runners, drop system wine entirely and the layer shrinks by two thirds.",
+    "pcsx2 in rpmfusion-nonfree is version 1.6.0 \u2014 years behind upstream 2.x and effectively unusable for modern PS2 emulation. Do NOT ship the RPM. Use Flatpak net.pcsx2.PCSX2.",
+    "Out-of-tree kernel modules (xone, xpadneo) are the sharp edge of a bootc gaming image. akmods/dkms/kernel-devel are all available, but building them into the image pins you to a specific kernel and every kernel bump requires a rebuild. Budget for that or skip the Xbox wireless dongle.",
+    "The COPRs for xone/xpadneo are personal repos (manhdv, shdwchn10, cherepavel), not organizational. Verified they have fedora-44 chroots, but pin a specific build and expect to re-verify; a stale COPR that stops building is a broken image, not a broken package.",
+    "'vkbasalt' does not resolve \u2014 the package is 'vkBasalt'. A lowercase name in the manifest fails the build with a confusing 'no match' error.",
+    "The 32-bit subpackages (mangohud.i686, vkBasalt.i686, gamemode.i686) are silently optional: everything installs and runs, but overlays and GameMode auto-opt-in just do not work in 32-bit titles. This is the classic 'my MangoHud does not show up' bug and it is invisible at build time.",
+    "Adding the user to the gamemode group is the one step nothing does for you. If your image creates users at first boot (cloud-init, systemd-firstboot, an installer), the group-add must happen there \u2014 a Containerfile-time usermod only affects users baked into /etc/passwd.",
+    "OpenRGB SMBus probing can hang boot or misbehave on some motherboards. Keep openrgb.service disabled by default; the i2c-dev modules-load makes the capability available without forcing the daemon on.",
+    "mame is 337 MiB installed for one emulator. It is verified available but was deliberately excluded \u2014 add it only if arcade emulation is an actual requirement.",
+    "setcap on gamescope will be lost if your build pipeline strips capabilities or if the image is built with a tool that does not carry file caps through the layer. Verify with `getcap /usr/bin/gamescope` in a test container after build.",
+    "Flatpak Steam and RPM Steam both installed is a real failure mode: two steam:// handlers, two library locations, and Proton prefixes that do not transfer. Pick one and actively prevent the other."
+  ],
+  "copr": [
+    "manhdv/xone \u2014 Xbox Wireless Adapter (dongle) kernel module; fedora-44-x86_64 chroot confirmed via COPR API. Alternative: theimportedking/xone (also has f43+f44).",
+    "shdwchn10/xpadneo \u2014 improved Xbox One/Series Bluetooth gamepad driver (rumble, correct mapping); fedora-43/44 across x86_64/aarch64/ppc64le confirmed. Alternative: cherepavel/xpadneo (f44 x86_64 only).",
+    "(optional, if you reject the Flatpak) coffeeicus/ProtonUp-Qt-Copr or apicalshark/ProtonUp-Qt \u2014 Proton-GE installer. Both are personal builds; Flathub net.davidotek.pupgui2 is the better channel."
+  ],
+  "external": [
+    {
+      "name": "umu-launcher",
+      "method": "Upstream RPM from github.com/Open-Wine-Components/umu-launcher releases (they publish Fedora builds). Unified Proton launcher used by Lutris/Heroic for non-Steam titles. No maintained F44 COPR exists \u2014 COPR search returned only Nobara forks and personal scratch repos."
+    },
+    {
+      "name": "LACT",
+      "method": "Upstream RPM from github.com/ilya-zlobintsev/LACT releases. AMD/NVIDIA GPU control daemon + GUI. Only take it if CoreCtrl is insufficient; running both is asking for conflicting fan-curve writes."
+    },
+    {
+      "name": "OpenRGB udev rules",
+      "method": "Fetch 60-openrgb.rules from the OpenRGB upstream tree during build and drop into /usr/lib/udev/rules.d/ \u2014 the Fedora RPM omits them entirely."
+    },
+    {
+      "name": "steamtinkerlaunch",
+      "method": "git + make install to ~/.local. NOT image-appropriate; mention in docs and let the user do it per-home."
+    },
+    {
+      "name": "Proton-GE",
+      "method": "Not a package at all \u2014 user-scope, installed into ~/.steam/root/compatibilitytools.d/ by ProtonUp-Qt at runtime. Do not attempt to bake it; it changes every few weeks."
+    }
+  ],
+  "flatpaks": [
+    "com.heroicgameslauncher.hgl \u2014 Epic/GOG/Amazon launcher. Not packaged anywhere trustworthy; Electron app that updates constantly.",
+    "net.davidotek.pupgui2 \u2014 ProtonUp-Qt. Writes only to the user's compatibilitytools.d, so a sandboxed app is a perfect fit.",
+    "com.usebottles.bottles \u2014 Bottles. An RPM exists (52.0, verified) but upstream officially supports ONLY the Flatpak and will not accept bug reports against distro builds. Prefer the Flatpak; skip the RPM I listed under packages if you take this route.",
+    "net.pcsx2.PCSX2 \u2014 PS2. Mandatory over the 1.6.0 RPM Fusion package.",
+    "net.rpcs3.RPCS3 \u2014 PS3.",
+    "org.duckstation.DuckStation \u2014 PS1.",
+    "org.ppsspp.PPSSPP \u2014 PSP.",
+    "net.kuribo64.melonDS \u2014 Nintendo DS.",
+    "io.github.azahar_emu.Azahar \u2014 3DS (Citra successor).",
+    "app.xemu.xemu \u2014 original Xbox.",
+    "org.flycast.Flycast \u2014 Dreamcast.",
+    "info.cemu.Cemu \u2014 Wii U.",
+    "com.valvesoftware.Steam \u2014 ONLY if you deliberately choose Flatpak Steam over the RPM; see notes for the recommendation. If you do, you still need steam-devices on the host, plus the Flatpak extensions org.freedesktop.Platform.VulkanLayer.MangoHud, .vkBasalt and .gamescope, and com.valvesoftware.Steam.Utility.gamescope \u2014 the host binaries are not visible inside the sandbox.",
+    "com.discordapp.Discord \u2014 an RPM exists in RPM Fusion but the Flatpak avoids the constant forced-update breakage."
+  ],
+  "services": [
+    "gamemoded.service (USER unit \u2014 enable with `systemctl --global enable gamemoded.service`, not system scope)",
+    "ratbagd.service (system, enable \u2014 required for Piper to see gaming mice)",
+    "openrgb.service (system, ship but leave DISABLED \u2014 SMBus probing is risky on some boards; let the user opt in)"
+  ],
+  "size_note": "Full manifest depsolved cleanly: 158 packages, ~550 MiB download, ~2 GiB installed on an already-populated host \u2014 expect roughly 2.5\u20133.5 GiB on a clean fedora-bootc desktop layer. Wine dominates absolutely: wine-core.x86_64 is 1355 MiB and wine-core.i686 another 624 MiB, i.e. ~2 GiB of the ~3 GiB total. Everything else is small \u2014 steam is 20 MiB (+19 MiB i686), lutris 9 MiB, gamescope 4 MiB, retroarch 20 MiB, dolphin-emu 25 MiB. Dropping system Wine (viable if Lutris/Bottles run as Flatpaks) takes the layer to under 1 GiB. mame was excluded specifically because it is 337 MiB for one emulator. Note that Steam's own Linux runtime and any Proton builds are downloaded into the user's home at first launch and are NOT part of the image \u2014 budget several more GiB of /var/home per user.",
+  "notes": [
+    "RECOMMENDATION \u2014 RPM Steam over Flatpak Steam for this image, but it is genuinely close. The case for the RPM: it uses the host's Mesa directly (newest drivers, no runtime lag), it sees host MangoHud/vkBasalt/gamescope/GameMode with zero extra plumbing, external game drives just work with no flatpak override --filesystem dance, protontricks operates normally, and custom Proton drops into ~/.steam/root/compatibilitytools.d without sandbox path translation. The case for the Flatpak: updates decouple from image rebuilds, it carries its own i686 runtime so you could omit ~1 GiB of multilib from the image, and it is sandboxed. The deciding argument is that you control this image. The entire justification for baking a gaming OS is host-level integration \u2014 udev rules, setcap'd gamescope, GameMode's polkit/group/limits chain \u2014 and Flatpak Steam requires you to duplicate every one of those as Flatpak extensions and overrides. Bazzite, the most battle-tested Fedora-atomic gaming image, ships the RPM for exactly this reason. Choose Flatpak Steam when you do NOT own the image.",
+    "Whichever Steam you pick, steam-devices belongs on the host. This is not optional and is the single most common Flatpak-Steam controller bug.",
+    "BELONGS IN THE SHARED DESKTOP LAYER, not here: the 64-bit Mesa/Vulkan stack (mesa-dri-drivers, mesa-vulkan-drivers, vulkan-loader), PipeWire and its pulse/alsa shims, xorg-x11-server-Xwayland, flatpak + xdg-desktop-portal, and all fonts. I have only listed the i686 halves, which are gaming-specific. If your desktop.conf already installs 64-bit mesa, the i686 entries here are the true delta.",
+    "BELONGS IN THE MULTIMEDIA LAYER: mesa-va-drivers-freeworld (note plain mesa-va-drivers no longer exists in F44), libva-utils, vdpauinfo, and anything GStreamer. Games do not need VA-API; streaming/recording does.",
+    "BELONGS IN THE SHARED LAYER: obs-studio (verified available, but it is a streaming/creator tool, not a gaming-purpose tool), btop, and earlyoom/systemd-oomd-defaults (verified available; OOM policy is a base-system decision, and note that systemd-oomd has historically killed games under memory pressure \u2014 worth a deliberate choice at the base layer).",
+    "NVIDIA drivers are deliberately absent. rpmfusion-nonfree-nvidia-driver is enabled in the base, but driver selection is a hardware-variant concern (akmod vs kmod, open vs proprietary) and should be its own layer or image tag, not part of 'gaming'.",
+    "OPEN QUESTION \u2014 handhelds. If this image ever targets a Steam Deck/ROG Ally-class device, you need a gamescope-session (not packaged in Fedora), InputPlumber, and TDP control. That is a substantially different manifest and should be a separate purpose, not bolted onto this one.",
+    "OPEN QUESTION \u2014 do you want the performance CPU governor always, or only under GameMode? The GameMode-scoped approach (the default) is better for a laptop; a tuned 'throughput-performance' profile is better for a desktop that only games. Do not do both.",
+    "Verification method, for reproducibility: every name above was echoed back by `dnf repoquery --qf '%{name}\\n'` against live F44 repos with RPM Fusion free/nonfree/steam enabled, and the whole set was then run through `dnf --assumeno install` to confirm it depsolves without conflicts. Names that did not echo are in `unavailable`."
+  ]
+}

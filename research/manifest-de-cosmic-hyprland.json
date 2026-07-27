@@ -1,0 +1,400 @@
+{
+  "key": "de-cosmic-hyprland",
+  "summary": "A single Fedora 44 bootc image offering COSMIC as the full desktop and Hyprland as a tiling alternative, chosen at the greeter. Verdict: this co-installation is SANE and I verified it empirically \u2014 the research host is Fedora 44 (VERSION=\"44 (COSMIC)\") running exactly this combination, with cosmic.desktop, hyprland.desktop and hyprland-uwsm.desktop all present in /usr/share/wayland-sessions and cosmic-greeter.service active as display-manager.service. The two stacks do not fight: portal preference is resolved per-session via XDG_CURRENT_DESKTOP, so /usr/share/xdg-desktop-portal/cosmic-portals.conf (\"default=cosmic;gtk;\") and hyprland-portals.conf (\"default=hyprland;gtk\") coexist without either overriding the other, and both xdg-desktop-portal-cosmic and xdg-desktop-portal-hyprland install disjoint D-Bus names and .portal files. There is exactly ONE greeter, and cosmic-greeter is it \u2014 it is not a COSMIC-only display manager but a greetd greeter (it Requires: greetd, ships /etc/greetd/cosmic-greeter.toml with ExecStart=greetd --config, and its binary contains both \"wayland-sessions\" and \"xsessions\" enumeration strings), so it lists and launches Hyprland like any other session. The single genuine complication is that Hyprland is entirely absent from Fedora 44 and RPM Fusion \u2014 a batched repoquery over the whole Hyprland stack (hyprland, hyprpaper, hypridle, hyprlock, hyprpicker, xdg-desktop-portal-hyprland, aquamarine, uwsm, hyprpolkitagent, rofi-wayland) returned only wlogout. The compositor must come from COPR, and that COPR necessarily *upgrades* Fedora's hyprutils/hyprlang/hyprgraphics/hyprcursor libraries, which is safe only because nothing outside the Hyprland stack consumes them (verified: --whatrequires on all four returns only their own -devel subpackages and each other; cosmic-comp and cosmic-session have zero hypr dependencies). This is a good image to bake precisely because Hyprland ships no default config at all and is unusable without one.",
+  "packages": [
+    {
+      "name": "cosmic-session",
+      "why": "COSMIC session entry point; ships /usr/share/wayland-sessions/cosmic.desktop and cosmic-session.target. Verified 1.4.0 in updates."
+    },
+    {
+      "name": "cosmic-comp",
+      "why": "COSMIC Wayland compositor. Also a hard dependency of cosmic-greeter (which runs the greeter UI on top of it)."
+    },
+    {
+      "name": "cosmic-greeter",
+      "why": "THE greeter for the whole image. Despite the name it is a greetd greeter and enumerates /usr/share/wayland-sessions, so it launches Hyprland too. Aliased to display-manager.service."
+    },
+    {
+      "name": "greetd",
+      "why": "Required by cosmic-greeter; the actual login daemon. cosmic-greeter.service literally execs 'greetd --config /etc/greetd/cosmic-greeter.toml'."
+    },
+    {
+      "name": "greetd-selinux",
+      "why": "SELinux policy for greetd. Hard Requires of cosmic-greeter \u2014 omitting it breaks login on an enforcing bootc image."
+    },
+    {
+      "name": "cosmic-settings",
+      "why": "COSMIC control center \u2014 display, input, appearance. Also the only GUI for fractional scaling config."
+    },
+    {
+      "name": "cosmic-settings-daemon",
+      "why": "Backing daemon for settings, media keys, backlight."
+    },
+    {
+      "name": "cosmic-panel",
+      "why": "COSMIC top panel / dock."
+    },
+    {
+      "name": "cosmic-applets",
+      "why": "Panel applets: network, battery, audio, bluetooth, clock."
+    },
+    {
+      "name": "cosmic-launcher",
+      "why": "COSMIC application launcher."
+    },
+    {
+      "name": "cosmic-app-library",
+      "why": "COSMIC app grid."
+    },
+    {
+      "name": "cosmic-workspaces",
+      "why": "COSMIC workspace overview."
+    },
+    {
+      "name": "cosmic-notifications",
+      "why": "COSMIC notification daemon. Only runs in the COSMIC session \u2014 Hyprland needs mako separately."
+    },
+    {
+      "name": "cosmic-osd",
+      "why": "On-screen display for volume/brightness in COSMIC."
+    },
+    {
+      "name": "cosmic-bg",
+      "why": "COSMIC wallpaper daemon."
+    },
+    {
+      "name": "cosmic-idle",
+      "why": "COSMIC idle management."
+    },
+    {
+      "name": "cosmic-screenshot",
+      "why": "COSMIC screenshot tool (uses the COSMIC portal)."
+    },
+    {
+      "name": "cosmic-randr",
+      "why": "Display configuration CLI for COSMIC."
+    },
+    {
+      "name": "cosmic-files",
+      "why": "COSMIC file manager. Mandatory member of @cosmic-desktop."
+    },
+    {
+      "name": "cosmic-term",
+      "why": "COSMIC terminal. Mandatory member of @cosmic-desktop."
+    },
+    {
+      "name": "cosmic-edit",
+      "why": "COSMIC text editor. Mandatory member of @cosmic-desktop; useful for editing hyprland.conf from the COSMIC side."
+    },
+    {
+      "name": "cosmic-store",
+      "why": "COSMIC software store; Flatpak frontend. Mandatory member of @cosmic-desktop."
+    },
+    {
+      "name": "cosmic-icon-theme",
+      "why": "Icon theme; hard dependency of cosmic-greeter."
+    },
+    {
+      "name": "cosmic-wallpapers",
+      "why": "Default wallpaper set, referenced by cosmic-bg defaults."
+    },
+    {
+      "name": "xdg-desktop-portal-cosmic",
+      "why": "COSMIC's portal backend (screenshot, screencast, file chooser). Ships cosmic-portals.conf keyed to XDG_CURRENT_DESKTOP=COSMIC \u2014 does NOT interfere with the Hyprland portal."
+    },
+    {
+      "name": "cosmic-initial-setup",
+      "why": "First-boot user setup wizard. Default member of @cosmic-desktop; worth keeping for a bootc image where there is no anaconda."
+    },
+    {
+      "name": "waybar",
+      "why": "Status bar for the Hyprland session. In Fedora proper at 0.15.0 \u2014 no COPR needed, which is a nice surprise given the rest of the stack."
+    },
+    {
+      "name": "fuzzel",
+      "why": "Application launcher for Hyprland. Recommended over wofi/rofi: native Wayland, actively maintained, 1.14.0 in Fedora. rofi in Fedora is the X11 build (pulls libxcb-ewmh/xinerama)."
+    },
+    {
+      "name": "mako",
+      "why": "Notification daemon for the Hyprland session (1.11.0 in updates). Needed because cosmic-notifications only runs under COSMIC."
+    },
+    {
+      "name": "wl-clipboard",
+      "why": "wl-copy/wl-paste. Required by essentially every Hyprland keybind config."
+    },
+    {
+      "name": "cliphist",
+      "why": "Clipboard history manager, pairs with wl-clipboard and fuzzel."
+    },
+    {
+      "name": "grim",
+      "why": "Wayland screenshot capture. Also a hard runtime Requires of xdg-desktop-portal-hyprland."
+    },
+    {
+      "name": "slurp",
+      "why": "Region selector for grim. Also a hard runtime Requires of xdg-desktop-portal-hyprland."
+    },
+    {
+      "name": "swappy",
+      "why": "Screenshot annotation, completes the grim|slurp|swappy pipeline."
+    },
+    {
+      "name": "swaybg",
+      "why": "Wallpaper for Hyprland. Use INSTEAD of hyprpaper \u2014 it is in Fedora proper, hyprpaper is COPR-only, and it removes one COPR dependency."
+    },
+    {
+      "name": "swayidle",
+      "why": "Idle daemon for Hyprland. In-Fedora substitute for hypridle, avoiding another COPR package."
+    },
+    {
+      "name": "swaylock",
+      "why": "Screen locker for Hyprland. In-Fedora substitute for hyprlock. Note: needs a PAM config; it ships one."
+    },
+    {
+      "name": "wlogout",
+      "why": "Logout/power menu for Hyprland. The single Hyprland-adjacent package that IS in Fedora."
+    },
+    {
+      "name": "foot",
+      "why": "Fast native Wayland terminal, sensible Hyprland default. Tiny footprint."
+    },
+    {
+      "name": "kitty",
+      "why": "GPU terminal; the de-facto Hyprland default that upstream example configs bind to $mainMod+Q. Include so a copied upstream config works."
+    },
+    {
+      "name": "mate-polkit",
+      "why": "Polkit authentication agent for the Hyprland session. Hyprland ships none and hyprpolkitagent is not in Fedora; polkit-gnome does not exist in F44. mate-polkit is the lightest GTK agent that actually exists."
+    },
+    {
+      "name": "xorg-x11-server-Xwayland",
+      "why": "X11 app support. Hard Requires of hyprland; also needed by COSMIC for legacy apps."
+    },
+    {
+      "name": "qt6-qtwayland",
+      "why": "Qt6 Wayland platform plugin. Hard Requires of xdg-desktop-portal-hyprland; also stops Qt apps falling back to XWayland in both sessions."
+    },
+    {
+      "name": "brightnessctl",
+      "why": "Backlight control for Hyprland keybinds (COSMIC handles this via cosmic-settings-daemon)."
+    },
+    {
+      "name": "playerctl",
+      "why": "MPRIS media key control for Hyprland/waybar."
+    },
+    {
+      "name": "pamixer",
+      "why": "CLI volume control for Hyprland keybinds and waybar."
+    },
+    {
+      "name": "network-manager-applet",
+      "why": "nm-applet tray icon for the Hyprland session; COSMIC has its own applet."
+    },
+    {
+      "name": "blueman",
+      "why": "Bluetooth tray/manager for Hyprland; COSMIC has its own applet."
+    },
+    {
+      "name": "udiskie",
+      "why": "Automount daemon for removable media in Hyprland (cosmic-files covers COSMIC)."
+    },
+    {
+      "name": "kanshi",
+      "why": "Dynamic output profile daemon for Hyprland multi-monitor / hotplug."
+    },
+    {
+      "name": "wlr-randr",
+      "why": "Output query/config CLI usable under Hyprland."
+    },
+    {
+      "name": "wdisplays",
+      "why": "GUI display arranger for Hyprland \u2014 the counterpart to cosmic-settings' display panel."
+    },
+    {
+      "name": "xdg-user-dirs-gtk",
+      "why": "Creates XDG user dirs on first login; Hyprland does nothing here on its own."
+    },
+    {
+      "name": "gnome-keyring",
+      "why": "Secret storage. cosmic-portals.conf explicitly sets org.freedesktop.impl.portal.Secret=oo7-portal;gnome-keyring, and Hyprland has no keyring of its own."
+    },
+    {
+      "name": "gnome-keyring-pam",
+      "why": "PAM module to unlock the keyring at login. Default member of @cosmic-desktop; must be present for the greeter to auto-unlock."
+    },
+    {
+      "name": "adw-gtk3-theme",
+      "why": "Makes GTK3 apps match libadwaita/COSMIC styling in both sessions."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "hyprland",
+      "alternative": "COPR. Verified absent from fedora, updates and both RPM Fusion repos. Use solopasha/hyprland (the widely-used, most complete Hyprland COPR) or lionheartp/Hyprland (what the research host runs, currently 0.56.0). NOT optional \u2014 this is the entire tiling half of the image."
+    },
+    {
+      "name": "aquamarine",
+      "alternative": "COPR (same Hyprland COPR). Hyprland's backend/rendering library, hard Requires: aquamarine >= 0.9.2. Absent from Fedora entirely, so you cannot even rebuild Hyprland against Fedora libs without also building this."
+    },
+    {
+      "name": "xdg-desktop-portal-hyprland",
+      "alternative": "COPR (same Hyprland COPR). Absolutely required \u2014 without it Hyprland has no screencast/screenshot and every Flatpak file chooser misbehaves. Ships /usr/share/xdg-desktop-portal/hyprland-portals.conf. Do NOT substitute xdg-desktop-portal-wlr (which IS in Fedora): it lacks Hyprland's window-picker and global shortcuts."
+    },
+    {
+      "name": "hyprpaper",
+      "alternative": "Use swaybg (in Fedora, already in packages). Avoids a COPR package for zero functional loss."
+    },
+    {
+      "name": "hypridle",
+      "alternative": "Use swayidle (in Fedora, already in packages), or take hypridle from the Hyprland COPR if you want hyprlock integration."
+    },
+    {
+      "name": "hyprlock",
+      "alternative": "Use swaylock (in Fedora, already in packages), or hyprlock from the Hyprland COPR. swaylock is the lower-risk choice for an immutable image because its PAM config is Fedora-maintained."
+    },
+    {
+      "name": "hyprpolkitagent",
+      "alternative": "Use mate-polkit (in Fedora, already in packages). polkit-gnome does NOT exist in Fedora 44 \u2014 verified absent \u2014 so do not reach for the usual muscle-memory package."
+    },
+    {
+      "name": "hyprpicker",
+      "alternative": "COPR (Hyprland COPR). Colour picker. Optional; grim+slurp can approximate."
+    },
+    {
+      "name": "hyprshot / grimblast",
+      "alternative": "COPR (lionheartp ships both; solopasha ships hyprland-contrib). Optional convenience wrappers \u2014 grim|slurp|swappy from Fedora already covers the functionality."
+    },
+    {
+      "name": "hyprsunset",
+      "alternative": "Use gammastep or wlsunset (both verified in Fedora) for night-light under Hyprland."
+    },
+    {
+      "name": "uwsm",
+      "alternative": "COPR only (lionheartp ships uwsm 0.26.4 plus hyprland-uwsm). Universal Wayland Session Manager \u2014 wraps the session in systemd user units. Recommended if you want Hyprland to get proper systemd session scoping like COSMIC has; adds a second wayland-session entry (hyprland-uwsm.desktop)."
+    },
+    {
+      "name": "rofi-wayland",
+      "alternative": "Use fuzzel (in Fedora, already in packages). Fedora's 'rofi' package is the X11 build \u2014 its deps include libxcb-ewmh/libxcb-xinerama/libxcb-icccm \u2014 so it is the wrong tool for a pure-Wayland image."
+    },
+    {
+      "name": "polkit-gnome",
+      "alternative": "Does not exist in Fedora 44. Use mate-polkit or xfce-polkit (both verified present)."
+    },
+    {
+      "name": "nwg-look / nwg-displays",
+      "alternative": "Not in Fedora (only nwg-panel is). Use wdisplays for output layout and qt6ct/gtk settings via cosmic-settings. Or COPR solopasha/hyprland which carries the nwg-* family."
+    },
+    {
+      "name": "swww",
+      "alternative": "Not in Fedora. Use swaybg for static wallpaper; swww only matters if you want animated transitions."
+    },
+    {
+      "name": "ghostty / wezterm",
+      "alternative": "Neither is in Fedora 44. Use foot or kitty (both verified). ghostty is available via COPR pgdev/ghostty if specifically wanted."
+    },
+    {
+      "name": "hyprland-qtutils",
+      "alternative": "COPR (Hyprland COPR). Provides Hyprland's Qt dialogs (update/error popups). Purely cosmetic; Hyprland logs to stderr without it."
+    }
+  ],
+  "copr": [
+    "solopasha/hyprland \u2014 RECOMMENDED. The most complete and most widely used Hyprland COPR: hyprland, aquamarine, xdg-desktop-portal-hyprland, hyprpaper, hypridle, hyprlock, hyprpicker, hyprpolkitagent, hyprland-qtutils, hyprland-plugins, hyprsunset, plus the nwg-* tooling. Pin with a versionlock or a dated snapshot in the Containerfile \u2014 it tracks upstream Hyprland aggressively and a rebuild can move you a minor version.",
+    "lionheartp/Hyprland \u2014 ALTERNATIVE, and what the Fedora 44 research host actually runs (hyprland 0.56.0, uwsm 0.26.4, hyprland-uwsm, aquamarine 0.13.0, hyprwire, hyprshot, grimblast, hdrop, gpu-screen-recorder). Choose this one if you want uwsm/systemd session integration, which solopasha does not ship. Caution: it also carries hyprland-git with dozens of snapshot builds \u2014 exclude that package name explicitly or dnf may prefer a git snapshot over the stable build."
+  ],
+  "external": [
+    {
+      "name": "Hyprland default configuration",
+      "method": "Author it yourself and COPY it into the image at /etc/skel/.config/hypr/hyprland.conf. Hyprland ships NO default config \u2014 verified: the hyprland RPM installs only /usr/share/hypr/{hyprland.lua,wall*.png,lockdead*.png,stubs/} and no .conf anywhere. A user landing in a Hyprland session with no config gets a black screen with no keybinds and no way to open a terminal. This is the single most important file in the layer."
+    },
+    {
+      "name": "Waybar / mako / fuzzel default configs",
+      "method": "COPY into /etc/skel/.config/{waybar,mako,fuzzel}/. Waybar with no config shows a mostly empty bar; mako and fuzzel have usable built-in defaults but look inconsistent with COSMIC's theme without one."
+    },
+    {
+      "name": "greetd session-wrapper hardening (optional)",
+      "method": "Drop-in file, not an external RPM. If you adopt uwsm, add hyprland-uwsm.desktop's session as the preferred entry and consider hiding the plain hyprland.desktop with NoDisplay=true so the greeter shows one Hyprland option rather than two confusing ones."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "systemd",
+      "detail": "systemctl enable cosmic-greeter.service. It carries [Install] Alias=display-manager.service, so enabling it wires up the whole login path. Do NOT also enable greetd.service or gdm.service \u2014 all three claim display-manager.service and the alias symlink will be won by whichever was enabled last, producing a nondeterministic image. Enable exactly one."
+    },
+    {
+      "kind": "systemd",
+      "detail": "cosmic-greeter.service declares Conflicts=getty@tty1.service and After=plymouth-quit-wait.service, and its greetd config pins [terminal] vt=\"1\". No manual VT juggling needed, but do not separately enable getty@tty1."
+    },
+    {
+      "kind": "config-file",
+      "detail": "/etc/skel/.config/hypr/hyprland.conf \u2014 the load-bearing integration. Must at minimum set a monitor line, exec-once for waybar/mako/swaybg/mate-polkit/the portal, $mainMod binds for terminal (kitty or foot), fuzzel, and killactive, plus 'env = XCURSOR_SIZE,24'. Because the image is immutable, /etc/skel is the correct vehicle: it seeds only NEW users at useradd time and leaves existing users' configs alone, which is exactly the semantics you want. A system-wide /usr/share fallback is NOT a substitute here \u2014 Hyprland does not read one."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Portal preference needs NO intervention and you should resist the urge to add /etc/xdg-desktop-portal/portals.conf. Verified on a live system: cosmic-portals.conf ([preferred] default=cosmic;gtk;) and hyprland-portals.conf ([preferred] default=hyprland;gtk) coexist because xdg-desktop-portal selects <lowercased XDG_CURRENT_DESKTOP>-portals.conf at runtime. cosmic.desktop sets DesktopNames=COSMIC and hyprland.desktop sets DesktopNames=Hyprland, so each session resolves to its own backend. A hand-written global portals.conf would override BOTH and break one of the two sessions."
+    },
+    {
+      "kind": "config-file",
+      "detail": "exec-once=/usr/libexec/xdg-desktop-portal-hyprland is generally unnecessary (D-Bus activation handles it), but DO exec-once a polkit agent (/usr/libexec/mate-polkit/polkit-mate-authentication-agent-1) \u2014 nothing autostarts it under Hyprland, and without it every privileged GUI action silently fails."
+    },
+    {
+      "kind": "group",
+      "detail": "cosmic-greeter Requires group(video) and user(cosmic-greeter), created via /usr/lib/sysusers.d/cosmic-greeter.conf. In a bootc build, confirm systemd-sysusers actually ran at build time \u2014 if the cosmic-greeter user is missing at first boot the greeter fails to start and you get no login at all. Verify with `getent passwd cosmic-greeter` in the Containerfile."
+    },
+    {
+      "kind": "selinux",
+      "detail": "Install greetd-selinux (it is a hard Requires of cosmic-greeter, so dnf pulls it, but state it explicitly). Also run a relabel or ensure /etc/greetd and /etc/skel content carry correct contexts \u2014 mislabeled greeter config is a classic cause of a bootc image that boots to a blank tty under enforcing."
+    },
+    {
+      "kind": "config-file",
+      "detail": "cosmic-greeter ships /etc/pam.d/cosmic-greeter and Requires fprintd-pam. If the image has no fingerprint hardware this is harmless, but the PAM stack pulls fprintd in \u2014 accept it or the greeter package will not install."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Hyprland launched from a greetd greeter does NOT get a systemd user session scope the way cosmic-session does (cosmic-session ships cosmic-session.target). If you want systemd-managed user services under Hyprland, adopt uwsm from the lionheartp COPR and prefer hyprland-uwsm.desktop; otherwise put everything in exec-once."
+    },
+    {
+      "kind": "other",
+      "detail": "COPR library override is REQUIRED and is safe. Fedora 44 ships hyprutils 0.7.1 / hyprlang 0.6.4 / hyprgraphics 0.1.5 / hyprcursor 0.1.11, but hyprland 0.56 Requires hyprutils >= 0.8.4 and hyprgraphics >= 0.1.6, so the COPR versions (hyprutils 0.14.0, hyprgraphics 0.5.1) must win. Soname bumps are real (libhyprutils.so.6 -> .so.13, libhyprgraphics.so.0 -> .so.4) but harmless: --whatrequires on all four Fedora packages returns only their own -devel subpackages and each other, and cosmic-comp/cosmic-session have zero hypr dependencies. Nothing in COSMIC breaks."
+    },
+    {
+      "kind": "other",
+      "detail": "Skip the @cosmic-desktop group and list packages explicitly. Verified group contents are thin and partly wrong for this image: mandatory = cosmic-edit, cosmic-files, cosmic-session, cosmic-store, cosmic-term; default = cosmic-initial-setup, cosmic-player, flatpak, gnome-keyring-pam, system-config-printer, toolbox. It pulls flatpak/system-config-printer (your desktop-common layer's job) and, critically, does NOT include cosmic-greeter, cosmic-settings, cosmic-panel or the applets. Installing the group alone gives you a COSMIC image with no greeter and no settings app."
+    },
+    {
+      "kind": "other",
+      "detail": "Avoid @cosmic-desktop-apps entirely. Verified contents: ark, gnome-calculator, gnome-disk-utility, gnome-system-monitor, nheko, okular, rhythmbox, thunderbird. That drags in KDE and GNOME app stacks plus a Matrix client and a mail client \u2014 hundreds of MB of unrelated dependencies that belong nowhere near a DE layer."
+    }
+  ],
+  "services": [
+    "cosmic-greeter.service \u2014 enable this one and only this one; it aliases display-manager.service",
+    "cosmic-greeter-daemon.service \u2014 pulled in via Wants= by cosmic-greeter.service; no separate enable needed but verify the symlink exists in the built image",
+    "systemd-sysusers \u2014 must run at build time to create the cosmic-greeter user from /usr/lib/sysusers.d/cosmic-greeter.conf",
+    "DO NOT enable: greetd.service, gdm.service, sddm.service \u2014 they contend for the display-manager.service alias"
+  ],
+  "risks": [
+    "GREETER RECOMMENDATION: use cosmic-greeter. Reasoning, from direct inspection rather than assumption \u2014 cosmic-greeter is NOT a COSMIC-only display manager, it is a greetd greeter (Requires: greetd + greetd-selinux, ships /etc/greetd/cosmic-greeter.toml whose default_session command is cosmic-greeter-start, and its service unit execs `greetd --config`). Its binary contains both 'wayland-sessions' and 'xsessions' enumeration strings, so it lists every session desktop file including Hyprland's. The research host proves it end-to-end: cosmic-greeter.service is the active display-manager with cosmic.desktop, hyprland.desktop and hyprland-uwsm.desktop all offered. It gives you greetd's simplicity, a graphical session picker, per-user session memory, and it is already a mandatory dependency chain of the COSMIC half. gdm is the wrong choice: it drags the entire GNOME session stack, xdg-desktop-portal-gnome, and gnome-shell into a DE layer that is supposed to contain neither DE, and it sets XDG_CURRENT_DESKTOP in ways that have historically confused non-GNOME sessions. greetd+tuigreet is a downgrade, not an upgrade: it is the same greetd daemon underneath, but a TUI picker on a machine whose flagship session is a polished GTK desktop is an aesthetic regression for zero benefit, and you would still need to install cosmic-greeter's dependencies anyway. Choose cosmic-greeter; keep tuigreet installed as a fallback only if you want a recovery login path.",
+    "COSMIC MATURITY \u2014 better than its reputation but not GNOME/KDE-stable. Fedora 44 ships COSMIC 1.4.0 in updates (1.0.9 in GA), i.e. post-1.0 stable releases, and Fedora 44's own VERSION string is '44 (COSMIC)', signalling first-class distro support. That said, COSMIC 1.x is roughly a year old as a stable line: accessibility (screen reader / AT-SPI) is markedly behind GNOME, the settings app still has gaps, third-party theming is immature, and cosmic-store is a thinner Flatpak frontend than GNOME Software. Acceptable as a daily driver, not yet appropriate for a deployment with hard a11y requirements.",
+    "HYPRLAND + IMAGENOLOGY (medical/diagnostic imaging) \u2014 this is the one place I would say plainly: do not use Hyprland as the session for image interpretation. Hyprland has no colour management protocol support of the kind that matters here \u2014 no ICC profile application, no wp_color_management_v1 maturity, no calibrated output path \u2014 so pixel values are displayed uncorrected and are not diagnostically trustworthy. Its fractional scaling is also the classic wlroots-style approach (render at integer scale, downscale), which resamples and can introduce interpolation artefacts on fine structures; that is exactly the failure mode you cannot tolerate when reading images. COSMIC (via cosmic-comp/cosmic-randr) has substantially better display-configuration and scaling handling and is the session that should be used for any actual imaging work. Ship Hyprland as the productivity/tiling session by all means \u2014 just do not let it be the one anyone reads a study on. If imaging is the primary purpose of this image, consider whether the Hyprland half earns its ~15 packages plus a COPR dependency at all.",
+    "COPR SUPPLY-CHAIN \u2014 Hyprland cannot come from Fedora, so the image's tiling half depends on a single unofficial COPR maintained by one person, with no Fedora security-response SLA and no guarantee of a rebuild after a Fedora mass rebuild. Mitigate by pinning: use `dnf install hyprland-0.56.0` style version pins or a dated COPR snapshot repo URL in the Containerfile, so an image rebuild is reproducible and a broken upstream release cannot silently land in production.",
+    "hyprland-git TRAP in the lionheartp COPR \u2014 that repo carries dozens of hyprland-git snapshot builds (0.55.4^51.git\u2026 through ^69.git\u2026 and beyond) alongside stable hyprland. Depending on version comparison, dnf may resolve to a git snapshot. Explicitly `--exclude=hyprland-git` or install the fully-versioned stable NEVRA.",
+    "TWO NOTIFICATION DAEMONS, TWO IDLE DAEMONS, TWO WALLPAPER DAEMONS in one image (cosmic-notifications/mako, cosmic-idle/swayidle, cosmic-bg/swaybg). Harmless as long as each is started only by its own session \u2014 COSMIC starts its set via cosmic-session, and the Hyprland set must be started ONLY from exec-once in hyprland.conf. Never put mako/swaybg/swayidle into a systemd user unit with WantedBy=default.target, or they will start inside the COSMIC session too and you will get duplicate notifications and a wallpaper fight.",
+    "/etc/skel SEEDS ONLY NEW USERS. On a bootc image the /etc/skel Hyprland config reaches users created after the image is deployed. An existing user upgrading to a new image build gets NO config update \u2014 and if you later fix a broken default keybind, existing users keep the broken one. Document this, or ship the config as a versioned file the user's config `source=`s from /usr/share so you retain the ability to push fixes.",
+    "IMAGE SIZE / SCOPE \u2014 resist installing @cosmic-desktop or @cosmic-desktop-apps as a shortcut; the latter alone pulls ark, okular, nheko, rhythmbox and thunderbird, mixing KDE and GNOME app stacks into a DE layer.",
+    "Fedora's `rofi` is the X11 build (deps include libxcb-ewmh, libxcb-xinerama, libxcb-icccm) and rofi-wayland does not exist in Fedora 44. If a copied upstream Hyprland config references rofi, it will run through XWayland with degraded behaviour. Standardise on fuzzel and adjust the shipped config accordingly."
+  ],
+  "notes": [
+    "desktop-common (excluded here per instructions, but these are the ones this layer genuinely assumes exist there): pipewire + wireplumber (screencast portals on BOTH sessions are useless without them), xdg-desktop-portal itself (the frontend \u2014 both cosmic and hyprland backends Require it), flatpak, fonts, mesa/vulkan drivers, and NetworkManager. If desktop-common does not carry xdg-desktop-portal and pipewire, screen sharing silently fails in both sessions and it is very hard to debug.",
+    "xdg-desktop-portal-gtk is worth putting in desktop-common rather than here: BOTH cosmic-portals.conf and hyprland-portals.conf name `gtk` as their fallback backend, so it is a shared requirement of the two sessions, not a property of either.",
+    "gnome-keyring/gnome-keyring-pam are arguably desktop-common too \u2014 I listed them here because cosmic-portals.conf names gnome-keyring explicitly for the Secret portal and Hyprland has no alternative, so this layer breaks without them.",
+    "OPEN QUESTION \u2014 uwsm or not? It is the difference between Hyprland getting a real systemd user session (like cosmic-session.target gives COSMIC) versus a bare exec-once soup. uwsm exists only in lionheartp's COPR, not solopasha's, so the answer determines which COPR you pick. My lean: if you want the two sessions to behave consistently for systemd user services, take lionheartp + uwsm and hide the non-uwsm hyprland.desktop.",
+    "OPEN QUESTION \u2014 is the Hyprland session actually wanted given the imagenology purpose? Given the colour-management and fractional-scaling findings above, the honest recommendation is COSMIC-primary, Hyprland-as-a-convenience. If nobody will use the tiling session for real work, dropping it removes an entire COPR dependency and about 15 packages from the trusted computing base.",
+    "VERIFICATION NOTE \u2014 all names under `packages` were echoed back by batched `dnf repoquery --disablerepo='*' --enablerepo=fedora --enablerepo=updates --enablerepo=rpmfusion-*`. The Hyprland stack was checked in one batch (hyprland, hyprpaper, hypridle, hyprlock, hyprpicker, hyprshot, hyprsunset, hyprpolkitagent, hyprland-qtutils, xdg-desktop-portal-hyprland, aquamarine, uwsm, rofi-wayland, polkit-gnome, wezterm, ghostty, nwg-look, nwg-displays, swww, wlogout, grimblast, hyprwire, hyprland-plugins) and returned exactly one result: wlogout. Group contents came from `dnf group info`, not from memory."
+  ],
+  "size_note": "Roughly 1.2\u20131.8 GB installed for this layer alone, on top of fedora-bootc and desktop-common. The COSMIC half dominates at approximately 900 MB\u20131.2 GB: these are Rust binaries that statically link most of their crate graph, so each cosmic-* package is tens of MB with little sharing between them (cosmic-settings, cosmic-store, cosmic-files and cosmic-edit are the largest single contributors), plus cosmic-wallpapers which is pure image data and can be dropped to save on the order of 100\u2013200 MB if you ship your own branding. The Hyprland half is comparatively cheap, roughly 150\u2013250 MB including the COPR-supplied hyprland, aquamarine and portal, since waybar/fuzzel/mako/grim/slurp/swaybg/swayidle are all small C binaries in the single-digit MB range. Supporting bits (Xwayland, qt6-qtwayland, gnome-keyring, mate-polkit, blueman, adw-gtk3-theme) add roughly 150\u2013250 MB, with qt6-qtwayland pulling the Qt6 base libraries being the notable lump. Two easy wins: exclude the debuginfo/debugsource packages the Hyprland COPRs publish (they are numerous and large), and skip @cosmic-desktop-apps, which would otherwise add ark, okular, nheko, rhythmbox and thunderbird along with the KDE and GNOME library stacks behind them \u2014 comfortably another 800 MB+ for applications unrelated to the desktop layer.",
+  "flatpaks": [
+    "Nothing in this layer should be a Flatpak \u2014 compositors, greeters, portals and status bars are all system components that must be baked. Flatpak is the right mechanism for the *applications* the excluded @cosmic-desktop-apps group would have pulled in.",
+    "org.mozilla.firefox \u2014 if a browser is wanted, Flatpak it rather than adding thunderbird/firefox RPMs to a DE layer.",
+    "com.github.tchx84.Flatseal \u2014 genuinely useful on an immutable image for managing the Flatpak permissions that portals mediate; pairs directly with the portal work in this layer.",
+    "org.gnome.Calculator, org.gnome.SystemMonitor \u2014 Flatpak substitutes for the @cosmic-desktop-apps members, keeping GNOME libraries out of the image."
+  ]
+}

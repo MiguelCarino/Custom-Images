@@ -1,0 +1,540 @@
+{
+  "key": "llms",
+  "summary": "A local LLM inference and development workstation layer for a Fedora 44 bootc image: engines (ollama, llama.cpp, whisper.cpp, ramalama), the ROCm/HIP acceleration stack, Fedora's ROCm-linked PyTorch plus the parts of the Hugging Face stack that are actually packaged, notebook/serving glue, and the Python env-management tooling (uv/pipx) that makes an immutable base workable. The single most important finding from verification: **Fedora 44's entire LLM RPM stack is AMD-only.** `python3-torch` hard-requires `libamdhip64.so.7`, `libMIOpen.so.1`, `libhipblaslt.so.1` and `libmagma.so.2`; `ollama` ships `/usr/lib/ollama/libggml-hip.so` and CPU backends but **no CUDA backend**; `llama-cpp` ships `libggml-hip.so` only. There is no CUDA-enabled RPM of any inference engine anywhere in Fedora or RPM Fusion. So this manifest is a first-class experience on AMD (RDNA2/3, CDNA) and a CPU-only experience on NVIDIA unless you take the container path or pip-install CUDA wheels. Target user: someone running 7B-70B quantized models locally, fine-tuning with LoRA, and building agent/RAG tooling against a local OpenAI-compatible endpoint.",
+  "packages": [
+    {
+      "name": "ollama",
+      "why": "Primary model daemon. Fedora 0.12.11 with CPU (sse42/sandybridge/haswell/skylakex/icelake/alderlake) + libggml-hip.so ROCm backends. Ships ollama.service, sysusers.d creating the ollama user with home /var/lib/ollama. No CUDA backend."
+    },
+    {
+      "name": "llama-cpp",
+      "why": "llama-server, llama-cli, llama-bench, llama-perplexity, llama-imatrix, llama-quantize, llama-gguf-split, llama-mtmd-cli (multimodal), llama-tts. llama-quantize + llama-imatrix are the actual quantization toolchain (K-quants, IQ-quants, importance matrices). CPU + HIP backends."
+    },
+    {
+      "name": "llama-cpp-devel",
+      "why": "libllama/libggml/libmtmd headers \u2014 needed to build llama-cpp-python or custom bindings against the system library instead of vendoring."
+    },
+    {
+      "name": "whisper-cpp",
+      "why": "GGML speech-to-text, same ecosystem and quant formats; pairs with local LLM for voice pipelines."
+    },
+    {
+      "name": "ramalama",
+      "why": "Podman-native model runner (v0.21.0). Pulls the correct OCI runtime image per accelerator (ROCm, CUDA, Vulkan, CPU) and mounts GGUF/OCI model artifacts. This is the honest answer for NVIDIA on this image and the strongest single package in the manifest."
+    },
+    {
+      "name": "python3-llm",
+      "why": "Simon Willison's `llm` CLI \u2014 scriptable prompting, plugin system, SQLite logging of all prompts/responses. Talks to local ollama and OpenAI-compatible endpoints."
+    },
+    {
+      "name": "python3-torch",
+      "why": "PyTorch 2.9.1, built against ROCm/HIP. Requires libamdhip64.so.7, libMIOpen.so.1, librocblas.so.5, libhipblaslt.so.1, libhipsparselt.so.0, libmagma.so.2.9.0, librocm_smi64.so.1. torch.cuda.is_available() returns True on AMD via the HIP shim; there is no CUDA path."
+    },
+    {
+      "name": "python3-torchvision",
+      "why": "Vision transforms/models; needed by most multimodal (LLaVA/Qwen-VL) preprocessing code."
+    },
+    {
+      "name": "python3-torchaudio",
+      "why": "Audio I/O and feature extraction for Whisper/TTS pipelines."
+    },
+    {
+      "name": "python3-triton",
+      "why": "OpenAI Triton kernel compiler \u2014 required by torch.compile / TorchInductor for fused kernel codegen. ROCm-capable in Fedora's build."
+    },
+    {
+      "name": "python3-accelerate",
+      "why": "1.13.0. Device mapping, mixed precision, big-model sharded loading (device_map='auto'), gradient accumulation. Notably it does NOT depend on transformers \u2014 its requires are only huggingface-hub, numpy, packaging, psutil, pyyaml, safetensors, torch."
+    },
+    {
+      "name": "python3-huggingface-hub",
+      "why": "1.3.1. Provides /usr/bin/hf (the modern CLI, replaces huggingface-cli) and /usr/bin/tiny-agents. Model/dataset download, xet-backed transfers, repo auth."
+    },
+    {
+      "name": "python3-safetensors",
+      "why": "0.7.0 in updates. The mmap-able weight format everything ships in now; zero-copy load of multi-GB checkpoints."
+    },
+    {
+      "name": "python3-tokenizers",
+      "why": "0.22.2. Rust BPE/Unigram/WordPiece implementation; usable standalone for tokenizer work even without transformers."
+    },
+    {
+      "name": "python3-datasets",
+      "why": "4.7.0. Arrow-backed dataset loading/streaming/mapping \u2014 the ingestion half of any fine-tune or eval harness."
+    },
+    {
+      "name": "python3-sentencepiece",
+      "why": "Tokenizer for Llama/Mistral/Gemma-lineage models and for training new tokenizers."
+    },
+    {
+      "name": "python3-onnx",
+      "why": "ONNX graph manipulation for exported/quantized model interchange."
+    },
+    {
+      "name": "python3-onnxruntime",
+      "why": "CPU ONNX inference \u2014 the practical path for small embedding/reranker models that shouldn't occupy VRAM."
+    },
+    {
+      "name": "onnxruntime-rocm",
+      "why": "ROCm execution provider for ONNX Runtime; GPU-accelerated embeddings/rerankers alongside the main LLM."
+    },
+    {
+      "name": "python3-openai",
+      "why": "The de-facto client protocol. ollama (:11434/v1), llama-server, and vLLM all expose OpenAI-compatible APIs, so this is the local-inference client, not a cloud dependency."
+    },
+    {
+      "name": "python3-tiktoken",
+      "why": "Token counting/budgeting for context-window management and cost modelling."
+    },
+    {
+      "name": "python3-einops",
+      "why": "Tensor rearrangement notation used pervasively in attention/model implementation code."
+    },
+    {
+      "name": "python3-numpy",
+      "why": "Base array type across the whole stack."
+    },
+    {
+      "name": "python3-scipy",
+      "why": "Required by scikit-learn and by most embedding/similarity work."
+    },
+    {
+      "name": "python3-pandas",
+      "why": "Eval result tables, dataset wrangling, prompt-set management."
+    },
+    {
+      "name": "python3-pyarrow",
+      "why": "Arrow/Parquet backend for datasets; also the on-disk format for large prompt/eval corpora."
+    },
+    {
+      "name": "python3-scikit-learn",
+      "why": "Clustering and metrics for embedding analysis and eval scoring."
+    },
+    {
+      "name": "python3-matplotlib",
+      "why": "Loss curves, attention maps, eval plots in notebooks."
+    },
+    {
+      "name": "jupyterlab",
+      "why": "4.5.3. Note: the binary/package name is `jupyterlab`, NOT python3-jupyterlab \u2014 the latter does not exist."
+    },
+    {
+      "name": "python3-ipykernel",
+      "why": "Kernel backend; also lets a uv-managed venv register itself as a JupyterLab kernel, which is the key escape hatch on an immutable base."
+    },
+    {
+      "name": "python3-ipywidgets",
+      "why": "Progress bars for model download/generation and interactive parameter sweeps in notebooks."
+    },
+    {
+      "name": "python3-notebook",
+      "why": "Classic notebook interface for users who prefer it over Lab."
+    },
+    {
+      "name": "uv",
+      "why": "THE critical package for this purpose on an immutable OS. Fedora 44 ships Python 3.14, for which a large share of ML wheels do not yet exist. `uv python install 3.12` fetches a standalone interpreter into the user's home, and `uv venv --python 3.12` gives a working environment for transformers/vLLM/bitsandbytes without touching /usr. Bake this or the image is a dead end."
+    },
+    {
+      "name": "pipx",
+      "why": "Isolated installs of Python CLI apps (open-webui, aider, etc.) into ~/.local without polluting the read-only system site-packages."
+    },
+    {
+      "name": "python3-virtualenv",
+      "why": "Fallback venv creation for tooling that doesn't understand uv."
+    },
+    {
+      "name": "python3-pip",
+      "why": "Needed inside venvs and for --user installs into /var/home."
+    },
+    {
+      "name": "python3-devel",
+      "why": "Python.h \u2014 required for any pip install that compiles (flash-attn, bitsandbytes, llama-cpp-python). Without it, every source wheel fails on an image you cannot dnf into later."
+    },
+    {
+      "name": "cmake",
+      "why": "Required to build llama-cpp-python, custom llama.cpp variants, and many source wheels."
+    },
+    {
+      "name": "ninja-build",
+      "why": "Build backend expected by torch's C++ extension loader (torch.utils.cpp_extension) and by scikit-build-core wheels."
+    },
+    {
+      "name": "gcc-c++",
+      "why": "C++ toolchain for source-wheel builds and torch cpp_extension JIT compilation."
+    },
+    {
+      "name": "pybind11-devel",
+      "why": "Header dependency for building llama-cpp-python and similar C++/Python bindings."
+    },
+    {
+      "name": "rocm-hip",
+      "why": "libamdhip64 HIP runtime \u2014 the load-bearing library for torch, ollama and llama-cpp on AMD."
+    },
+    {
+      "name": "rocm-hip-devel",
+      "why": "HIP headers, needed to compile any GPU kernel or rebuild llama.cpp with HIP."
+    },
+    {
+      "name": "rocm-runtime",
+      "why": "ROCr/HSA runtime; talks to /dev/kfd."
+    },
+    {
+      "name": "rocm-core",
+      "why": "ROCm version metadata that other components probe."
+    },
+    {
+      "name": "rocm-device-libs",
+      "why": "OpenCL/HIP device bitcode libraries linked into every GPU kernel."
+    },
+    {
+      "name": "rocm-comgr",
+      "why": "Code object manager for runtime kernel compilation (used by Triton and hipRTC)."
+    },
+    {
+      "name": "rocm-opencl",
+      "why": "OpenCL ICD on ROCm \u2014 some tooling (and clinfo-based detection) still probes this path."
+    },
+    {
+      "name": "rocm-clinfo",
+      "why": "OpenCL device enumeration for diagnosing 'GPU not detected' reports."
+    },
+    {
+      "name": "rocminfo",
+      "why": "First-line diagnostic: prints HSA agents and the gfx target (gfx1030/1100/1101/1102/1151...). You need this to know whether HSA_OVERRIDE_GFX_VERSION is required."
+    },
+    {
+      "name": "rocm-smi",
+      "why": "VRAM usage, clocks, power, temperature, per-process GPU memory \u2014 the AMD equivalent of nvidia-smi."
+    },
+    {
+      "name": "amdsmi",
+      "why": "Newer unified AMD SMI library/CLI; supersedes rocm-smi on recent hardware and is what current tooling links against."
+    },
+    {
+      "name": "rocblas",
+      "why": "GEMM kernels \u2014 the single hottest path in transformer inference. 974 MB installed because it ships pre-tuned Tensile kernels per gfx target."
+    },
+    {
+      "name": "hipblas",
+      "why": "BLAS portability layer that ollama and llama-cpp link against directly (both list hipblas + rocblas in Requires)."
+    },
+    {
+      "name": "hipblaslt",
+      "why": "Fused/epilogue GEMM used by torch for attention projections; 381 MB."
+    },
+    {
+      "name": "miopen",
+      "why": "AMD's cuDNN equivalent \u2014 conv and attention primitives; hard requirement of python3-torch."
+    },
+    {
+      "name": "rccl",
+      "why": "Collective comms (allreduce/allgather) for multi-GPU tensor/pipeline parallel inference. 400 MB."
+    },
+    {
+      "name": "rocfft",
+      "why": "FFT library; pulled by torch, used by audio pipelines."
+    },
+    {
+      "name": "rocsparse",
+      "why": "Sparse kernels; torch dependency."
+    },
+    {
+      "name": "rocsolver",
+      "why": "LAPACK-equivalent; torch dependency. 942 MB \u2014 one of the biggest single contributors to image size."
+    },
+    {
+      "name": "hipsolver",
+      "why": "HIP portability wrapper over rocSOLVER, linked by torch."
+    },
+    {
+      "name": "hipsparse",
+      "why": "HIP portability wrapper over rocSPARSE, linked by torch."
+    },
+    {
+      "name": "hiprand",
+      "why": "RNG on device; torch dependency for dropout/sampling."
+    },
+    {
+      "name": "hipcc",
+      "why": "HIP compiler driver \u2014 needed to build any custom GPU kernel or rebuild llama.cpp/vLLM from source on-device."
+    },
+    {
+      "name": "hipify",
+      "why": "CUDA-to-HIP source translation; the practical route to running CUDA-only research code on AMD."
+    },
+    {
+      "name": "rocm-bandwidth-test",
+      "why": "Host-to-device and peer-to-peer bandwidth measurement; distinguishes PCIe bottlenecks from compute bottlenecks when offloading layers."
+    },
+    {
+      "name": "rocm-validation-suite",
+      "why": "Post-deploy GPU health/stress validation \u2014 worth having baked since you cannot easily add it later."
+    },
+    {
+      "name": "nvtop",
+      "why": "Live GPU utilisation/VRAM TUI. Supports both AMD and NVIDIA, so it is useful on either hardware path."
+    },
+    {
+      "name": "radeontop",
+      "why": "Lightweight AMD GPU utilisation monitor that works without the full SMI stack."
+    },
+    {
+      "name": "numactl",
+      "why": "NUMA pinning for CPU/hybrid inference. On dual-socket or large-core machines, `numactl --cpunodebind=0 --membind=0` on llama-server is worth a large fraction of throughput."
+    },
+    {
+      "name": "git-lfs",
+      "why": "Hugging Face model repos are git-LFS; `git clone` of a model silently gives you pointer files without it."
+    },
+    {
+      "name": "python3-fastapi",
+      "why": "Building custom OpenAI-compatible proxies, routers and RAG endpoints in front of local models."
+    },
+    {
+      "name": "python3-uvicorn",
+      "why": "ASGI server for the above."
+    },
+    {
+      "name": "python3-httpx",
+      "why": "Async HTTP client used to talk to local inference endpoints and to stream tokens."
+    },
+    {
+      "name": "python3-psutil",
+      "why": "RAM/CPU introspection; a hard requirement of accelerate and used for model-fits-in-memory checks."
+    },
+    {
+      "name": "python3-tqdm",
+      "why": "Progress reporting for downloads, quantization runs and eval loops."
+    },
+    {
+      "name": "python3-rich",
+      "why": "Terminal rendering for CLI LLM tooling; dependency of python3-llm and much of the agent ecosystem."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "python3-transformers",
+      "alternative": "NOT PACKAGED IN FEDORA 44 \u2014 verified absent (wildcard '*transformers*' returns only Haskell ghc-transformers). This is the biggest gap in the manifest: accelerate, datasets, tokenizers and safetensors are all packaged but the library that ties them together is not. Path: `uv venv --python 3.12 && uv pip install transformers` in the user's home. Alternatively @rocm-packagers-sig/F44 COPR does NOT carry it either. Do not attempt to pip-install it into the system Python 3.14 on a read-only /usr."
+    },
+    {
+      "name": "vllm / python3-vllm",
+      "alternative": "Absent. Best path is the official container: `rocm/vllm` (AMD) or `vllm/vllm-openai` (NVIDIA) run under podman/quadlet, or via ramalama. Native pip install requires matching torch build + compiling CUDA/HIP kernels and is very fragile against Fedora's system torch. Use containers."
+    },
+    {
+      "name": "open-webui",
+      "alternative": "Absent. Container is the intended delivery: `ghcr.io/open-webui/open-webui:main` as a podman quadlet with a user unit, bound to 127.0.0.1:8080, OLLAMA_BASE_URL=http://host.containers.internal:11434. pipx install open-webui also works but drags a large pinned dep tree."
+    },
+    {
+      "name": "text-generation-webui",
+      "alternative": "Absent and effectively unpackageable (git-pinned deps, per-backend requirements files). Upstream git clone + its one-click installer inside a distrobox/toolbox, or skip in favour of open-webui."
+    },
+    {
+      "name": "python3-gguf",
+      "alternative": "Absent. `uv pip install gguf` in a venv. Needed for scripting GGUF metadata inspection and for llama.cpp's convert_hf_to_gguf.py. Note the convert scripts themselves are NOT shipped by the llama-cpp RPM (only compiled binaries are), so HF->GGUF conversion requires an upstream checkout."
+    },
+    {
+      "name": "python3-bitsandbytes",
+      "alternative": "Absent. On NVIDIA: `uv pip install bitsandbytes`. On AMD there is a ROCm branch (bitsandbytes-foundation multi-backend) that must be built from source against ROCm. QLoRA/int8 loading is meaningfully harder on the AMD path \u2014 be honest with users about this."
+    },
+    {
+      "name": "python3-peft",
+      "alternative": "Absent. `uv pip install peft` \u2014 required for LoRA/QLoRA fine-tuning."
+    },
+    {
+      "name": "python3-optimum",
+      "alternative": "Absent. `uv pip install optimum` (optimum-amd for ROCm)."
+    },
+    {
+      "name": "python3-sentence-transformers",
+      "alternative": "Absent. `uv pip install sentence-transformers` for embeddings/RAG. Or serve embeddings via ollama (nomic-embed-text, mxbai-embed-large) and avoid the dependency entirely \u2014 this is the better route on an immutable base."
+    },
+    {
+      "name": "python3-langchain / python3-llamaindex",
+      "alternative": "Absent. pipx or a per-project uv venv. These move too fast to belong in a baked image anyway."
+    },
+    {
+      "name": "python3-gradio / python3-streamlit",
+      "alternative": "Absent. per-project uv venv. Gradio in particular pins aggressively and should never be a system package."
+    },
+    {
+      "name": "python3-flash-attn / python3-xformers",
+      "alternative": "Absent. flash-attn has no ROCm-general build (only CDNA via composable_kernel); on AMD use torch's built-in scaled_dot_product_attention with the ROCm efficient-attention backend, or llama.cpp's own flash-attn implementation (-fa). On NVIDIA, pip in a venv with matching CUDA torch."
+    },
+    {
+      "name": "python3-deepspeed",
+      "alternative": "Absent. `uv pip install deepspeed` \u2014 needs a working nvcc/hipcc at install time, which is why gcc-c++/cmake/ninja-build/rocm-hip-devel are baked."
+    },
+    {
+      "name": "nvidia-container-toolkit / libnvidia-container",
+      "alternative": "NOT in Fedora and NOT in RPM Fusion (verified). Add NVIDIA's own repo: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo. Required for CDI-based GPU passthrough into podman containers."
+    },
+    {
+      "name": "CUDA Toolkit (nvcc, cuBLAS, cuDNN, cuSPARSE)",
+      "alternative": "NOT in Fedora or RPM Fusion. RPM Fusion's xorg-x11-drv-nvidia-cuda only provides libcuda/nvidia-smi (the driver-side CUDA runtime), not the SDK. Full toolkit requires NVIDIA's developer repo (developer.download.nvidia.com/compute/cuda/repos/fedoraNN/x86_64/) \u2014 and NVIDIA typically lags Fedora releases, so a fedora44 repo may not exist at build time; pinning fedora42/43 is the usual workaround and is a real supply-chain wart."
+    },
+    {
+      "name": "libhugetlbfs / libhugetlbfs-utils",
+      "alternative": "Retired from Fedora \u2014 verified absent. Explicit hugepage support must come from kernel args (default_hugepagesz=1G hugepagesz=1G hugepages=N) plus /sys manipulation. Honestly: explicit hugepages are NOT worth it here \u2014 neither llama.cpp nor ollama allocates from hugetlbfs, and both mmap weights from page cache. Set transparent_hugepage=madvise instead."
+    },
+    {
+      "name": "LM Studio / Jan",
+      "alternative": "Neither is packaged nor on Flathub. LM Studio is AppImage-only (proprietary); Jan ships an AppImage/deb. Both are poor fits for an immutable image \u2014 prefer open-webui in a container."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "systemd",
+      "detail": "Enable ollama.service via `systemctl enable ollama.service` in the Containerfile (bootc honours preset/enablement baked into /usr/lib/systemd/system-preset or the /etc symlink committed at build). Note the shipped unit uses WantedBy=default.target, not multi-user.target \u2014 for a workstation that is fine, but if you want it up before graphical login, override to multi-user.target in a drop-in."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Ship /usr/lib/systemd/system/ollama.service.d/10-local.conf as a drop-in rather than editing the unit (the unit lives on read-only /usr and will be replaced on every image update). Set: Environment=OLLAMA_MODELS=/var/lib/ollama/models, OLLAMA_HOST=127.0.0.1:11434 (do NOT bind 0.0.0.0 \u2014 ollama has no auth), OLLAMA_KEEP_ALIVE=15m, OLLAMA_MAX_LOADED_MODELS=1, OLLAMA_FLASH_ATTENTION=1, OLLAMA_CONTEXT_LENGTH=8192."
+    },
+    {
+      "kind": "group",
+      "detail": "THE most important integration item. The shipped sysusers.d creates the `ollama` system user (home /var/lib/ollama, shell /sbin/nologin) but gives it NO supplementary groups. /dev/kfd is root:render 0660 and /dev/dri/renderD* is root:render. Without membership the daemon silently falls back to CPU. Fix in the drop-in: SupplementaryGroups=render video. Equivalently ship /usr/lib/sysusers.d/50-ollama-groups.conf with `m ollama render` and `m ollama video`."
+    },
+    {
+      "kind": "group",
+      "detail": "Interactive users need render+video too, for direct rocminfo/torch/llama-cli use. Bake a /usr/lib/sysusers.d entry or a systemd-firstboot/`useradd -G` policy; on bootc you cannot rely on an installer to have done this. Confirm the render GID is stable across the image and the host."
+    },
+    {
+      "kind": "udev",
+      "detail": "Verify /dev/kfd permissions with a shipped rule at /usr/lib/udev/rules.d/70-kfd.rules: KERNEL==\"kfd\", GROUP=\"render\", MODE=\"0660\". Fedora's amdgpu/rocm packaging usually gets this right, but on a bootc image with a custom /usr you should assert it rather than assume it."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "AMD unified-memory / iGPU-APU users: `amdgpu.gttsize=<MB>` and `ttm.pages_limit=<pages>` raise the GTT ceiling so a Strix/Phoenix APU can address far more than the BIOS-reserved VRAM carve-out \u2014 this is the difference between running a 7B and a 32B model on an APU. Set via `bootc kargs` / a /usr/lib/bootc/kargs.d/ drop-in so it survives image updates."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "AMD dGPU: `amdgpu.ppfeaturemask=0xfffd7fff` to unlock power/clock control for undervolting under sustained inference load. `iommu=pt` avoids IOMMU translation overhead on large host-to-device transfers."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "NVIDIA path: `rd.driver.blacklist=nouveau modprobe.blacklist=nouveau nvidia-drm.modeset=1`. On a bootc image these belong in /usr/lib/bootc/kargs.d/, not /etc/default/grub."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "`transparent_hugepage=madvise` \u2014 the realistic hugepage story. llama.cpp/ollama mmap weights and benefit from THP on the KV cache without the brittleness of preallocated 1G hugepages. Explicitly do NOT reserve static hugepages; they permanently remove RAM from the page cache that model mmap depends on."
+    },
+    {
+      "kind": "sysctl",
+      "detail": "/usr/lib/sysctl.d/60-llm.conf: vm.max_map_count=1048576 (multi-shard safetensors + many mmapped GGUF splits can exhaust the default 65530), vm.overcommit_memory=1 (llama.cpp reserves large virtual ranges it never touches), vm.swappiness=10 (never swap a resident model), kernel.numa_balancing=0 (auto-NUMA migration thrashes a pinned inference process)."
+    },
+    {
+      "kind": "limits",
+      "detail": "Prefer systemd directives over /etc/security/limits.d since the daemons are units: in the ollama drop-in set LimitMEMLOCK=infinity (pinned/locked model pages, required if you enable mlock) and LimitNOFILE=65536 (sharded checkpoints open many files). For interactive users, ship /usr/lib/security/limits.d/60-llm.conf with `* soft memlock unlimited` and `* hard memlock unlimited`."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Model weight placement on bootc. /usr is read-only and is replaced wholesale on update, so NOTHING multi-GB may live there. /var is persistent and is the only correct home: /var/lib/ollama/models for ollama, /var/lib/containers/storage for ramalama's OCI model artifacts, /var/lib/huggingface (or per-user /var/home/$USER/.cache/huggingface) for the HF cache. Set HF_HOME and HF_HUB_CACHE globally in /usr/lib/environment.d/60-llm.conf. Practical advice: give /var its own filesystem or Btrfs subvolume with nodatacow (chattr +C) for the model directories \u2014 CoW on 40 GB of immutable weight files is pure waste and destroys Btrfs performance."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Ship /usr/lib/tmpfiles.d/llm.conf to create the persistent tree at boot: `d /var/lib/ollama 0750 ollama ollama -`, `d /var/lib/ollama/models 0750 ollama ollama -`, `d /var/lib/huggingface 0755 root root -`. tmpfiles.d is the supported way to populate /var on a bootc image, since /var content baked into the image at build time is NOT carried to existing deployments."
+    },
+    {
+      "kind": "config-file",
+      "detail": "For AMD GPUs whose gfx target lacks tuned rocBLAS/Tensile kernels (common on gfx1010/1012, gfx1103, gfx115x), set HSA_OVERRIDE_GFX_VERSION (e.g. 11.0.0 or 10.3.0) to make ROCm use a compatible kernel set. Ship it as a commented template in /usr/lib/environment.d rather than unconditionally \u2014 a wrong override produces silent numerical garbage, not an error."
+    },
+    {
+      "kind": "selinux",
+      "detail": "If you relocate models off /var/lib/ollama, the new path needs a file context or the confined ollama daemon will be denied. Ship a small policy module or an `semanage fcontext -a -e /var/lib/ollama <newpath>` equivalence rule; on bootc, bake the .pp module into the image rather than running semanage at runtime."
+    },
+    {
+      "kind": "selinux",
+      "detail": "Container GPU access requires the `container_use_devices` boolean to let unprivileged podman containers open /dev/kfd, /dev/dri/renderD*, and /dev/nvidia*. Set it at build time (`setsebool -P container_use_devices 1` inside the Containerfile) \u2014 ramalama, vLLM containers and open-webui-with-GPU all need it, and diagnosing the denial after the fact is miserable."
+    },
+    {
+      "kind": "other",
+      "detail": "NVIDIA kernel modules on bootc \u2014 the honest explanation. akmod-nvidia builds the module at boot from source via akmods; that requires a writable /usr and kernel-devel present on the running system, so it does NOT work on an atomic image. The supported path is to build the kmod at IMAGE BUILD TIME against the exact kernel pinned in the image: install kernel-devel matching `rpm -q --qf '%{version}-%{release}.%{arch}' kernel-core`, run `akmods --force --kernels $KVER --kmod nvidia`, then dnf install the resulting /var/cache/akmods/nvidia/*.rpm and delete the build deps in the same layer. This is exactly what Universal Blue/Bazzite do. Consequence: the image is welded to one kernel version \u2014 every kernel bump forces an image rebuild, and a kernel/driver skew ships a machine with no GPU. Second consequence: with Secure Boot enabled the module must be signed and the key MOK-enrolled by hand on first boot; unsigned modules will refuse to load. Consider shipping a -nvidia image variant rather than trying to make one image serve both vendors."
+    },
+    {
+      "kind": "other",
+      "detail": "CDI as the alternative to host driver installs \u2014 and its honest limit. nvidia-container-toolkit generates /etc/cdi/nvidia.yaml which lets podman inject GPU devices and userspace driver libraries into a container (`podman run --device nvidia.com/gpu=all`). This removes the need to install the CUDA toolkit on the host, but it does NOT remove the need for the kernel module: CDI injects device nodes and .so files, and those nodes only exist if nvidia.ko is loaded on the host. So the kmod problem above is unavoidable on NVIDIA. The CDI spec itself must be generated at runtime (`nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml`) via a oneshot unit, not baked, because it enumerates the actual devices present. AMD is much easier: no CDI needed, just bind-mount /dev/kfd and /dev/dri with the render group and the container_use_devices boolean."
+    }
+  ],
+  "risks": [
+    "FEDORA'S LLM RPM STACK IS AMD-ONLY. Verified: ollama ships libggml-hip.so and CPU backends but no CUDA backend; llama-cpp ships libggml-hip.so only; python3-torch hard-requires libamdhip64.so.7/libMIOpen.so.1/libhipblaslt.so.1. On an NVIDIA machine these RPMs still install (pulling ~4 GB of ROCm you cannot use) and run CPU-only. If the target hardware is NVIDIA, this manifest as written is close to useless for GPU work and you should go the container/ramalama route instead.",
+    "Python 3.14 is the system interpreter in Fedora 44. A large fraction of the ML wheel ecosystem (transformers extras, vLLM, bitsandbytes, flash-attn, deepspeed, xformers) has no cp314 wheels and will attempt slow, often-failing source builds. `uv python install 3.12` is the mitigation and is why uv is a load-bearing package here rather than a convenience \u2014 but it does mean the packaged python3-torch (3.14) and any uv-managed venv (3.12) are two disjoint stacks that cannot share modules.",
+    "Image size is severe. Baking the full ROCm stack plus torch plus both engines lands around 8-9 GB of additional layer. rocblas (974 MB) and rocsolver (942 MB) are large because they ship pre-tuned Tensile kernels for every gfx target; llama-cpp is 1325 MB and ollama 941 MB for the same reason (fat HIP binaries). Every image pull and every update transfers this. Strongly consider a separate -llm image variant rather than adding this to a general desktop image.",
+    "python3-transformers does not exist in Fedora 44 \u2014 verified by wildcard search. The packaged HF stack (accelerate, datasets, tokenizers, safetensors, huggingface-hub) is therefore incomplete: you get all the supporting pieces and not the central library. Any user following a standard HF tutorial hits an ImportError immediately. Document the uv-venv workaround prominently or the purpose looks broken.",
+    "ROCm gfx-target coverage is uneven and failure is silent. Fedora builds rocBLAS/Tensile for a subset of targets. Cards outside it (older Polaris/Vega, some RDNA3.5/Strix iGPUs, brand-new parts) either fall back to CPU without warning or produce wrong numerics under an incorrect HSA_OVERRIDE_GFX_VERSION. rocminfo must be part of the documented first-run check.",
+    "Fedora's ollama (0.12.11) lags upstream substantially. New model architectures land in upstream ollama/llama.cpp weeks-to-months before the RPM rebuilds, so users will hit 'unsupported model architecture' on recent releases. This is the single strongest argument for ramalama/containers over the baked RPM.",
+    "akmod-nvidia cannot work as designed on an atomic image (no writable /usr, no boot-time module build). Building the kmod at image build time welds the image to one exact kernel version; any kernel/driver mismatch ships a machine with no GPU acceleration and no way to fix it in place. Add Secure Boot MOK enrollment as a manual first-boot step and this path has real operational cost.",
+    "NVIDIA's CUDA repo has no Fedora 44 target at time of writing and historically lags Fedora releases by one or two versions. Pinning the fedora42/43 repo works in practice but is an unpinned supply-chain assumption that can break a build without warning.",
+    "ollama binds and serves with no authentication. Defaulting OLLAMA_HOST to 127.0.0.1 is essential; a careless 0.0.0.0 on a laptop exposes unauthenticated model execution (and arbitrary model pull) to the local network. Bake the loopback bind, do not leave it to the user.",
+    "The ollama system user gets no render/video group membership from the shipped sysusers.d file. Without the drop-in described in integration, GPU acceleration fails silently and the daemon just runs slowly on CPU \u2014 the most likely support ticket this image will generate.",
+    "Btrfs CoW on a /var holding tens of GB of immutable weight files causes severe fragmentation and wasted space if snapshots are enabled. chattr +C on the model directories (before writing data) or a dedicated subvolume with nodatacow is close to mandatory.",
+    "onnxruntime-rocm and python3-onnxruntime can conflict or shadow each other at import time depending on which provider registers first; validate that ort.get_available_providers() reports ROCMExecutionProvider on the target hardware rather than assuming."
+  ],
+  "services": [
+    "ollama.service \u2014 shipped by the ollama RPM at /usr/lib/systemd/system/ollama.service. Enable at build time. MUST be paired with a /usr/lib/systemd/system/ollama.service.d/ drop-in adding SupplementaryGroups=render video (GPU access), Environment=OLLAMA_HOST=127.0.0.1:11434 (no auth, do not expose), Environment=OLLAMA_MODELS=/var/lib/ollama/models, LimitMEMLOCK=infinity and LimitNOFILE=65536. Consider overriding WantedBy to multi-user.target.",
+    "systemd-tmpfiles-setup.service \u2014 implicitly required to materialise the /usr/lib/tmpfiles.d/llm.conf tree (/var/lib/ollama, /var/lib/ollama/models, /var/lib/huggingface) on first boot of each deployment, since /var baked at image build time is not propagated to existing systems.",
+    "nvidia-cdi-generate.service (NVIDIA path only, custom oneshot) \u2014 ConditionPathExists=/dev/nvidia0, ExecStart=/usr/bin/nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml, Before=podman.service. The CDI spec enumerates real device nodes so it cannot be baked into the image.",
+    "nvidia-persistenced.service (NVIDIA path only, from RPM Fusion) \u2014 keeps the driver initialised between CUDA context creations. Meaningfully reduces model load latency on a headless/compute box; unnecessary if a display is attached.",
+    "Optional user-level quadlets rather than system services for the UI layer: a ~/.config/containers/systemd/open-webui.container unit is a cleaner delivery for open-webui than a system service, keeps its state in the user's /var/home, and avoids baking a fast-moving web app into the image."
+  ],
+  "copr": [
+    "@rocm-packagers-sig/F44 \u2014 VERIFIED to exist with a fedora-44-x86_64 chroot. Carries newer/extended builds of the ROCm stack and the ROCm-linked Python ML packages: hipblas, hipblaslt, hipblas-common, hipcub, hipfft, hipfort, hipify, hiprand, hiprt, hipsolver, hipsparse, hipsparselt, hip-tests, miopen, migraphx, mivisionx, rccl, composable_kernel, magma, onnx, onnxruntime, ollama, llama-cpp, python-torch, python-torchvision, python-torchaudio, python-triton, python-accelerate, python-datasets, python-safetensors, python-einops, python-llama-cpp-python. Notably this COPR DOES package python-llama-cpp-python and magma, neither of which is in Fedora proper. Useful when Fedora's ROCm lags or when you need a gfx target Fedora didn't build. Caveat: it describes itself as 'a build of the ROCm stack on Rawhide' \u2014 expect churn and pin explicitly rather than tracking head.",
+    "@ai-packagers-sig/agentic \u2014 VERIFIED to exist but chroots are fedora-rawhide-x86_64 and fedora-rawhide-aarch64 ONLY; there is no fedora-44 chroot, so it is not directly usable here. Contains ollama, olla, openclaw, clawhub, pi-coding-agent, emacs-agent-shell, python-fire, python-jsonargparse. Worth watching \u2014 this is the SIG that will eventually carry the agentic tooling, and it may branch to F44.",
+    "mwprado/ollama-cuda \u2014 VERIFIED to exist but only has a fedora-43-x86_64 chroot, so using it on Fedora 44 means pointing at an F43 repo. It is the only COPR I found offering a CUDA-enabled ollama build. Given it also ships compat-gcc12 and gcc-13 (i.e. it drags an old toolchain to build against CUDA), I would NOT bake this. Use ramalama or the upstream container instead.",
+    "NOT VERIFIED / DO NOT ASSUME: I searched for and could not find COPRs for vLLM, open-webui, or nvidia-container-toolkit (lantw44/ollama, sunwire/ollama, jdoss/nvidia-container-toolkit, ai-ml/nvidia-container-toolkit, lihaohong/vllm and gagbo/open-webui all returned HTTP 404). Do not cite these; use the container or upstream-repo paths in `external` instead."
+  ],
+  "external": [
+    {
+      "name": "nvidia-container-toolkit",
+      "method": "NVIDIA's own RPM repo \u2014 curl -sL https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo -o /etc/yum.repos.d/nvidia-container-toolkit.repo, then dnf install nvidia-container-toolkit. Not present in Fedora or RPM Fusion (verified). Required for CDI GPU injection into podman containers. Bake the package; generate /etc/cdi/nvidia.yaml at runtime via a oneshot unit."
+    },
+    {
+      "name": "CUDA Toolkit (nvcc, cuBLAS, cuDNN, cuSPARSE, NCCL)",
+      "method": "NVIDIA developer repo at developer.download.nvidia.com/compute/cuda/repos/fedoraNN/x86_64/cuda-fedoraNN.repo. Note there is frequently no fedora44 target \u2014 pinning fedora42 or fedora43 is the common workaround and is a genuine fragility. Only needed if you intend to COMPILE CUDA kernels on the host; for merely running CUDA workloads, prefer containers, which bundle their own toolkit."
+    },
+    {
+      "name": "NVIDIA kernel module (akmod-nvidia / akmod-nvidia-open from RPM Fusion nonfree)",
+      "method": "Present in RPM Fusion (verified: akmod-nvidia, akmod-nvidia-open, kmod-nvidia, xorg-x11-drv-nvidia-cuda from rpmfusion-nonfree) but requires a BUILD-TIME akmods invocation in the Containerfile against the pinned kernel \u2014 `dnf install kernel-devel-$KVER akmods akmod-nvidia && akmods --force --kernels $KVER --kmod nvidia && dnf install /var/cache/akmods/nvidia/*.rpm`. This is not a normal dnf install; treat it as an external build step. Prefer akmod-nvidia-open on Turing and newer."
+    },
+    {
+      "name": "Upstream ollama (with CUDA backend)",
+      "method": "Official install script https://ollama.com/install.sh installs to /usr/local, which on bootc maps to the writable /var/usrlocal \u2014 so it actually works on an immutable image, unusually. This is the pragmatic NVIDIA answer and also gives you current model-architecture support that Fedora's 0.12.11 lacks. Downside: unmanaged, self-updating, outside the image's provenance. Do not combine with the ollama RPM."
+    },
+    {
+      "name": "AMD ROCm official repo (repo.radeon.com)",
+      "method": "amdgpu-install / the repo.radeon.com RPM repo offers newer ROCm than Fedora and broader gfx-target coverage. STRONGLY conflicts with Fedora's ROCm packaging (different prefixes, different soname policy) \u2014 pick one, never both. Fedora's ROCm is the right default here; reach for AMD's only if your specific gfx target is unsupported."
+    },
+    {
+      "name": "vLLM",
+      "method": "Container only. rocm/vllm (AMD) or vllm/vllm-openai (NVIDIA) via podman/quadlet, or through ramalama. Native install is not viable against Fedora's system torch."
+    },
+    {
+      "name": "open-webui",
+      "method": "Container: ghcr.io/open-webui/open-webui:main as a user-level podman quadlet, or pipx install open-webui. Do not bake."
+    },
+    {
+      "name": "llama.cpp conversion/quantization scripts",
+      "method": "git clone https://github.com/ggml-org/llama.cpp \u2014 the RPM ships only compiled binaries, NOT convert_hf_to_gguf.py or the gguf-py package. HF-to-GGUF conversion requires the upstream checkout plus `uv pip install -r requirements/requirements-convert_hf_to_gguf.txt`. Worth documenting because users assume the RPM is complete."
+    },
+    {
+      "name": "Hugging Face model weights",
+      "method": "Not packages at all, but the largest artifact class in this purpose. `hf download <repo>` (from python3-huggingface-hub) or `ollama pull`. Must land in /var, never in the image \u2014 a baked model would be re-transferred on every image update."
+    }
+  ],
+  "flatpaks": [
+    "com.jeffser.Alpaca \u2014 GTK4/libadwaita frontend for ollama on Flathub. Good Flatpak candidate: it is a fast-moving GUI app with no system-integration needs, talks to the host ollama over localhost, and does not belong baked into an immutable image. Note the Flatpak sandbox needs network access to 127.0.0.1:11434 (granted by default with --share=network).",
+    "io.podman_desktop.PodmanDesktop \u2014 useful for managing the vLLM/open-webui containers this purpose leans on, but arguably belongs in a shared dev layer rather than here.",
+    "GENERAL GUIDANCE rather than specific IDs: any GUI chat frontend is better as a Flatpak than an RPM, because they iterate weekly and have zero system-integration requirements \u2014 the inference daemon is the part that needs host privileges, the UI is not. Conversely, nothing in the inference/acceleration path can be a Flatpak: ROCm/CUDA userspace must match the host kernel module, and Flatpak's GPU story for compute (as opposed to graphics) is poor. I have deliberately not listed further Flathub IDs I could not verify from this machine \u2014 check `flatpak search` against Flathub at build time before committing any ID."
+  ],
+  "notes": [
+    "HONEST ASSESSMENT \u2014 containers vs baked packages. This purpose is the weakest case for baking of any I would expect in this image set, and I would recommend a hybrid rather than the full manifest above. Bake the things that genuinely need host privilege or host-kernel coupling: the GPU driver/kernel module, the ROCm or CUDA userspace, the render/video group plumbing, sysctls, kernel args, the SELinux boolean, and the /var layout. Do NOT bake the fast-moving application layer. Concretely: ollama's Fedora RPM is already three-plus months behind upstream on model-architecture support, transformers is not packaged at all, vLLM and open-webui are not packaged at all, and the pieces that ARE packaged pull ~8-9 GB into every image pull. ramalama exists in Fedora 44 (0.21.0), is podman-native, selects the right accelerator image automatically, and stores models as OCI artifacts in /var \u2014 it solves the version-churn problem and the NVIDIA problem simultaneously. A minimal-but-correct version of this manifest would be: ramalama + the ROCm runtime + uv + the monitoring/diagnostic tools + all the system integration, with engines and Python ML stacks delivered as containers and uv venvs. The full manifest above is the right answer only if the target hardware is AMD and the user specifically wants an offline-capable, dnf-managed, reproducible stack.",
+    "SHARED-LAYER, NOT HERE: podman, podman-compose, and container-selinux are prerequisites for ramalama and for every container path described above, but they are generic container infrastructure and belong in the shared/base layer per the layering rule. Flag the dependency explicitly to whoever owns that layer \u2014 this purpose is non-functional without podman.",
+    "SHARED-LAYER, NOT HERE: tuned. A `throughput-performance` or `latency-performance` profile measurably helps sustained inference (governor pinning, no C-state deep sleep mid-generation), but tuned is generic system tuning infrastructure. Request it from the base layer and ship only an LLM-specific tuned profile fragment from here if the base layer supports drop-ins.",
+    "SHARED-LAYER, NOT HERE: git, git-core, and the general dev toolchain. I included gcc-c++, cmake, ninja-build, python3-devel and pybind11-devel in packages despite their genericness, because on an immutable image a missing compiler makes every source-wheel pip install fail permanently and the user cannot dnf their way out. If the shared dev layer already guarantees these, drop them from here.",
+    "SHARED-LAYER QUESTION: git-lfs. It is generic version-control tooling, but the specific reason it is needed here (cloning HF model repos) is purpose-bound. Keep it here if the base layer does not have it.",
+    "OPEN QUESTION \u2014 one image or two? Because the Fedora RPMs are ROCm-linked and NVIDIA needs a build-time kmod welded to an exact kernel, a single image cannot serve both vendors well. Installing python3-torch on an NVIDIA box drags in ~4 GB of unusable ROCm. I would build llms-amd and llms-nvidia variants from a common llms-base (uv, ramalama, monitoring, integration, Python data stack) rather than trying to make one image conditional.",
+    "OPEN QUESTION \u2014 kernel/kmod coupling cadence. If you go the NVIDIA akmod route, decide up front how image builds are triggered on kernel bumps and what the rollback story is. bootc makes rollback easy (`bootc rollback`), which is genuinely the best mitigation available for a bad driver/kernel pairing \u2014 worth documenting as the recovery path.",
+    "VERIFICATION NOTE on naming traps found during this research: the JupyterLab package is `jupyterlab`, NOT `python3-jupyterlab`. The HF CLI binary is `hf` (from python3-huggingface-hub), not `huggingface-cli`. ROCm sub-libraries follow no single prefix convention \u2014 some are `rocm-*` (rocm-hip, rocm-smi), some bare `roc*` (rocblas, rocsolver), some `hip*` (hipblas, hipcc), and several exist only as `-devel` (rocprim-devel, rocthrust-devel, hipcub-devel have no runtime subpackage). There is no `rocm` dnf group; `dnf group list --available` on Fedora 44 has no ML or ROCm group at all, so everything must be enumerated by hand.",
+    "SUGGESTED FIRST-RUN DIAGNOSTIC to ship at /usr/bin/llm-check (a few lines of shell): print `rocminfo | grep gfx`, `rocm-smi --showmeminfo vram`, `id ollama`, `systemctl is-active ollama`, and `python3 -c 'import torch; print(torch.cuda.is_available(), torch.version.hip)'`. Every failure mode described in risks shows up in that output, and on an immutable image you want the diagnostic baked rather than downloaded."
+  ],
+  "size_note": "Roughly 8-9 GB of additional installed footprint, and it is dominated almost entirely by GPU math kernels, not by anything the user would recognise as an application. Measured install sizes from repoquery: rocblas 974 MB, rocsolver 942 MB, miopen 446 MB, rccl 400 MB, hipblaslt 381 MB, rocsparse 336 MB, rocfft 33 MB \u2014 about 3.6 GB of ROCm libraries alone, large because rocBLAS/Tensile ship pre-tuned assembly kernels for every supported gfx target. On top of that: llama-cpp 1325 MB and ollama 941 MB (both fat HIP binaries containing multi-architecture GPU code objects), python3-torch 675 MB, rocm-llvm 52 MB, rocm-hip 27 MB. The Python data/notebook stack (numpy, scipy, pandas, pyarrow, scikit-learn, matplotlib, jupyterlab and deps) adds roughly 700 MB-1 GB. Everything else in the manifest \u2014 the CLI tools, monitoring, build toolchain, HF libraries \u2014 is collectively under 300 MB and is not worth optimising. If size matters, the two levers that actually move the needle are (1) dropping llama-cpp and ollama in favour of ramalama plus containers, which removes ~2.3 GB from the image and moves it to /var where it is pulled once and not re-transferred on every image update, and (2) dropping python3-torch, which removes 675 MB plus makes rocsolver/rocsparse/miopen/hipblaslt/magma droppable for another ~2 GB. Doing both yields an image around 1.5-2 GB for this layer. Separately: this figure excludes model weights entirely, which in practice dwarf it \u2014 a single 70B Q4_K_M GGUF is ~40 GB. Those must live on /var and must never be baked, or every image update re-transfers them."
+}

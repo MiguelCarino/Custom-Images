@@ -1,0 +1,634 @@
+{
+  "key": "de-gnome",
+  "summary": "The GNOME desktop layer for a Fedora 44 bootc image, targeting GNOME 50 (gnome-shell 50.3, mutter 50.3, gnome-control-center 50.3, gdm 50.1). It provides the Wayland-only GNOME session, GDM greeter, Settings/settings-daemon, Nautilus plus its gvfs/thumbnailer/search backends, the GNOME portal backend, a curated core app set, tweaking/extension tooling, and colour-management stack. Fedora 44 ships GNOME as Wayland-only \u2014 there is no gnome-session-xsession and no /usr/share/xsessions/gnome-xorg.desktop, so there is no X11 fallback session to bake. On the group question: @workstation-product-environment is the wrong tool here \u2014 comps shows it is an environment composed of base-graphical, container-management, core, desktop-accessibility, firefox, fonts, gnome-desktop, guest-desktop-agents, hardware-support, libreoffice, multimedia, networkmanager-submodules, printing and workstation-product, i.e. it drags in Firefox, LibreOffice, printing, fonts, codecs and container tooling that this project's desktop-common layer already owns. @gnome-desktop is the correct group, but its default (non-mandatory) member list pulls gnome-boxes (full libvirt/qemu), rygel, gnome-remote-desktop, sane/hplip scanner backends and the NetworkManager VPN plugins. A dry-run resolve measured 145 packages for the full group vs 62 for `dnf install --setopt=group_package_types=mandatory @gnome-desktop`. Recommendation: use an explicit package list (below), or the mandatory-only group plus explicit additions, never the bare group and never the environment.",
+  "packages": [
+    {
+      "name": "gnome-shell",
+      "why": "The shell itself; 50.3 on F44. Also supplies the built-in polkit agent, so polkit-gnome is not needed."
+    },
+    {
+      "name": "gnome-shell-common",
+      "why": "Arch-independent shell data; pulled by gnome-shell but pin it explicitly for reproducibility."
+    },
+    {
+      "name": "mutter",
+      "why": "Compositor. 50.3 carries full VRR (meta_kms_update_set_vrr) and HDR/colour-mode plumbing."
+    },
+    {
+      "name": "mutter-common",
+      "why": "Mutter gschemas \u2014 the file you inspect/override for experimental-features."
+    },
+    {
+      "name": "gnome-session",
+      "why": "Session manager and gnome-session targets."
+    },
+    {
+      "name": "gnome-session-wayland-session",
+      "why": "Ships /usr/share/wayland-sessions/gnome.desktop. This is the ONLY session file GNOME provides on F44."
+    },
+    {
+      "name": "gdm",
+      "why": "Display manager. Ships /etc/gdm/custom.conf, /etc/dconf/db/gdm.d and /usr/share/dconf/profile/gdm for greeter config."
+    },
+    {
+      "name": "gnome-control-center",
+      "why": "Settings. Provides gnome-color-panel.desktop, gnome-display-panel.desktop (fractional scaling + VRR toggles) and gnome-wacom-panel.desktop."
+    },
+    {
+      "name": "gnome-control-center-filesystem",
+      "why": "Directory ownership for third-party Settings panels; keeps later panel drop-ins clean."
+    },
+    {
+      "name": "gnome-settings-daemon",
+      "why": "The gsd-* user services, including org.gnome.SettingsDaemon.Color.service which applies the colord VCGT to the GPU LUT."
+    },
+    {
+      "name": "gnome-desktop4",
+      "why": "Shared GNOME desktop library (thumbnailing, idle monitor, XKB info) used by shell and control-center."
+    },
+    {
+      "name": "dconf",
+      "why": "Configuration backend. Owns /etc/dconf/profile/user and /etc/dconf/db/{local,site,distro}.d \u2014 the baking targets."
+    },
+    {
+      "name": "gsettings-desktop-schemas",
+      "why": "org.gnome.desktop.* schemas \u2014 the namespace most of your gschema overrides will target."
+    },
+    {
+      "name": "gnome-menus",
+      "why": "Menu spec implementation used by app folders and gnome-shell-extension-apps-menu."
+    },
+    {
+      "name": "gnome-keyring",
+      "why": "Secret Service provider; without it GNOME Online Accounts, Wi-Fi secrets and many apps degrade badly."
+    },
+    {
+      "name": "gnome-keyring-pam",
+      "why": "Unlocks the login keyring from the GDM password \u2014 otherwise users get a keyring prompt on every boot."
+    },
+    {
+      "name": "accountsservice",
+      "why": "Backs GDM's user list, avatars and per-user session preference."
+    },
+    {
+      "name": "polkit",
+      "why": "Mandatory member of @gnome-desktop; the shell's authentication agent needs it."
+    },
+    {
+      "name": "gnome-online-accounts",
+      "why": "GOA daemon; feeds gvfs-goa, Calendar, Contacts and Settings' Online Accounts panel."
+    },
+    {
+      "name": "gnome-online-accounts-gtk",
+      "why": "The GTK provider UI GOA needs to actually run the account-add flows."
+    },
+    {
+      "name": "xdg-desktop-portal-gnome",
+      "why": "GNOME portal backend \u2014 file chooser, screencast, screenshot, global shortcuts, settings. Required for Flatpaks and Wayland screen capture to behave."
+    },
+    {
+      "name": "xdg-desktop-portal-gtk",
+      "why": "Fallback backend for portal interfaces xdg-desktop-portal-gnome does not implement (notably print and some appchooser paths)."
+    },
+    {
+      "name": "xorg-x11-server-Xwayland",
+      "why": "24.1.13. Required for all X11 clients under the Wayland-only session; F44 mutter does native (non-blurry) Xwayland scaling."
+    },
+    {
+      "name": "nautilus",
+      "why": "Files, 50.2.2."
+    },
+    {
+      "name": "nautilus-extensions",
+      "why": "Headers/dir ownership so extension packages (papers-nautilus, file-roller-nautilus, seahorse-nautilus) install cleanly."
+    },
+    {
+      "name": "sushi",
+      "why": "Spacebar quick-preview in Nautilus \u2014 a genuinely GNOME-specific piece of Files UX."
+    },
+    {
+      "name": "file-roller",
+      "why": "Archive manager; the only archive GUI Nautilus integrates with."
+    },
+    {
+      "name": "file-roller-nautilus",
+      "why": "Extract Here / Compress context menu entries in Files."
+    },
+    {
+      "name": "gvfs-fuse",
+      "why": "Exposes gvfs mounts at a real POSIX path so non-GTK apps can open network/MTP files."
+    },
+    {
+      "name": "gvfs-smb",
+      "why": "SMB browsing from Files' Other Locations."
+    },
+    {
+      "name": "gvfs-mtp",
+      "why": "Android/phone storage in Files."
+    },
+    {
+      "name": "gvfs-gphoto2",
+      "why": "Camera access in Files."
+    },
+    {
+      "name": "gvfs-goa",
+      "why": "Surfaces Online Accounts (Nextcloud/WebDAV/Google) as mounts."
+    },
+    {
+      "name": "gvfs-archive",
+      "why": "Browse archives in-place in Files."
+    },
+    {
+      "name": "gvfs-afc",
+      "why": "iOS device access; drop if no Apple hardware in scope."
+    },
+    {
+      "name": "localsearch",
+      "why": "Filesystem indexer (was tracker-miners). Nautilus search and the shell's search provider are near-useless without it."
+    },
+    {
+      "name": "tinysparql",
+      "why": "The SPARQL store localsearch writes to (was tracker3)."
+    },
+    {
+      "name": "glycin-thumbnailer",
+      "why": "Sandboxed image thumbnailing \u2014 the F44 replacement for the old gdk-pixbuf thumbnailer path."
+    },
+    {
+      "name": "gst-thumbnailers",
+      "why": "Video thumbnails in Files."
+    },
+    {
+      "name": "gnome-epub-thumbnailer",
+      "why": "EPUB/MOBI covers in Files."
+    },
+    {
+      "name": "gnome-tweaks",
+      "why": "49.0 \u2014 note it lags the 50.x shell. Still the only GUI for fonts/hinting, titlebar buttons, and Xwayland/legacy scaling knobs Settings does not expose."
+    },
+    {
+      "name": "gnome-extensions-app",
+      "why": "GNOME's own Extensions manager (50.2). The RPM-native counterpart to the Flatpak Extension Manager."
+    },
+    {
+      "name": "gnome-browser-connector",
+      "why": "Native host so extensions.gnome.org install/toggle works from Firefox/Chrome."
+    },
+    {
+      "name": "gnome-shell-extension-common",
+      "why": "Shared directory/macro ownership for all packaged extensions."
+    },
+    {
+      "name": "dconf-editor",
+      "why": "Indispensable when authoring gschema overrides \u2014 lets you see the effective default vs user value per key."
+    },
+    {
+      "name": "gnome-shell-extension-appindicator",
+      "why": "AppIndicator/StatusNotifier tray. Effectively mandatory for Steam, Discord, Nextcloud, Syncthing tray icons."
+    },
+    {
+      "name": "gnome-shell-extension-user-theme",
+      "why": "Enables /usr/share/themes shell themes; required if you ever ship a branded shell theme."
+    },
+    {
+      "name": "gnome-shell-extension-dash-to-dock",
+      "why": "Packaged, so it survives dnf upgrades rather than silently breaking at GNOME 51."
+    },
+    {
+      "name": "gnome-shell-extension-blur-my-shell",
+      "why": "Packaged and popular; safe to bake because Fedora rebuilds it per GNOME release."
+    },
+    {
+      "name": "gnome-shell-extension-caffeine",
+      "why": "Inhibit idle/suspend from the panel \u2014 relevant to long imaging exports and gaming."
+    },
+    {
+      "name": "gnome-shell-extension-just-perfection",
+      "why": "Packaged, covers most 'hide this UI element' requests without unpackaged extensions."
+    },
+    {
+      "name": "gnome-shell-extension-forge",
+      "why": "Packaged tiling window manager for GNOME; the in-repo answer to tiling-assistant/pop-shell requests."
+    },
+    {
+      "name": "gnome-shell-extension-gsconnect",
+      "why": "KDE Connect protocol for GNOME \u2014 phone notifications, clipboard, file send."
+    },
+    {
+      "name": "nautilus-gsconnect",
+      "why": "'Send to device' in the Files context menu; pairs with the extension above."
+    },
+    {
+      "name": "gnome-shell-extension-gamemode",
+      "why": "Panel indicator for feralinteractive gamemode; useful signal for the gaming purpose layer."
+    },
+    {
+      "name": "gnome-text-editor",
+      "why": "Default GNOME editor (mandatory group member)."
+    },
+    {
+      "name": "ptyxis",
+      "why": "F44's default GNOME terminal (mandatory group member). Container-aware, which matters on an atomic host with toolbx."
+    },
+    {
+      "name": "loupe",
+      "why": "Image viewer."
+    },
+    {
+      "name": "papers",
+      "why": "Document/PDF viewer (successor to Evince)."
+    },
+    {
+      "name": "papers-nautilus",
+      "why": "PDF thumbnails and properties in Files."
+    },
+    {
+      "name": "showtime",
+      "why": "F44's GNOME video player (replaces Totem in the group)."
+    },
+    {
+      "name": "decibels",
+      "why": "Simple audio player, GNOME 50 core app."
+    },
+    {
+      "name": "snapshot",
+      "why": "GNOME camera app."
+    },
+    {
+      "name": "gnome-calculator",
+      "why": "Core app."
+    },
+    {
+      "name": "gnome-characters",
+      "why": "Emoji/character picker; the shell's character search provider depends on it."
+    },
+    {
+      "name": "gnome-font-viewer",
+      "why": "Font preview/install; pairs with whatever fonts desktop-common ships."
+    },
+    {
+      "name": "gnome-system-monitor",
+      "why": "Process/resource GUI."
+    },
+    {
+      "name": "gnome-disk-utility",
+      "why": "Disks \u2014 partitioning, SMART, benchmark. Also provides the udisks-backed 'Format' path in Files."
+    },
+    {
+      "name": "baobab",
+      "why": "Disk usage analyser."
+    },
+    {
+      "name": "gnome-logs",
+      "why": "Journal GUI; worth having on an immutable host where you cannot easily install tooling later."
+    },
+    {
+      "name": "gnome-connections",
+      "why": "RDP/VNC client."
+    },
+    {
+      "name": "seahorse",
+      "why": "GUI for the keyring, GPG and SSH keys."
+    },
+    {
+      "name": "gnome-calendar",
+      "why": "Calendar; needed for the shell's calendar-popover event integration to show anything."
+    },
+    {
+      "name": "gnome-contacts",
+      "why": "Contacts; backs the shell search provider."
+    },
+    {
+      "name": "gnome-clocks",
+      "why": "World clocks/alarms; also feeds the shell clock popover."
+    },
+    {
+      "name": "gnome-weather",
+      "why": "Weather; feeds the shell clock popover forecast."
+    },
+    {
+      "name": "gnome-software",
+      "why": "Software centre. On bootc, restrict it to Flatpaks (see risks)."
+    },
+    {
+      "name": "gnome-software-rpm-ostree",
+      "why": "The image-based-system plugin. Without it gnome-software has no idea it is running on an atomic host."
+    },
+    {
+      "name": "gnome-firmware",
+      "why": "fwupd GUI; on an immutable image the CLI is available but a GUI is the discoverable path."
+    },
+    {
+      "name": "gnome-user-docs",
+      "why": "Yelp content; a GNOME-only dependency of the help system."
+    },
+    {
+      "name": "yelp",
+      "why": "Help viewer, mandatory group member. Note it drags webkitgtk6.0 (~92 MiB)."
+    },
+    {
+      "name": "xdg-user-dirs-gtk",
+      "why": "Creates and localises ~/Documents, ~/Pictures etc. on first login \u2014 Nautilus sidebar depends on these."
+    },
+    {
+      "name": "gnome-backgrounds",
+      "why": "Default wallpapers referenced by Fedora's shipped gschema override. ~38 MiB; drop if you ship your own set."
+    },
+    {
+      "name": "adwaita-icon-theme",
+      "why": "Base icon theme; missing icons are the classic 'GNOME looks broken' symptom."
+    },
+    {
+      "name": "adwaita-cursor-theme",
+      "why": "Default cursor theme, split out from the icon theme."
+    },
+    {
+      "name": "gnome-bluetooth",
+      "why": "Bluetooth panel and shell status menu integration."
+    },
+    {
+      "name": "libwacom",
+      "why": "Tablet database powering the Wacom Settings panel \u2014 relevant if any imaging workstation has a pen display."
+    },
+    {
+      "name": "colord",
+      "why": "1.4.8. Colour management daemon. Owns the device/profile database and ships udev rules 69-cd-sensors.rules and 95-cd-devices.rules for colorimeters."
+    },
+    {
+      "name": "colord-gtk4",
+      "why": "GTK4 colour-selection widgets so modern GTK apps can pick a colord profile."
+    },
+    {
+      "name": "colord-extra-profiles",
+      "why": "Additional ICC profiles beyond the base set \u2014 genuinely useful for imaging work."
+    },
+    {
+      "name": "icc-profiles-openicc",
+      "why": "OpenICC profile collection; broader printer/RGB working-space coverage."
+    },
+    {
+      "name": "gnome-color-manager",
+      "why": "3.36.2 \u2014 the calibration assistant behind Settings > Color's 'Calibrate' button. GTK3 and effectively frozen upstream, but it is what the Color panel launches."
+    },
+    {
+      "name": "argyllcms",
+      "why": "The actual calibration/profiling engine gnome-color-manager shells out to. Without it the Calibrate button is decorative."
+    },
+    {
+      "name": "DisplayCAL",
+      "why": "Full-featured ArgyllCMS frontend. Note the exact capitalisation \u2014 'displaycal' does not resolve. Use this when the GNOME assistant is too limited for diagnostic-display targets."
+    },
+    {
+      "name": "power-profiles-daemon",
+      "why": "Backs the Settings power-mode selector and the shell's power menu."
+    },
+    {
+      "name": "switcheroo-control",
+      "why": "Ships 30-discrete-gpu.rules; enables Nautilus/shell 'Launch using Discrete Graphics Card'."
+    },
+    {
+      "name": "iio-sensor-proxy",
+      "why": "Ambient light and accelerometer; needed for auto-rotate and auto-brightness."
+    },
+    {
+      "name": "fprintd",
+      "why": "Fingerprint daemon."
+    },
+    {
+      "name": "fprintd-pam",
+      "why": "Wires fingerprint into gdm-fingerprint PAM; group default, and pointless to add later on an immutable host."
+    },
+    {
+      "name": "malcontent-control",
+      "why": "Parental controls panel; gnome-control-center weak-depends on it and Settings shows a broken entry without it."
+    },
+    {
+      "name": "orca",
+      "why": "GNOME screen reader \u2014 the DE-specific half of accessibility."
+    },
+    {
+      "name": "at-spi2-core",
+      "why": "Accessibility bus. Also required for many automation/test tools and some Electron a11y paths."
+    },
+    {
+      "name": "speech-dispatcher",
+      "why": "TTS backend Orca speaks through."
+    },
+    {
+      "name": "adw-gtk3-theme",
+      "why": "Makes remaining GTK3 apps match libadwaita. The supported replacement for gnome-themes-extra, which is not in F44."
+    },
+    {
+      "name": "qt6-qtwayland-adwaita-decoration",
+      "why": "Adwaita client-side decorations for Qt6 apps under Wayland \u2014 otherwise Qt apps get mismatched titlebars."
+    },
+    {
+      "name": "qadwaitadecorations-qt5",
+      "why": "Same for the remaining Qt5 apps."
+    },
+    {
+      "name": "gnome-classic-session",
+      "why": "Optional. Adds a gnome-classic Wayland session for users who want a traditional layout; costs almost nothing since it just enables already-packaged extensions."
+    },
+    {
+      "name": "gnome-shell-extension-apps-menu",
+      "why": "Applications menu used by gnome-classic; also the in-repo answer to ArcMenu requests."
+    },
+    {
+      "name": "gnome-shell-extension-places-menu",
+      "why": "Classic places menu; part of the gnome-classic set."
+    },
+    {
+      "name": "gnome-shell-extension-window-list",
+      "why": "Classic taskbar; part of the gnome-classic set."
+    },
+    {
+      "name": "gnome-shell-extension-launch-new-instance",
+      "why": "Classic behaviour for app clicks; part of the gnome-classic set."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "extension-manager (Extension Manager, com.mattjakeman.ExtensionManager)",
+      "alternative": "Not packaged in Fedora. Ship the Flatpak com.mattjakeman.ExtensionManager. The RPM-native partial substitute already in the list is gnome-extensions-app + gnome-browser-connector."
+    },
+    {
+      "name": "gnome-session-xsession / gnome-xorg.desktop",
+      "alternative": "None. Verified: gnome-session and gnome-session-wayland-session between them ship only /usr/share/wayland-sessions/gnome.desktop, and gnome-shell ships no session files at all. Fedora 44 GNOME is Wayland-only. If an X11 session is a hard requirement, that is a different DE layer (KDE still ships an X11 session), not a GNOME package you can add."
+    },
+    {
+      "name": "gnome-themes-extra",
+      "alternative": "adw-gtk3-theme (verified, in packages). If you specifically need the legacy Adwaita GTK2/GTK3 engine assets, there is no F44 package."
+    },
+    {
+      "name": "polkit-gnome",
+      "alternative": "None needed \u2014 gnome-shell has an integrated polkit authentication agent. Do not try to install this."
+    },
+    {
+      "name": "qgnomeplatform-qt6",
+      "alternative": "qt6-qtwayland-adwaita-decoration (verified, in packages) covers the decoration half; Qt6 apps pick up GNOME colours via the portal Settings interface, so the old platform theme is no longer required."
+    },
+    {
+      "name": "gnome-shell-extension-vitals",
+      "alternative": "Use packaged gnome-shell-extension-system-monitor or gnome-shell-extension-system-monitor-applet (both verified), or install Vitals at runtime via extensions.gnome.org through gnome-browser-connector."
+    },
+    {
+      "name": "gnome-shell-extension-tiling-assistant",
+      "alternative": "Packaged gnome-shell-extension-forge or gnome-shell-extension-pop-shell (both verified). Otherwise extensions.gnome.org at runtime."
+    },
+    {
+      "name": "gnome-shell-extension-openweather",
+      "alternative": "gnome-weather (verified) covers the shell clock popover. Otherwise extensions.gnome.org at runtime."
+    },
+    {
+      "name": "gnome-shell-extension-ding / desktop-icons-ng",
+      "alternative": "Not packaged. Desktop icons require installing DING from extensions.gnome.org at runtime, or unpacking it into /usr/share/gnome-shell/extensions/ at build time (see external \u2014 fragile across GNOME majors)."
+    },
+    {
+      "name": "gnome-shell-extension-arcmenu",
+      "alternative": "gnome-shell-extension-apps-menu (verified, packaged) for a basic applications menu; ArcMenu itself only via extensions.gnome.org."
+    },
+    {
+      "name": "nautilus-open-any-terminal / ptyxis-nautilus",
+      "alternative": "No such package. Ptyxis registers itself as the terminal via the org.gnome.desktop.default-applications / GNOME terminal-handling path; set the terminal through a gschema override rather than a Nautilus extension."
+    },
+    {
+      "name": "webp-pixbuf-loader",
+      "alternative": "Not resolved in F44 repos; glycin-thumbnailer (verified) handles modern image formats for GNOME apps, and this is desktop-common territory anyway."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "systemd",
+      "detail": "Enable the greeter and graphical boot in the Containerfile: `systemctl enable gdm.service` and `systemctl set-default graphical.target`. gdm.service is the only system unit gdm ships (plus gnome-headless-session@.service)."
+    },
+    {
+      "kind": "config-file",
+      "detail": "PRIMARY dconf-baking mechanism for bootc: gschema overrides. Write /usr/share/glib-2.0/schemas/50-<yourorg>.gschema.override then run `glib-compile-schemas /usr/share/glib-2.0/schemas/` as the last step of the RUN layer. This lives entirely in /usr, so it is image-managed, atomically replaced on upgrade, and cannot drift. Fedora itself uses exactly this pattern \u2014 see the shipped 10_org.gnome.desktop.background.fedora.gschema.override and org.gnome.software-fedora.gschema.override."
+    },
+    {
+      "kind": "config-file",
+      "detail": "SECONDARY mechanism, for the two things overrides cannot do: locking keys, and setting relocatable-schema paths (e.g. org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/\u2026/custom0/). Use /etc/dconf/db/local.d/00-<name> keyfiles plus /etc/dconf/db/local.d/locks/<name>, then `dconf update`. The dconf package already ships /etc/dconf/profile/user containing `user-db:user` + `system-db:local` + `site` + `distro`, so no profile authoring is needed. CAVEAT: this writes the binary db into /etc, which bootc 3-way-merges across upgrades \u2014 a stale machine-local /etc/dconf/db/local can shadow your intent. Keep /etc usage minimal and confined to locks."
+    },
+    {
+      "kind": "config-file",
+      "detail": "GDM greeter settings are a separate dconf profile: /usr/share/dconf/profile/gdm reads /etc/dconf/db/gdm.d. Put greeter tweaks (banner message, disable user list, greeter scaling/night-light) in /etc/dconf/db/gdm.d/ and run `dconf update`. gdm also ships /usr/share/gdm/greeter-dconf-defaults as the read-only default set."
+    },
+    {
+      "kind": "config-file",
+      "detail": "/etc/gdm/custom.conf for autologin (AutomaticLoginEnable/AutomaticLogin), TimedLogin, and \u2014 if you ever need it \u2014 WaylandEnable. On F44 setting WaylandEnable=false leaves GDM with no session to launch, since no X11 GNOME session exists. Do not ship that."
+    },
+    {
+      "kind": "mime",
+      "detail": "Bake default-application choices in /usr/share/applications/gnome-mimeapps.list, not mimeapps.list. GNOME's XDG_CURRENT_DESKTOP=GNOME causes the desktop-prefixed file to be consulted first, and it lives in /usr so it is image-managed. Run `update-desktop-database /usr/share/applications` afterwards."
+    },
+    {
+      "kind": "udev",
+      "detail": "colord ships /usr/lib/udev/rules.d/69-cd-sensors.rules (colorimeter/spectrophotometer uaccess tagging \u2014 i1Display, ColorMunki, Spyder, huey) and 95-cd-devices.rules (display/scanner/camera device enumeration). Installing the colord RPM is sufficient; no custom rules needed. If you use an unlisted or newer instrument, add a drop-in in /usr/lib/udev/rules.d/ with TAG+=\"uaccess\" \u2014 this is exactly the kind of thing that justifies baking rather than post-install scripting."
+    },
+    {
+      "kind": "systemd",
+      "detail": "colord.service and colord-session.service (user) are D-Bus activated \u2014 do NOT `systemctl enable` them. Same for the gsd-* user units. What you may want to enable is org.gnome.SettingsDaemon.Color.target's presence, which comes from gnome-settings-daemon automatically."
+    },
+    {
+      "kind": "systemd",
+      "detail": "power-profiles-daemon.service, switcheroo-control.service and iio-sensor-proxy.service ship enable presets. Verify with `systemctl preset-all` semantics in your build; on a minimal fedora-bootc base presets are usually applied, but assert them explicitly if the Settings power panel matters."
+    },
+    {
+      "kind": "systemd",
+      "detail": "gnome-remote-desktop ships gnome-remote-desktop.service + gnome-remote-desktop-configuration.service (system, for headless/login-screen RDP) and three user units. Leave all disabled unless remote access is an intentional feature of the image \u2014 a group-default RDP listener on every machine is a real attack surface."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "NVIDIA + Wayland: ensure nvidia-drm.modeset=1 (and on 555+ nvidia_drm.fbdev=1) is on the kernel command line. RPM Fusion's akmod-nvidia usually drops this in modprobe.d, but on a bootc image with a baked initramfs it is safer to also set it as a kernel arg in the bootc/bootupd config. This belongs to the GPU layer, but the GNOME layer is what breaks (black screen, no session) when it is missing."
+    },
+    {
+      "kind": "other",
+      "detail": "COLOUR MANAGEMENT, medical imaging: the pipeline is colord (device+ICC database) -> gsd Color plugin -> GPU gamma LUT. Verified in mutter 50.3: the compositor applies only the VCGT/gamma ramp from the profile. It does NOT perform a display-referred colour transform of application output. Any app that needs true colour-managed rendering must do its own lcms2 transform and fetch the profile from colord itself. Ship colord + colord-extra-profiles + argyllcms + DisplayCAL and treat per-application CMS as an application-layer requirement, not something the DE provides."
+    },
+    {
+      "kind": "other",
+      "detail": "COLOUR MANAGEMENT, HDR: mutter 50.3 has real HDR plumbing \u2014 verified symbols meta_kms_update_set_hdr_metadata, meta_set_drm_hdr_metadata, HDR_OUTPUT_METADATA, supported-color-modes, bt2100 handling, and a new org.gnome.mutter output-luminance gsettings key (a(ssssud): connector, vendor, product, serial, colour mode, luminance). This is a BT.2100/PQ signalling path, not an ICC pipeline. Do not conflate it with diagnostic colour accuracy."
+    },
+    {
+      "kind": "other",
+      "detail": "FRACTIONAL SCALING: verified against /usr/share/glib-2.0/schemas/org.gnome.mutter.gschema.xml on F44 \u2014 org.gnome.mutter experimental-features now documents ONLY 'kms-modifiers' and 'autoclose-xwayland'. Both 'scale-monitor-framebuffer' and 'xwayland-native-scaling' have graduated and are unconditionally active. Do NOT ship the old override experimental-features=['scale-monitor-framebuffer']; it is a no-op on F44 and is pure cargo cult. Fractional scale is a first-class Settings > Displays control, and Xwayland apps now scale natively rather than being blurrily upscaled. For diagnostic imaging displays, still prefer 100% or 200% integer scale to guarantee 1:1 pixel mapping \u2014 fractional scale means the compositor resamples, which is unacceptable for pixel-accurate DICOM review."
+    },
+    {
+      "kind": "other",
+      "detail": "VRR: fully implemented in mutter 50.3 and no longer experimental. Verified symbols meta_kms_update_set_vrr, meta_output_is_vrr_enabled, the 'refresh-rate-mode' property, and the runtime warning 'Output is VRR capable, but a possible CRTC for the output does not support VRR'. It is a per-monitor toggle in Settings > Displays. Important for baking: the setting is stored in the user's ~/.config/monitors.xml as a refresh-rate-mode of 'variable', NOT in dconf \u2014 so it cannot be set via gschema override or the dconf db. You can only pre-seed it per-user via /etc/skel/.config/monitors.xml (fragile, monitor-serial specific) or leave it to the user. The greeter's own copy lives at /var/lib/gdm/.config/monitors.xml."
+    },
+    {
+      "kind": "other",
+      "detail": "TEARING: not supported. A full symbol scan of libmutter-18.so.0 found zero tearing/immediate-flip/tearing-control-v1 symbols. GNOME does not implement wp_tearing_control_v1 and offers no 'allow tearing' or unredirect-for-fullscreen tearing mode. For the gaming purpose, VRR is the only latency mitigation available in-session; if tear-free-off / immediate presentation is a hard requirement, the escape hatch is running the game inside gamescope (which does implement it) \u2014 that belongs in the gaming layer, not here."
+    },
+    {
+      "kind": "group",
+      "detail": "No custom groups required. colord runs under its own system user created by the RPM; colorimeter access is granted by uaccess tagging rather than plugdev membership, so do not add users to plugdev."
+    }
+  ],
+  "risks": [
+    "@workstation-product-environment is the wrong choice and will duplicate/conflict with the desktop-common layer: comps shows it composes base-graphical, container-management, core, desktop-accessibility, firefox, fonts, gnome-desktop, guest-desktop-agents, hardware-support, libreoffice, multimedia, networkmanager-submodules, printing and workstation-product. It brings Firefox, LibreOffice, CUPS/printing, fonts and codecs \u2014 all of which desktop-common owns.",
+    "Bare `dnf install @gnome-desktop` resolves 145 packages because comps 'default' members are installed alongside 'mandatory'. That silently pulls gnome-boxes (entire libvirt+qemu stack), rygel (a DLNA/UPnP media server listening on the LAN), gnome-remote-desktop, sane-backends-drivers-scanners, libsane-hpaio, and seven NetworkManager VPN plugins. Measured: 145 packages full vs 62 with --setopt=group_package_types=mandatory. Prefer the explicit list above.",
+    "webkitgtk6.0 is ~92 MiB installed and is dragged in by yelp, gnome-initial-setup and gnome-online-accounts. It is both the single biggest contributor to layer size and a large CVE surface that you now must rebuild the image to patch. Dropping yelp + gnome-user-docs is the only meaningful lever, at the cost of F1 help.",
+    "gnome-software on bootc: gnome-software-rpm-ostree understands rpm-ostree-managed systems, but a pure bootc image updated via bootc-fetch-apply-updates.timer is not the same thing. Expect gnome-software to either show nothing useful or offer a misleading OS update path. Recommended mitigation: ship a gschema override on org.gnome.software disabling the packagekit/rpm-ostree plugins and let it manage Flatpaks only, with bootc owning OS updates.",
+    "gnome-initial-setup runs on first login and will interrupt a pre-provisioned image. It is gated on ~/.config/gnome-initial-setup-done, so either drop the package, or seed that marker via /etc/skel. It is a mandatory member of @gnome-desktop, so a group-based install brings it back.",
+    "Fedora 44 has no X11 GNOME session at all \u2014 verified, gnome-session ships only wayland-sessions/gnome.desktop. Any workload that genuinely needs Xorg (some proprietary medical viewers, older CAD, certain NVIDIA configurations, screen-capture tools that predate PipeWire portals) has no in-session fallback. This is the single highest-impact constraint of choosing GNOME on F44 for this project.",
+    "Unpackaged extensions from extensions.gnome.org break at every GNOME major bump (50 -> 51). Baking them into /usr/share/gnome-shell/extensions/ at build time means a shell that fails to load extensions after the next Fedora rebase, with no user-level recovery on an immutable host. Restrict baked extensions to the Fedora-packaged ones (which get rebuilt per release) and let users add the rest at runtime.",
+    "gnome-tweaks is 49.0 against a 50.3 shell. It mostly works but is drifting; some panels are already redundant with Settings. Do not build workflows or documentation that depend on it.",
+    "Shell themes via gnome-shell-extension-user-theme are explicitly unsupported by upstream GNOME and break on minor updates. Fine to include the extension; do not ship a custom shell theme as the default.",
+    "gnome-color-manager is 3.36.2 \u2014 a GTK3 app that has seen essentially no upstream development in years, while colord itself is 1.4.8 and healthy. The calibration UX is dated and it is plausible Fedora drops the frontend in a future release. For medical imaging, treat DisplayCAL/ArgyllCMS as the real tool and gnome-color-manager as the Settings-panel shim.",
+    "Fractional scaling plus a colour-critical display is a genuine conflict: fractional scale means compositor resampling of app output. Combined with the fact that mutter only applies the VCGT and not a full colour transform, a fractionally-scaled diagnostic display gives neither pixel accuracy nor colour accuracy. Document 100%/200% as the supported configuration for imaging workstations.",
+    "VRR state cannot be pre-configured from the image because it lives in per-user ~/.config/monitors.xml keyed by monitor serial, not dconf. Any 'VRR on by default' requirement will need a first-login script or per-machine provisioning, which partly defeats the point of baking.",
+    "gnome-remote-desktop is a comps default member and ships a system service. If it slips in via a group install and gets enabled by preset, every machine from the image exposes an RDP surface. Explicitly assert it disabled, or omit the package."
+  ],
+  "copr": [
+    "(none required) \u2014 every package listed under `packages` resolves from fedora/updates or RPM Fusion. No COPR is needed for a complete GNOME 50 layer on F44. Flagging this explicitly so nobody adds one speculatively: COPRs are the main source of upgrade breakage on atomic images, since a COPR that has not rebuilt for F45 will block the rebase."
+  ],
+  "flatpaks": [
+    "com.mattjakeman.ExtensionManager \u2014 Extension Manager. Not packaged in Fedora and the canonical delivery is Flathub. Also the right call on an immutable host: it browses/installs extensions into ~/.local/share/gnome-shell/extensions, which is user-writable, so it works without touching the image.",
+    "org.gnome.Boxes \u2014 prefer over the gnome-boxes RPM. The RPM drags the whole libvirt/qemu/edk2 stack into the image for a feature most users never touch; the Flatpak bundles its own qemu.",
+    "io.github.realmazharhussain.GdmSettings \u2014 GDM Settings. Only useful if you want interactive greeter tweaking; for a baked image, /etc/dconf/db/gdm.d is the correct mechanism and this is just a discovery aid.",
+    "org.gnome.design.Palette and org.gnome.Snapshot-style GNOME Circle apps generally \u2014 for anything outside the core set, prefer Flathub over RPM so app churn does not force image rebuilds.",
+    "com.mattjakeman.ExtensionManager is the only one of these that is genuinely load-bearing; the rest are preferences."
+  ],
+  "external": [
+    {
+      "name": "Unpackaged GNOME Shell extensions (DING/desktop-icons-ng, ArcMenu, Vitals, Tiling Assistant, OpenWeather)",
+      "method": "If they must be baked: download the .shell-extension.zip from extensions.gnome.org at build time, unzip into /usr/share/gnome-shell/extensions/<uuid>/, run `glib-compile-schemas` on any bundled schemas dir, and enable via a gschema override on org.gnome.shell enabled-extensions. Strongly discouraged \u2014 these break on every GNOME major and you cannot fix them without a rebuild. Preferred method is runtime install by the user via gnome-browser-connector or the Extension Manager Flatpak."
+    },
+    {
+      "name": "Custom ICC display profiles for calibrated imaging workstations",
+      "method": "Not an RPM. Drop vendor/measured .icc files into /usr/share/color/icc/ at build time so they are image-managed, then bind them to devices at runtime with `colormgr device-add-profile`. Per-device binding is inherently machine-local (keyed by monitor serial) and cannot be fully baked."
+    },
+    {
+      "name": "None otherwise",
+      "method": "No upstream RPM URLs or installer scripts are required for this layer."
+    }
+  ],
+  "services": [
+    "gdm.service \u2014 enable. The one unit that must be enabled for this layer to do anything.",
+    "graphical.target \u2014 `systemctl set-default graphical.target`.",
+    "colord.service \u2014 D-Bus activated, do NOT enable.",
+    "colord-session.service (user) \u2014 D-Bus activated, do NOT enable.",
+    "power-profiles-daemon.service \u2014 preset-enabled; assert explicitly if the Settings power panel matters.",
+    "switcheroo-control.service \u2014 preset-enabled; needed for 'Launch using Discrete Graphics Card'.",
+    "iio-sensor-proxy.service \u2014 preset-enabled; needed for auto-rotate and ambient-light brightness.",
+    "gnome-remote-desktop.service \u2014 leave DISABLED unless remote access is an intentional feature.",
+    "gnome-remote-desktop-configuration.service \u2014 leave DISABLED (login-screen RDP).",
+    "gnome-headless-session@.service \u2014 template unit from gdm; not enabled directly.",
+    "org.gnome.SettingsDaemon.*.service (user units from gnome-settings-daemon) \u2014 started by the gnome-session targets, never enabled manually."
+  ],
+  "size_note": "A dry-run of the recommended explicit set (94 packages resolved) reported ~137 MiB download / ~430 MiB installed on a host that already had most GTK/Qt/Mesa libraries present, so that figure badly understates a bare quay.io/fedora/fedora-bootc base. Realistic incremental cost on a minimal bootc base is roughly 1.5\u20132.0 GiB. For calibration, `@gnome-desktop` full resolves to 145 packages and `--setopt=group_package_types=mandatory @gnome-desktop` to 62. Measured install sizes of the dominant items: webkitgtk6.0 ~92 MiB (pulled by yelp/GOA/initial-setup), mesa-dri-drivers ~52 MiB (though that belongs to desktop-common), gnome-backgrounds ~38 MiB, gnome-control-center ~24 MiB, appstream-data ~14 MiB, gnome-shell ~14 MiB, gnome-software ~12 MiB, mutter ~9 MiB. The rest is GTK4/libadwaita, GStreamer, LLVM (via Mesa), and the app set. Cheapest meaningful reductions, in order: drop yelp + gnome-user-docs (kills webkitgtk6.0, ~92 MiB), drop gnome-backgrounds if shipping custom wallpapers (~38 MiB), drop gnome-boxes/rygel/scanner backends by not using the bare group (already excluded above).",
+  "notes": [
+    "Deliberately excluded as desktop-common territory, per the brief: fonts (incl. adobe-source-code-pro-fonts and the fonts group), PipeWire/WirePlumber, flatpak, podman/toolbox, CUPS/printing, GStreamer codec packs, mesa-dri-drivers and mesa-vulkan-drivers (these come from comps group base-graphical, along with plymouth-system-theme), avahi, glib-networking, NetworkManager and its VPN plugins, PackageKit, and the base xdg-desktop-portal package. Note that base-graphical is exactly three packages \u2014 mesa-dri-drivers, mesa-vulkan-drivers, plymouth-system-theme \u2014 so desktop-common should own it explicitly rather than relying on GNOME to pull it.",
+    "Judgement call flagged for the parent: xdg-desktop-portal-gtk is listed here rather than in desktop-common. It is technically GTK-generic (Cinnamon/Budgie/Xfce also want it), but on GNOME it is the required fallback for portal interfaces xdg-desktop-portal-gnome does not implement. If desktop-common already ships it, drop it from this layer.",
+    "Second judgement call: the accessibility trio (orca, at-spi2-core, speech-dispatcher) comes from the desktop-accessibility comps group, which also contains brltty. at-spi2-core is arguably DE-agnostic infrastructure; orca is specifically GNOME's screen reader. Consider moving at-spi2-core to desktop-common and keeping orca here.",
+    "adw-gtk3-theme, qt6-qtwayland-adwaita-decoration and qadwaitadecorations-qt5 are listed here because their entire purpose is making non-GTK4 apps match GNOME. If the project also ships a KDE layer, these will conflict aesthetically \u2014 they are harmless but pointless there, so keep them GNOME-scoped.",
+    "Recommended Containerfile shape for this layer: a single RUN that does `dnf -y install <explicit list>` (or `dnf -y install --setopt=group_package_types=mandatory @gnome-desktop <extras>`), then writes the gschema override, then `glib-compile-schemas /usr/share/glib-2.0/schemas/`, then `update-desktop-database /usr/share/applications`, then `systemctl enable gdm.service && systemctl set-default graphical.target`, then `dnf clean all`. Consider --no-docs to shave the layer; it costs man pages, which on an immutable host you may not want to lose.",
+    "Open question for the parent: is gnome-software wanted at all? On a bootc image where the OS is updated by bootc and apps by Flatpak, its value is a Flathub GUI. If desktop-common already provides a Flatpak store front-end, gnome-software + gnome-software-rpm-ostree + appstream-data could be dropped entirely (~30 MiB plus PackageKit).",
+    "Open question: does the medical-imaging purpose need a specific GNOME configuration profile (locked 100% scale, night-light disabled, a fixed colour profile), and if so should it be a separate dconf-locks drop-in layered on top of this one? The locks mechanism (/etc/dconf/db/local.d/locks) is the right tool and belongs in the purpose layer, not here.",
+    "Open question: the gaming purpose will likely want VRR on by default, which \u2014 as established \u2014 is not bakeable via dconf. Somebody needs to decide whether a first-login script seeding ~/.config/monitors.xml is acceptable, or whether the gaming workstations get a different DE where tearing control also exists.",
+    "Verification method used, for reproducibility: all package names were confirmed by batched `dnf repoquery --qf '%{name}\\n' <names\u2026>` on a live Fedora 44 host with fedora, updates and RPM Fusion free/nonfree enabled; only names echoed back are listed under `packages`. Group composition came from `dnf group info` plus direct parsing of the comps-Everything.x86_64.xml from the repo cache (dnf5 has no `environment` subcommand, so the environment definition was read from comps directly). VRR/tearing/scaling claims were verified against the installed mutter 50.3 gschema XML and a symbol scan of /usr/lib64/libmutter-18.so.0, not from memory."
+  ]
+}

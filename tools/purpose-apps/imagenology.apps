@@ -1,0 +1,65 @@
+# tools/purpose-apps/imagenology.apps — what the Medical Imaging purpose is
+# supposed to contain, stated once, at the level where drift is a real bug.
+#
+# The two projects deliver the same purpose by different means and that is
+# CORRECT: Carino Setup targets ~40 mutable distros plus Windows and macOS, so
+# it reaches for Flatpak wherever a name is not portable; Custom Images builds
+# one immutable Fedora, where things belong in /usr as RPMs. Comparing package
+# names would therefore flag good decisions as errors. Comparing *applications*
+# does not — "Medical Imaging includes a DICOM viewer" is a fact about the
+# purpose, while "it arrives as io.github.nroduit.Weasis" is a fact about the
+# delivery target.
+#
+# Format, pipe separated:
+#
+#   app | setup tokens | image tokens | policy | why
+#
+#   app     short identity, unique in this file
+#   tokens  the names that side WOULD use, space separated alternatives —
+#           filled in whether or not that side ships the app today, because an
+#           empty column can never notice the gap being closed. The app counts
+#           as present on a side if ANY of that side's tokens appears there.
+#   policy  both        must be present on both sides    (asymmetry = drift)
+#           setup-only  deliberately absent from the image
+#           image-only  deliberately absent from Setup
+#   why     required for setup-only / image-only; empty for both
+#
+# Every token either project actually ships must appear somewhere in this file.
+# A token claimed by no row is reported as UNMAPPED and fails --strict, so this
+# manifest cannot silently go stale the moment either side gains a package.
+
+# --- DICOM toolchain: the shared core, present on both sides today -----------
+dcmtk        | dcmtk                | dcmtk                        | both |
+gdcm         | python3-gdcm gdcm libgdcm-tools | gdcm gdcm-applications | both |
+pydicom      | python3-pydicom      | python3-pydicom              | both |
+pynetdicom   | python3-pynetdicom   | python3-pynetdicom           | both |
+dcm2niix     | dcm2niix             | dcm2niix                     | both |
+nibabel      | python3-nibabel      | python3-nibabel              | both |
+
+# --- Viewers: the purpose is not usable without one --------------------------
+# A study can be parsed with the toolchain above but not looked at. Setup
+# installs three viewers and xmedcon; the image installs none. These are the
+# rows this check exists for, and they are deliberately left as violations
+# rather than exempted — the image column carries the name the image would use
+# so the row flips to clean the moment the package phase adds it.
+weasis       | io.github.nroduit.Weasis | io.github.nroduit.Weasis | both |
+aliza        | com.github.AlizaMedicalImaging.AlizaMS | com.github.AlizaMedicalImaging.AlizaMS | both |
+invesalius   | br.gov.cti.invesalius | br.gov.cti.invesalius       | both |
+xmedcon      | xmedcon              | xmedcon                      | both |
+
+# --- Scientific Python: image-only, and correctly so -------------------------
+# The image pins one Fedora release, so numpy/scipy/matplotlib resolve to a
+# known-good set at build time. Setup would have to carry per-family names
+# across ~40 distros for a stack most of its profiles do not need, and pip or a
+# venv is the better answer on a mutable system. The Setup column is still
+# filled so the check fires if that decision is ever quietly reversed.
+numpy        | python3-numpy        | python3-numpy                | image-only | per-distro naming across the Setup matrix; venv/pip is the better fit on a mutable system
+scipy        | python3-scipy        | python3-scipy                | image-only | as numpy
+matplotlib   | python3-matplotlib   | python3-matplotlib           | image-only | as numpy
+
+# --- Display calibration: image-only, and load-bearing -----------------------
+# Calibration is a property of a fixed, known display attached to a known OS
+# image. Setup cannot assume either, so shipping the tooling there would imply
+# a guarantee it has no way to keep.
+argyllcms    | argyllcms argyll     | argyllcms                    | image-only | calibration presumes a fixed display and a reproducible OS image; Setup can assume neither
+colord-icc   | colord-extra-profiles | colord-extra-profiles       | image-only | ships alongside argyllcms

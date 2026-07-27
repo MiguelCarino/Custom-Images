@@ -1,0 +1,98 @@
+# =============================================================================
+# Generic Fedora Workstation bootc image
+# =============================================================================
+# Builds on the base image and adds:
+#   - GNOME desktop with Wayland
+#   - Flatpak + Flathub
+#   - Podman / toolbox for developer containers
+#   - Common desktop applications
+#   - Font stack (including CJK)
+#
+# Build (requires base image built first):
+#   podman build \
+#     --build-arg REGISTRY=localhost \
+#     -t localhost/fedora-workstation:latest .
+# =============================================================================
+
+ARG REGISTRY=localhost
+ARG BASE_TAG=latest
+FROM ${REGISTRY}/fedora-base:${BASE_TAG}
+
+LABEL org.opencontainers.image.title="Fedora Workstation bootc"
+LABEL org.opencontainers.image.description="GNOME workstation layer for custom Fedora bootc images"
+
+# ---------------------------------------------------------------------------
+# Desktop environment: GNOME + Wayland
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      @gnome-desktop \
+      gnome-tweaks \
+      gnome-extensions-app \
+      gdm \
+      xdg-user-dirs \
+      xdg-utils \
+      xorg-x11-server-Xwayland \
+    && dnf clean all
+
+# ---------------------------------------------------------------------------
+# Fonts
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      google-noto-fonts-common \
+      google-noto-sans-fonts \
+      google-noto-serif-fonts \
+      google-noto-emoji-fonts \
+      google-noto-cjk-fonts \
+      liberation-fonts \
+      dejavu-fonts-all \
+      bitstream-vera-fonts-all \
+    && dnf clean all
+
+# ---------------------------------------------------------------------------
+# Multimedia codecs (via RPM Fusion)
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      ffmpeg \
+      gstreamer1-plugins-base \
+      gstreamer1-plugins-good \
+      gstreamer1-plugins-bad-free \
+      gstreamer1-plugins-ugly \
+      gstreamer1-plugin-openh264 \
+      pipewire \
+      pipewire-pulseaudio \
+      wireplumber \
+    && dnf clean all
+
+# ---------------------------------------------------------------------------
+# Developer / container tools
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      podman \
+      buildah \
+      skopeo \
+      toolbox \
+      distrobox \
+      flatpak \
+    && dnf clean all
+
+# ---------------------------------------------------------------------------
+# Flathub remote (user-level; activated on first login)
+# ---------------------------------------------------------------------------
+COPY files/usr/lib/sysusers.d/flatpak.conf /usr/lib/sysusers.d/flatpak.conf
+RUN flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+
+# ---------------------------------------------------------------------------
+# Enable GDM (graphical login)
+# ---------------------------------------------------------------------------
+RUN systemctl enable gdm \
+    && systemctl set-default graphical.target
+
+# ---------------------------------------------------------------------------
+# Printer / scanner support
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      cups \
+      system-config-printer \
+      sane-backends \
+    && systemctl enable cups \
+    && dnf clean all

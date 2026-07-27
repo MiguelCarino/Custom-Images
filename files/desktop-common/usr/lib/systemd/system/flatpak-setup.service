@@ -1,0 +1,17 @@
+[Unit]
+Description=First-boot Flatpak setup (Flathub remote + baked app lists)
+Documentation=file:///usr/share/fedora-images/flatpaks.d
+Wants=network-online.target
+After=network-online.target
+# Run once per installed system; the script writes the stamp on success.
+ConditionPathExists=!/var/lib/fedora-images/.flatpaks-done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/flatpak-setup
+# Flathub can be slow on first boot; installs are potentially large.
+TimeoutStartSec=30min
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

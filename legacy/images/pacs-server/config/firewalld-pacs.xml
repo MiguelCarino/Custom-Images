@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Custom firewalld service definition for PACS ports.
+  Install to /etc/firewalld/services/pacs.xml, then:
+    firewall-cmd - -permanent - -add-service=pacs
+    firewall-cmd - -reload
+-->
+<service>
+  <short>PACS</short>
+  <description>Picture Archiving and Communication System (DICOM, DICOMweb, HTTPS)</description>
+  <!-- Standard DICOM port -->
+  <port protocol="tcp" port="104"/>
+  <!-- Orthanc non-standard DICOM port (change if using 104) -->
+  <port protocol="tcp" port="4242"/>
+  <!-- Orthanc REST API (internal; exposed via Nginx TLS) -->
+  <!-- <port protocol="tcp" port="8042"/> -->
+  <!-- HTTPS -->
+  <port protocol="tcp" port="443"/>
+  <!-- HTTP (redirect only) -->
+  <port protocol="tcp" port="80"/>
+</service>

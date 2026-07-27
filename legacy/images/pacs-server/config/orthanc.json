@@ -1,0 +1,61 @@
+{
+  // =========================================================================
+  // Orthanc main configuration
+  // Docs: https://book.orthanc-server.com/configuration.html
+  // Override site-specific values in /etc/orthanc/orthanc.local.json
+  // =========================================================================
+
+  // AE Title of this Orthanc instance
+  "Name": "PACS_SERVER",
+
+  // Directory where Orthanc stores its files (DICOM + index)
+  // Override to a bind-mounted volume at deploy time.
+  "StorageDirectory": "/var/lib/orthanc/db",
+  "IndexDirectory": "/var/lib/orthanc/db",
+
+  // REST API
+  "HttpServerEnabled": true,
+  "HttpPort": 8042,
+  // Bind only to loopback; Nginx handles external TLS termination
+  "HttpListenAddress": "127.0.0.1",
+
+  // DICOM server
+  "DicomServerEnabled": true,
+  "DicomPort": 4242,
+  "DicomAet": "ORTHANC",
+  "DicomCheckCalledAet": false,
+
+  // Authentication (enable in production; set via environment variables
+  // ORTHANC_USER / ORTHANC_PASSWORD in your systemd drop-in)
+  "AuthenticationEnabled": true,
+  "RegisteredUsers": {
+    // CHANGE THESE before deploying. Prefer env-var injection:
+    // RegisteredUsers populated from /etc/orthanc/users.secret at startup
+  },
+
+  // DICOM modalities known to this PACS
+  // "DicomModalities" : {
+  //   "WEASIS_WS" : { "AET": "WEASIS_WS", "Host": "192.168.1.10", "Port": 11112 }
+  // },
+
+  // Plugins directory
+  "Plugins": [
+    "/usr/lib64/orthanc"
+  ],
+
+  // Stable age (seconds) — study considered stable/complete after this idle time
+  "StableAge": 60,
+
+  // Logging
+  "Verbosity": "default",
+
+  // DICOM TLS (enable with proper certificates in production)
+  "DicomTlsEnabled": false,
+
+  // Storage compression (saves disk space at the cost of CPU)
+  "StorageCompression": false,
+
+  // Maximum storage size (0 = unlimited)
+  "MaximumStorageSize": 0,
+  "MaximumPatientCount": 0
+}

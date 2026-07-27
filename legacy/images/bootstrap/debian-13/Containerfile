@@ -1,0 +1,36 @@
+# =============================================================================
+# Bootstrap: Debian 13 (trixie) bootc base image
+# Built from the official debian:trixie image.
+# bootc is available in Debian 13's main repo.
+# =============================================================================
+
+FROM debian:trixie
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y \
+         bootc \
+         systemd \
+         systemd-sysv \
+         systemd-resolved \
+         dbus \
+         udev \
+         sudo \
+         openssh-server \
+         ca-certificates \
+         locales \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Generate default locale
+RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && locale-gen
+
+# Disable services that don't make sense in a container image layer
+RUN systemctl disable \
+        apt-daily.timer \
+        apt-daily-upgrade.timer \
+    2>/dev/null || true
+
+STOPSIGNAL SIGRTMIN+3
+CMD ["/lib/systemd/systemd"]

@@ -1,0 +1,87 @@
+# =============================================================================
+# App container: Ubuntu 24.04 LTS — Medical imaging environment
+# =============================================================================
+# This is NOT a bootc image. It is a Distrobox guest container that runs
+# on top of a Fedora bootc host. GUI apps launched inside this container
+# appear on the host's Wayland/X11 desktop via Distrobox integration.
+#
+# Build:
+#   podman build -t localhost/ubuntu-24.04-medical:latest .
+#
+# Use (on deployed Fedora host):
+#   distrobox enter ubuntu-medical
+#   weasis &
+# =============================================================================
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ---------------------------------------------------------------------------
+# Enable universe + multiverse repos
+# ---------------------------------------------------------------------------
+RUN apt-get update \
+    && apt-get install -y software-properties-common \
+    && add-apt-repository -y universe \
+    && add-apt-repository -y multiverse \
+    && apt-get update
+
+# ---------------------------------------------------------------------------
+# Medical imaging packages
+# ---------------------------------------------------------------------------
+RUN apt-get install -y \
+      # DICOM tools
+      dcmtk \
+      gdcm-tools \
+      python3-gdcm \
+      python3-pydicom \
+      # Viewers / editors
+      geeqie \
+      inkscape \
+      # Office suite
+      libreoffice \
+      libreoffice-writer \
+      libreoffice-calc \
+      libreoffice-impress \
+      libreoffice-draw \
+      # Python data science
+      python3-pip \
+      python3-numpy \
+      python3-matplotlib \
+      gnuplot \
+      # Java runtime (required by Weasis)
+      openjdk-21-jre-headless \
+      # Encryption
+      age \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------------------
+# Weasis DICOM viewer (not in Ubuntu repos)
+# ---------------------------------------------------------------------------
+ARG WEASIS_VERSION=4.3.0
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL -o /tmp/weasis.deb \
+      "https://github.com/nroduit/Weasis/releases/download/v${WEASIS_VERSION}/weasis_${WEASIS_VERSION}-1_amd64.deb" \
+    && dpkg -i /tmp/weasis.deb || apt-get install -fy \
+    && rm -f /tmp/weasis.deb \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------------------
+# Python extras
+# ---------------------------------------------------------------------------
+RUN pip3 install --no-cache-dir itk SimpleITK nibabel pynetdicom
+
+# ---------------------------------------------------------------------------
+# Distrobox integration tools
+# (sudo, basic shell tools — distrobox injects its own init on container create)
+# ---------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y \
+      sudo \
+      bash-completion \
+      curl \
+      wget \
+      git \
+      vim \
+      xdg-utils \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*

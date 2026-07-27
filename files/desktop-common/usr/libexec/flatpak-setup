@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# flatpak-setup — first-boot Flatpak installer (ARCHITECTURE.md §8).
+#
+# Layers bake their FLATPAKS into /usr/share/fedora-images/flatpaks.d/*.list
+# (one app id per line; blank lines and #-comments ignored). On first boot
+# with network this script adds Flathub, installs every listed id, then
+# stamps /var/lib/fedora-images/.flatpaks-done so it never runs again.
+# Invoked by flatpak-setup.service (oneshot, After=network-online.target).
+
+set -euo pipefail
+
+LIST_DIR=/usr/share/fedora-images/flatpaks.d
+STAMP_DIR=/var/lib/fedora-images
+STAMP="${STAMP_DIR}/.flatpaks-done"
+
+# --- Already done? (belt-and-braces; the unit has a ConditionPathExists) ----
+if [[ -e "$STAMP" ]]; then
+  echo "flatpak-setup: stamp $STAMP exists, nothing to do"
+  exit 0
+fi
+
+# --- Collect app ids from every baked list --------------------------------
+apps=()
+if [[ -d "$LIST_DIR" ]]; then
+  while IFS= read -r line; do
+    line="${line%%#*}"                       # strip comments
+    line="${line//[[:space:]]/}"             # strip whitespace
+    [[ -n "$line" ]] && apps+=("$line")
+  done < <(cat "$LIST_DIR"/*.list 2>/dev/null || true)
+fi
+
+# --- Add Flathub (idempotent) and install ---------------------------------
+flatpak remote-add --if-not-exists flathub \
+  https://dl.flathub.org/repo/flathub.flatpakrepo
+
+if (( ${#apps[@]} > 0 )); then
+  echo "flatpak-setup: installing ${#apps[@]} app(s): ${apps[*]}"
+  # Install one by one so a single bad id does not abort the rest.
+  failed=0
+  for app in "${apps[@]}"; do
+    if ! flatpak install -y --noninteractive flathub "$app"; then
+      echo "flatpak-setup: WARNING: failed to install $app" >&2
+      failed=1
+    fi
+  done
+  # Leave no stamp if anything failed, so the next boot retries.
+  if (( failed )); then
+    echo "flatpak-setup: some installs failed; will retry on next boot" >&2
+    exit 1
+  fi
+else
+  echo "flatpak-setup: no flatpaks listed under $LIST_DIR"
+fi
+
+# --- Stamp ----------------------------------------------------------------
+mkdir -p "$STAMP_DIR"
+touch "$STAMP"
+echo "flatpak-setup: done"

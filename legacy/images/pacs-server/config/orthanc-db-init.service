@@ -1,0 +1,15 @@
+[Unit]
+Description=Initialise Orthanc PostgreSQL database (first boot)
+After=postgresql.service network.target
+Requires=postgresql.service
+ConditionPathExists=!/var/lib/orthanc/.db-initialised
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/orthanc-db-init.sh
+ExecStartPost=/bin/touch /var/lib/orthanc/.db-initialised
+RemainAfterExit=yes
+User=root
+
+[Install]
+WantedBy=multi-user.target

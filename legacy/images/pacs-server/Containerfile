@@ -1,0 +1,107 @@
+# =============================================================================
+# PACS Server — Fedora bootc image
+# =============================================================================
+# Purpose: Headless PACS (Picture Archiving and Communication System) server.
+#
+# Stack:
+#   - Orthanc          — runs as a Podman quadlet (systemd-managed container)
+#                        using the official orthancteam/orthanc image.
+#                        orthanc is NOT packaged for Fedora 43; the quadlet
+#                        approach is the idiomatic bootc solution.
+#   - PostgreSQL        — metadata + index database
+#   - DCMTK            — diagnostic CLI tools (echoscu, storescu, findscu …)
+#   - Nginx            — TLS reverse proxy in front of Orthanc REST API
+#   - Certbot          — auto-renew Let's Encrypt TLS certificates
+#
+# Storage layout (mount at deploy time):
+#   /var/lib/orthanc        — DICOM files  (bind-mount a large volume)
+#   /var/lib/pgsql          — PostgreSQL data
+#   /etc/orthanc            — Orthanc configuration (image-baked defaults)
+#
+# Build (requires base image built first):
+#   podman build \
+#     --build-arg REGISTRY=localhost \
+#     -t localhost/fedora-pacs-server:latest .
+# =============================================================================
+
+ARG REGISTRY=localhost
+ARG BASE_TAG=latest
+FROM ${REGISTRY}/fedora-base:${BASE_TAG}
+
+LABEL org.opencontainers.image.title="Fedora PACS Server bootc"
+LABEL org.opencontainers.image.description="Orthanc DICOM PACS server (quadlet) with PostgreSQL and Nginx"
+
+# ---------------------------------------------------------------------------
+# Server packages
+# NOTE: orthanc is not in Fedora 43 repos — it runs as a Podman quadlet.
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      # Database
+      postgresql-server \
+      postgresql \
+      python3-psycopg2 \
+      # DICOM toolkit (diagnostics / scripting)
+      dcmtk \
+      gdcm \
+      gdcm-applications \
+      # Container runtime (for quadlets)
+      podman \
+      # Web / TLS
+      nginx \
+      certbot \
+      python3-certbot-nginx \
+    && dnf clean all
+
+# ---------------------------------------------------------------------------
+# PostgreSQL initial cluster setup (runs once at first boot)
+# ---------------------------------------------------------------------------
+RUN postgresql-setup --initdb || true
+
+# ---------------------------------------------------------------------------
+# Orthanc configuration (bind-mounted into the quadlet container)
+# ---------------------------------------------------------------------------
+RUN mkdir -p /etc/orthanc
+COPY config/orthanc.json       /etc/orthanc/orthanc.json
+COPY config/orthanc-dicomweb.json /etc/orthanc/dicomweb.json
+
+# ---------------------------------------------------------------------------
+# Orthanc Podman quadlet — systemd unit that manages the Orthanc container
+# /etc/containers/systemd/  is scanned by podman-systemd-generator at boot
+# ---------------------------------------------------------------------------
+RUN mkdir -p /etc/containers/systemd
+COPY config/orthanc.container /etc/containers/systemd/orthanc.container
+
+# ---------------------------------------------------------------------------
+# Nginx TLS reverse proxy config
+# ---------------------------------------------------------------------------
+COPY config/nginx-orthanc.conf /etc/nginx/conf.d/orthanc.conf
+
+# ---------------------------------------------------------------------------
+# DICOM storage directory
+# (actual data goes in /var which persists across bootc upgrades)
+# ---------------------------------------------------------------------------
+RUN mkdir -p /var/lib/orthanc && chmod 750 /var/lib/orthanc
+
+# ---------------------------------------------------------------------------
+# Firewall service definition
+# ---------------------------------------------------------------------------
+COPY config/firewalld-pacs.xml /etc/firewalld/services/pacs.xml
+RUN firewall-offline-cmd --add-service=pacs || true
+
+# ---------------------------------------------------------------------------
+# Enable services
+# The orthanc quadlet becomes orthanc.service via podman-systemd-generator;
+# it is enabled implicitly by the [Install] section in the .container file.
+# ---------------------------------------------------------------------------
+RUN systemctl enable \
+      postgresql \
+      nginx
+
+# ---------------------------------------------------------------------------
+# Orthanc DB initialisation (oneshot, runs on first boot)
+# ---------------------------------------------------------------------------
+COPY config/orthanc-db-init.sh /usr/local/bin/orthanc-db-init.sh
+RUN chmod +x /usr/local/bin/orthanc-db-init.sh
+
+COPY config/orthanc-db-init.service /etc/systemd/system/orthanc-db-init.service
+RUN systemctl enable orthanc-db-init.service

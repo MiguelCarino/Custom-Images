@@ -1,0 +1,589 @@
+{
+  "key": "de-xfce",
+  "summary": "A lightweight, X11-only XFCE 4.20 desktop layer for Fedora 44 bootc, skinned end-to-end as Windows 95 via grassmunk/Chicago95. Everything in this layer is verified present in Fedora 44 / RPM Fusion except Chicago95 itself, which is not packaged anywhere (no COPR exists \u2014 the COPR API returns zero hits for \"chicago95\") and must be baked from a pinned git checkout using its own GNU-style Makefile. The layer targets a user who wants a genuinely low-resource, fully retro desktop that boots the same on every machine: XFCE core (session/panel/wm/settings/Thunar), a curated subset of xfce4-goodies, LightDM + the GTK greeter as the display manager, the X11 server stack (XFCE on Fedora 44 has no Wayland session at all), and a complete set of system-wide Chicago95 defaults injected through /etc/xdg/xfce4/xfconf so that brand-new users on an image-based OS with no baked /home land in a Win95 desktop on first login. Deliberately excluded: fonts/codecs/PipeWire/flatpak/podman/cups (desktop-common), and the Fedora `xfce-desktop` comps group itself, which drags in abrt-desktop, initial-setup-gui, vim-enhanced and \u2014 critically \u2014 dnfdragora-updater, which is actively misleading on an atomic image.",
+  "packages": [
+    {
+      "name": "xfce4-session",
+      "why": "XFCE 4.20.3 session manager; ships /usr/share/xsessions/xfce.desktop (X11 only \u2014 no wayland-sessions file in Fedora 44)"
+    },
+    {
+      "name": "xfwm4",
+      "why": "Window manager (4.20.0). Hosts the Chicago95 xfwm4 theme (46 files) that produces the Win95 titlebars"
+    },
+    {
+      "name": "xfce4-panel",
+      "why": "Panel 4.20.7 \u2014 the Win95 taskbar"
+    },
+    {
+      "name": "xfce4-settings",
+      "why": "xfsettingsd + Appearance/Window Manager/Mouse settings dialogs; xfsettingsd is what applies the xfconf theme defaults to GTK apps via XSETTINGS"
+    },
+    {
+      "name": "xfdesktop",
+      "why": "Desktop backdrop, desktop icons, right-click applications menu"
+    },
+    {
+      "name": "xfconf",
+      "why": "Config daemon. THE mechanism for image-wide defaults: it resolves channels through XDG_CONFIG_DIRS and only writes ~/.config on the user's first change"
+    },
+    {
+      "name": "Thunar",
+      "why": "File manager. NOTE the capital T \u2014 'thunar' does not resolve"
+    },
+    {
+      "name": "thunar-volman",
+      "why": "Removable media auto-handling in Thunar"
+    },
+    {
+      "name": "thunar-archive-plugin",
+      "why": "Extract Here / Create Archive context menu (pairs with xarchiver)"
+    },
+    {
+      "name": "thunar-media-tags-plugin",
+      "why": "Audio tag columns and bulk rename in Thunar"
+    },
+    {
+      "name": "tumbler",
+      "why": "Thumbnail daemon backing Thunar's icon view"
+    },
+    {
+      "name": "tumbler-extras",
+      "why": "Extra thumbnailers (fonts, raw, PDF) for Thunar"
+    },
+    {
+      "name": "xfce4-appfinder",
+      "why": "Application finder; also backs the panel's run dialog"
+    },
+    {
+      "name": "xfce4-settings-manager equivalent is in xfce4-settings; xfce4-about",
+      "why": "Small 'About XFCE' dialog, pulled by the group and cheap"
+    },
+    {
+      "name": "xfce4-power-manager",
+      "why": "Power/backlight/lid handling; provides the battery tray icon"
+    },
+    {
+      "name": "xfce4-notifyd",
+      "why": "Notification daemon. Chicago95 ships an xfce-notify-4.0 sub-theme so notifications get Win95 chrome too"
+    },
+    {
+      "name": "xfce4-screensaver",
+      "why": "Lock screen / blanking. Pick this OR light-locker, not both \u2014 running both causes double-lock races"
+    },
+    {
+      "name": "xfce4-terminal",
+      "why": "Terminal. Chicago95 installs a Chicago95.theme colorscheme into /usr/share/xfce4/terminal/colorschemes"
+    },
+    {
+      "name": "xfce4-whiskermenu-plugin",
+      "why": "The Start menu. Chicago95's Start-button badge icons are set on this plugin's button-icon property"
+    },
+    {
+      "name": "xfce4-pulseaudio-plugin",
+      "why": "Volume tray icon with PipeWire/pulse compat"
+    },
+    {
+      "name": "xfce4-clipman-plugin",
+      "why": "Clipboard manager applet"
+    },
+    {
+      "name": "xfce4-screenshooter",
+      "why": "Screenshot tool"
+    },
+    {
+      "name": "xfce4-screenshooter-plugin",
+      "why": "Panel button variant of the screenshot tool (separate subpackage in Fedora)"
+    },
+    {
+      "name": "xfce4-taskmanager",
+      "why": "Lightweight process viewer \u2014 the 'Ctrl+Alt+Del' analogue"
+    },
+    {
+      "name": "xfce4-panel-profiles",
+      "why": "Required to consume Chicago95's Chicago95_Panel_Preferences.tar.bz2, which its Makefile installs to /usr/share/xfce4-panel-profiles/layouts"
+    },
+    {
+      "name": "xfce4-places-plugin",
+      "why": "Places menu button on the panel"
+    },
+    {
+      "name": "xfce4-datetime-plugin",
+      "why": "Clock/calendar applet matching the Win95 tray clock"
+    },
+    {
+      "name": "xfce4-systemload-plugin",
+      "why": "Small system monitor applet; cheap and thematically fitting"
+    },
+    {
+      "name": "xfce4-genmon-plugin",
+      "why": "Generic monitor \u2014 the escape hatch for any custom panel indicator"
+    },
+    {
+      "name": "xfce4-battery-plugin",
+      "why": "Battery applet for laptop targets"
+    },
+    {
+      "name": "xfce4-sensors-plugin",
+      "why": "Temperature/fan readout applet"
+    },
+    {
+      "name": "xfce4-xkb-plugin",
+      "why": "Keyboard layout switcher applet"
+    },
+    {
+      "name": "xfce-polkit",
+      "why": "Lightweight polkit agent for XFCE \u2014 without an agent, any privileged GUI action silently fails"
+    },
+    {
+      "name": "xfce4-dict",
+      "why": "Dictionary tool (goodies)"
+    },
+    {
+      "name": "xfburn",
+      "why": "Optical burning, the XFCE-native choice (goodies)"
+    },
+    {
+      "name": "catfish",
+      "why": "File search frontend integrated into Thunar's toolbar"
+    },
+    {
+      "name": "mousepad",
+      "why": "XFCE's Notepad equivalent \u2014 thematically the right text editor for this layer"
+    },
+    {
+      "name": "ristretto",
+      "why": "Image viewer"
+    },
+    {
+      "name": "galculator",
+      "why": "Calculator with a very Win95-appropriate look"
+    },
+    {
+      "name": "xarchiver",
+      "why": "Archive manager; backend for thunar-archive-plugin"
+    },
+    {
+      "name": "gigolo",
+      "why": "GVFS remote-share mounting frontend"
+    },
+    {
+      "name": "lightdm",
+      "why": "Display manager. Recommended over GDM: GDM pulls the GNOME stack and defaults to Wayland, which XFCE 4.20 on Fedora 44 cannot use. Ships /usr/lib/systemd/system/lightdm.service and /etc/lightdm/lightdm.conf.d/"
+    },
+    {
+      "name": "lightdm-gtk",
+      "why": "The GTK greeter. NOTE the package is 'lightdm-gtk', NOT 'lightdm-gtk-greeter' \u2014 that name does not exist in Fedora. Provides /etc/lightdm/lightdm-gtk-greeter.conf, which is where Chicago95 gets applied to the login screen"
+    },
+    {
+      "name": "lightdm-gtk-greeter-settings",
+      "why": "Optional GUI for editing the greeter conf; useful for iterating on the theme during image development"
+    },
+    {
+      "name": "xorg-x11-server-Xorg",
+      "why": "XFCE 4.20 on Fedora 44 is X11-only; verified xfce4-session ships only /usr/share/xsessions/xfce.desktop"
+    },
+    {
+      "name": "xorg-x11-xinit",
+      "why": "Xsession machinery LightDM invokes to start the XFCE session"
+    },
+    {
+      "name": "xorg-x11-drv-libinput",
+      "why": "Input driver for the X server"
+    },
+    {
+      "name": "gtk2",
+      "why": "Required at runtime: Chicago95's GTK2 theme uses engine \"pixmap\", and /usr/lib64/gtk-2.0/2.10.0/engines/libpixmap.so is shipped by gtk2 itself (not gtk2-engines)"
+    },
+    {
+      "name": "gtk-xfce-engine",
+      "why": "Required: Chicago95's gtk-2.0/gtkrc also references engine \"xfce\" (libxfce.so). Without it the GTK2 half of the theme renders wrong"
+    },
+    {
+      "name": "gtk2-engines",
+      "why": "Includes libredmond95.so and friends; useful fallbacks and dependencies for older GTK2 themes"
+    },
+    {
+      "name": "xorg-x11-fonts-75dpi",
+      "why": "Source of the Adobe 'Helvetica' bitmap PCFs (helvR08 etc.) that Chicago95 asks you to set at 8pt. See the fontconfig integration note \u2014 these land in /usr/share/X11/fonts/75dpi, which Fedora's fontconfig does not scan"
+    },
+    {
+      "name": "xorg-x11-fonts-100dpi",
+      "why": "100dpi Helvetica variants for higher-DPI panels"
+    },
+    {
+      "name": "xorg-x11-fonts-ISO8859-1-75dpi",
+      "why": "ISO8859-1 encoded bitmap set including helvR08-ISO8859-1.pcf.gz; the encoding Chicago95 expects"
+    },
+    {
+      "name": "xorg-x11-fonts-misc",
+      "why": "Fixed/misc bitmap fonts for the authentic terminal look"
+    },
+    {
+      "name": "fontconfig",
+      "why": "Needed explicitly because the build must drop a conf.d snippet and run fc-cache -sf after installing Chicago95's fonts"
+    },
+    {
+      "name": "mkfontscale",
+      "why": "Regenerate fonts.dir/fonts.scale if you relocate the bitmap PCFs into /usr/share/fonts instead of adding a fontconfig <dir>"
+    },
+    {
+      "name": "xcursorgen",
+      "why": "Only needed if you rebuild or rescale Chicago95's animated hourglass cursors for HiDPI"
+    },
+    {
+      "name": "network-manager-applet",
+      "why": "nm-applet tray icon \u2014 XFCE has no built-in network indicator"
+    },
+    {
+      "name": "nm-connection-editor",
+      "why": "GUI network configuration, paired with nm-applet"
+    },
+    {
+      "name": "blueman",
+      "why": "Bluetooth manager; the XFCE-conventional choice over gnome-bluetooth"
+    },
+    {
+      "name": "gvfs",
+      "why": "Backend for Thunar's trash, network and device browsing"
+    },
+    {
+      "name": "gvfs-mtp",
+      "why": "Phone/MTP device mounting in Thunar"
+    },
+    {
+      "name": "gvfs-gphoto2",
+      "why": "Camera mounting in Thunar"
+    },
+    {
+      "name": "gvfs-smb",
+      "why": "SMB shares in Thunar/Gigolo"
+    },
+    {
+      "name": "gvfs-archive",
+      "why": "Browse archives as folders in Thunar"
+    },
+    {
+      "name": "gvfs-fuse",
+      "why": "Expose gvfs mounts to non-GIO apps via FUSE \u2014 matters because a retro app set is mostly non-GIO"
+    },
+    {
+      "name": "xdg-desktop-portal-gtk",
+      "why": "Portal backend so Flatpak file dialogs render with the GTK (and therefore Chicago95) theme"
+    },
+    {
+      "name": "xdg-user-dirs-gtk",
+      "why": "Creates and localizes Desktop/Documents/Downloads on first login \u2014 necessary because /home is not baked into the image"
+    },
+    {
+      "name": "xdg-utils",
+      "why": "xdg-open and friends; underpins default-application handling"
+    },
+    {
+      "name": "desktop-file-utils",
+      "why": "Provides update-desktop-database, which must be run at image build time after Chicago95 installs its .desktop files"
+    },
+    {
+      "name": "gtk-update-icon-cache",
+      "why": "Must be run at build time against each /usr/share/icons/Chicago95* directory or icon lookup is slow and partially broken"
+    },
+    {
+      "name": "shared-mime-info",
+      "why": "Provides update-mime-database for Chicago95's chicago95-plus-theme.xml MIME type"
+    },
+    {
+      "name": "hicolor-icon-theme",
+      "why": "Base icon theme Chicago95's icon theme falls through to"
+    },
+    {
+      "name": "adwaita-icon-theme",
+      "why": "Final fallback so modern apps still show icons where Chicago95 has no equivalent"
+    },
+    {
+      "name": "adwaita-cursor-theme",
+      "why": "Fallback cursor theme; Chicago95 cursors inherit through it for anything missing"
+    },
+    {
+      "name": "gnome-keyring",
+      "why": "Secret storage; XFCE has no native keyring and apps will prompt endlessly without it"
+    },
+    {
+      "name": "gnome-keyring-pam",
+      "why": "Unlocks the keyring at LightDM login instead of prompting again after login"
+    },
+    {
+      "name": "seahorse",
+      "why": "GUI for managing keyring/GPG secrets"
+    },
+    {
+      "name": "upower",
+      "why": "Power state backend for xfce4-power-manager and the battery plugin"
+    },
+    {
+      "name": "udisks2",
+      "why": "Disk/removable-media backend for thunar-volman"
+    },
+    {
+      "name": "accountsservice",
+      "why": "User list and avatars in the LightDM greeter"
+    },
+    {
+      "name": "polkit",
+      "why": "Authorization framework xfce-polkit fronts"
+    },
+    {
+      "name": "at-spi2-core",
+      "why": "Accessibility bus; GTK3 apps log errors and some dialogs misbehave without it"
+    },
+    {
+      "name": "pavucontrol",
+      "why": "Full audio routing UI \u2014 xfce4-pulseaudio-plugin's own menu is minimal"
+    },
+    {
+      "name": "dbus-x11",
+      "why": "dbus-launch for X11 session startup paths still used by some XFCE autostart scripts"
+    },
+    {
+      "name": "xrdb",
+      "why": "Applies X resources at session start; needed if you ship a system Xresources for legacy-app fonts/colors"
+    },
+    {
+      "name": "xset",
+      "why": "Used by session scripts to manage the X font path and DPMS"
+    },
+    {
+      "name": "xdpyinfo",
+      "why": "DPI/geometry queries used by HiDPI decision logic in session scripts"
+    },
+    {
+      "name": "setxkbmap",
+      "why": "Keyboard layout application; backs xfce4-xkb-plugin"
+    },
+    {
+      "name": "arandr",
+      "why": "Simple GUI display arrangement; XFCE's built-in display dialog is limited on multi-monitor"
+    },
+    {
+      "name": "numlockx",
+      "why": "Restore NumLock at login \u2014 a classic desktop-image expectation"
+    },
+    {
+      "name": "zenity",
+      "why": "Shell-scriptable GTK dialogs; useful for any first-login glue you bake"
+    },
+    {
+      "name": "python3-gobject",
+      "why": "Runtime dependency of Chicago95 Plus! (PlusGUI.py uses Gtk via GI)"
+    },
+    {
+      "name": "python3-pillow",
+      "why": "Runtime dependency of Chicago95 Plus! (pluslib.py imports PIL.Image, BmpImagePlugin, PngImagePlugin)"
+    },
+    {
+      "name": "python3-svgwrite",
+      "why": "Runtime dependency of Chicago95 Plus! (pluslib.py imports svgwrite)"
+    },
+    {
+      "name": "python3-fonttools",
+      "why": "Runtime dependency of Chicago95 Plus! (pluslib.py imports fontTools.ttLib)"
+    },
+    {
+      "name": "txt2man",
+      "why": "BUILD-time only: Chicago95's `install_plus` target installs ${BUILDDIR}/*.1.gz, which only exist after running `make man`, which shells out to txt2man. Omit it and install_plus fails"
+    },
+    {
+      "name": "make",
+      "why": "BUILD-time: Chicago95 is installed via its own Makefile"
+    },
+    {
+      "name": "git-core",
+      "why": "BUILD-time: clone Chicago95 at a pinned commit"
+    },
+    {
+      "name": "bzip2",
+      "why": "BUILD-time: needed to unpack Chicago95_Panel_Preferences.tar.bz2 if you convert the panel profile into system defaults"
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "Chicago95 (theme, icons, cursors, sounds, plymouth, Plus!)",
+      "alternative": "Not in Fedora and NOT in any COPR \u2014 the COPR API search for 'chicago95' returns zero projects (the 'chicago-font'/'oflb-chicago-fonts' COPRs are the unrelated Apple Chicago typeface). Bake from git: clone https://github.com/grassmunk/Chicago95 at a pinned commit/tag, then `make man && make install_all prefix=/usr`. See the integration entries for the exact layout it produces."
+    },
+    {
+      "name": "lightdm-webkit2-greeter / web-greeter",
+      "alternative": "Not packaged in Fedora 44 (verified: lightdm-webkit2-greeter, lightdm-webkit-greeter, web-greeter all fail repoquery). Chicago95's Lightdm/Chicago95 directory is an HTML/CSS/JS webkit greeter theme and is therefore unusable. Use lightdm-gtk instead and theme it via /etc/lightdm/lightdm-gtk-greeter.conf with theme-name=Chicago95."
+    },
+    {
+      "name": "Microsoft Sans Serif / MS Sans Serif",
+      "alternative": "Not in Fedora; also not in msttcorefonts (it shipped with Windows itself). Chicago95's Extras/99-ms-sans-serif.conf and 99-ms-sans-serif-bold.conf only turn off antialias/embolden for it \u2014 they assume you supply the font. Recommended: skip it and use the Adobe bitmap Helvetica at 8pt (Chicago95's documented default, and more period-accurate). If you must have it, fetch a redistributable pixel clone as an external asset, or alias 'Microsoft Sans Serif' to liberation-sans-fonts in a fontconfig snippet (accepts a visual compromise)."
+    },
+    {
+      "name": "xfce-desktop-environment (comps group)",
+      "alternative": "That group ID does not exist on Fedora 44. The real IDs are `xfce-desktop`, `xfce-apps`, `xfce-extra-plugins`, `xfce-media`, `xfce-office`, `xfce-software-development`, `critical-path-xfce`. Recommendation: do NOT use any of them \u2014 install the explicit package list above. `xfce-desktop` mandates abrt-desktop, dnfdragora-updater, initial-setup-gui, vim-enhanced, mint-y-theme and four greybird themes; `xfce-apps` mandates firefox, claws-mail plus 13 claws plugins, pidgin, transmission, geany, gparted."
+    },
+    {
+      "name": "lightdm-slick-greeter",
+      "alternative": "Only the `slick-greeter` package exists in Fedora 44 (no lightdm- prefix). Not needed here \u2014 lightdm-gtk themes better with a GTK2/GTK3 theme like Chicago95."
+    },
+    {
+      "name": "menulibre",
+      "alternative": "Not in Fedora 44. Edit .desktop files directly in /etc/xdg/menus and /usr/share/applications at build time, which is the correct approach for an immutable image anyway."
+    },
+    {
+      "name": "mugshot",
+      "alternative": "Not in Fedora 44. User avatar/details are handled by accountsservice; the LightDM greeter reads it directly."
+    },
+    {
+      "name": "xfce4-windowck-plugin",
+      "alternative": "Not in Fedora 44. Panel-embedded titlebar buttons are unavailable; the Win95 look does not depend on it, so drop the requirement."
+    },
+    {
+      "name": "xfce4-indicator-plugin / xfce4-embed-plugin / xfce4-stopwatch-plugin",
+      "alternative": "Not in Fedora 44. Use xfce4-statusnotifier-plugin (verified available) for SNI/appindicator tray items, and xfce4-genmon-plugin for anything custom."
+    },
+    {
+      "name": "xfce4-volumed-pulse",
+      "alternative": "Not in Fedora 44. xfce4-pulseaudio-plugin already handles volume keys."
+    },
+    {
+      "name": "polkit-gnome",
+      "alternative": "Not in Fedora 44. Use xfce-polkit (verified available) as the session's polkit agent."
+    },
+    {
+      "name": "gtk3-classic",
+      "alternative": "Not in Fedora 44. GTK3 header bars will remain on GTK3 apps that use them; Chicago95's GTK3 CSS restyles them but cannot convert them back to classic titlebars."
+    },
+    {
+      "name": "xorg-x11-server-utils",
+      "alternative": "Split up in modern Fedora. Install the individual tools instead: xset, xrdb, xdpyinfo, xmodmap, xhost, xkill (all verified)."
+    },
+    {
+      "name": "p7zip",
+      "alternative": "Not in Fedora 44 under that name. Use `7zip`/`p7zip-plugins` equivalents via desktop-common, or rely on xarchiver's built-in handlers plus `unrar` (verified in RPM Fusion nonfree)."
+    },
+    {
+      "name": "org.gtk.Gtk3theme.Chicago95 (Flathub runtime extension)",
+      "alternative": "Does not exist on Flathub. Flatpak apps will not pick up Chicago95 from /usr/share/themes. Bake a system override granting read access \u2014 see the integration notes."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "config-file",
+      "detail": "CRITICAL FONT FIX. Fedora's /etc/fonts/fonts.conf scans only /usr/share/fonts, /usr/local/share/fonts, /usr/share/X11/fonts/Type1 and /usr/share/X11/fonts/TTF. The Adobe Helvetica bitmaps from xorg-x11-fonts-75dpi land in /usr/share/X11/fonts/75dpi and are therefore INVISIBLE to fontconfig \u2014 verified on a live F44 box: with the package installed, `fc-list | grep -ci helvetica` returns 0 and `fc-match 'Helvetica:size=8'` falls through to NimbusSans. Chicago95 will silently render in the wrong font. Fix: write /etc/fonts/conf.d/09-x11-bitmap-dirs.conf containing <dir>/usr/share/X11/fonts/75dpi</dir>, <dir>/usr/share/X11/fonts/100dpi</dir>, <dir>/usr/share/X11/fonts/misc</dir>, then run `fc-cache -sf` in the same Containerfile layer. (Alternative: copy the helv*.pcf.gz files into /usr/share/fonts/chicago95-bitmap/ and run mkfontscale + fc-cache.)"
+    },
+    {
+      "kind": "config-file",
+      "detail": "GOOD NEWS, do NOT copy the Debian instructions. Chicago95's Extras/post_install.txt tells you to `mv /etc/fonts/conf.d/70-no-bitmaps.conf` out of the way. On Fedora 44 that symlink does not exist \u2014 /etc/fonts/conf.d contains only 10-scale-bitmap-fonts.conf and 25-no-bitmap-fedora.conf, and the latter merely toggles embeddedbitmap for four CJK families (Kochi/Sazanami/AR PL). Bitmap fonts are already permitted. Skip that step entirely."
+    },
+    {
+      "kind": "config-file",
+      "detail": "SYSTEM-WIDE DEFAULTS, the core mechanism for an OS with no baked /home. xfconfd resolves each channel through XDG_CONFIG_DIRS and only writes to ~/.config/xfce4/xfconf/xfce-perchannel-xml on the user's FIRST change to that channel. So drop read-only defaults in /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/. Minimum set: xsettings.xml with /Net/ThemeName=Chicago95, /Net/IconThemeName=Chicago95, /Gtk/FontName='Helvetica 8', /Gtk/CursorThemeName=Chicago95_Cursor_White, /Gtk/CursorThemeSize=32, /Xft/Antialias=0, /Xft/Hinting=1, /Xft/HintStyle=hintfull, /Xft/RGBA=none (antialiasing OFF is what makes it look like 1995). xfwm4.xml with /general/theme=Chicago95, /general/title_font='Sans Bold 8', /general/button_layout='O|HMC', /general/use_compositing=false, /general/show_dock_shadow=false. xfce4-notifyd.xml with /theme=Chicago95 and /initial-opacity=1.0. xfce4-desktop.xml pointing the backdrop at /usr/share/backgrounds/Chicago95/wallpapers/. Each channel root element accepts a `locked` attribute if you want to make a setting immutable for non-admin users."
+    },
+    {
+      "kind": "config-file",
+      "detail": "PANEL LAYOUT GOTCHA. Chicago95's Makefile installs Chicago95_Panel_Preferences.tar.bz2 into /usr/share/xfce4-panel-profiles/layouts/, but that only helps a user who manually opens xfce4-panel-profiles. To make it the default: unpack the tarball at build time, place its xfce4-panel.xml at /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml, AND place the accompanying launcher directories at /etc/xdg/xfce4/panel/launcher-N/. Panel launchers live in ~/.config/xfce4/panel/launcher-N/ per user; without the /etc/xdg counterpart the panel comes up with empty launcher buttons."
+    },
+    {
+      "kind": "config-file",
+      "detail": "NON-XSETTINGS FALLBACK. xfsettingsd only reaches apps on the session bus. Also write /etc/gtk-3.0/settings.ini and /etc/gtk-2.0/gtkrc with gtk-theme-name=Chicago95, gtk-icon-theme-name=Chicago95, gtk-font-name='Helvetica 8', gtk-cursor-theme-name=Chicago95_Cursor_White, gtk-xft-antialias=0, gtk-xft-hinting=1, gtk-xft-hintstyle=hintfull. This covers apps launched from a TTY, sudo'd GUI tools, and the greeter's pre-session context."
+    },
+    {
+      "kind": "config-file",
+      "detail": "CURSOR SYSTEM DEFAULT. Write /usr/share/icons/default/index.theme containing [Icon Theme] Inherits=Chicago95_Cursor_White. This is what sets the Xorg root-window cursor and the pointer in apps that ignore XSETTINGS \u2014 without it the desktop background keeps the default X cursor while windows show the Win95 one."
+    },
+    {
+      "kind": "config-file",
+      "detail": "LOGIN SCREEN. Write /etc/lightdm/lightdm-gtk-greeter.conf (or better, a drop-in under /etc/lightdm/lightdm.conf.d/ for the daemon side) with [greeter] theme-name=Chicago95, icon-theme-name=Chicago95, font-name='Sans Bold 8', cursor-theme-name=Chicago95_Cursor_White, xft-antialias=false, xft-hintstyle=hintfull, background=/usr/share/backgrounds/Chicago95/wallpapers/<file>. lightdm-gtk also ships /usr/share/lightdm/lightdm.conf.d/60-lightdm-gtk-greeter.conf which selects the greeter session."
+    },
+    {
+      "kind": "other",
+      "detail": "CHICAGO95 INSTALL LAYOUT (from its Makefile, prefix=/usr, DESTDIR honored). Cursors -> /usr/share/icons/{Chicago95 Animated Hourglass Cursors, Chicago95_Cursor_Black, Chicago95_Cursor_White, Chicago95_Emerald, Chicago95 Standard Cursors, Chicago95 Standard Cursors Black}. GTK/xfwm/notify theme -> /usr/share/themes/Chicago95 (contains gtk-2.0, gtk-3.0, gtk-3.22, gtk-3.24 symlinks, xfwm4, xfwm4_hidpi, xfce-notify-4.0, metacity-1, openbox-3, cinnamon, gnome-shell). Icons -> /usr/share/icons/Chicago95 and Chicago95-tux. Fonts -> /usr/share/fonts/truetype (LessPerfectDOSVGA.ttf, MorePerfectDOSVGA.ttf only). Sounds -> /usr/share/sounds/Chicago95/stereo + index.theme. Startup sound -> /usr/share/sounds/Chicago95/startup.ogg. Terminal colorscheme -> /usr/share/xfce4/terminal/colorschemes/Chicago95.theme. Panel profile -> /usr/share/xfce4-panel-profiles/layouts/. Plymouth -> /usr/share/plymouth/themes/{Chicago95,RetroTux}. Backgrounds -> /usr/share/backgrounds/Chicago95/{patterns,wallpapers}. Plus! -> /usr/bin/{ChicagoPlus,PlusGUI}, /usr/libexec/chicago95-theme-plus/, /usr/share/chicago95-theme-plus/assets/, /usr/share/applications/, /usr/share/mime/packages/, /usr/share/man/man1/."
+    },
+    {
+      "kind": "other",
+      "detail": "START BUTTON GOTCHA. `install_gtk_theme` explicitly runs `rm -r /usr/share/themes/Chicago95/misc` \u2014 but misc/ is exactly where the Whisker-menu Start-button badge icons live, and post_install.txt tells the user to browse to it. On a system-wide install that directory is gone. Fix: after `make install_all`, copy Theme/Chicago95/misc separately to /usr/share/chicago95/misc, then set the whiskermenu button-icon default to a specific file there in /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml."
+    },
+    {
+      "kind": "other",
+      "detail": "BUILD-TIME CACHE REGENERATION. After `make install_all`, the Containerfile must run: `fc-cache -sf`; `gtk-update-icon-cache -qtf /usr/share/icons/Chicago95` and the same for Chicago95-tux and each cursor dir; `update-desktop-database /usr/share/applications`; `update-mime-database /usr/share/mime`. On an immutable image these caches live in /usr, so they cannot be built lazily at first boot."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Enable lightdm.service and set the default target: `systemctl enable lightdm.service` + `systemctl set-default graphical.target`. On bootc use `systemctl preset`/`enable` at build so the symlink is baked into /usr/lib/systemd/system-preset or /etc/systemd/system/display-manager.service. Do NOT rely on the /etc/systemd/system/display-manager.service symlink being created at runtime."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Chicago95's `install_login_sound` target drops /etc/xdg/autostart/chicago95-startup.desktop, which plays /usr/share/sounds/Chicago95/startup.ogg for every user. On bootc /etc is image content, so this works image-wide with no per-user setup. Skip this target if you do not want a startup jingle on every login \u2014 it is not separable from install_all, so call the individual targets instead."
+    },
+    {
+      "kind": "mime",
+      "detail": "Chicago95 Plus! registers a MIME type via /usr/share/mime/packages/chicago95-plus-theme.xml so .plus theme packs open in PlusGUI. Requires update-mime-database at build time (see cache regeneration)."
+    },
+    {
+      "kind": "other",
+      "detail": "FLATPAK THEMING. Flatpak apps run in a sandbox that cannot see /usr/share/themes, and there is no org.gtk.Gtk3theme.Chicago95 extension on Flathub. Bake /etc/flatpak/overrides/global with [Context] filesystems=/usr/share/themes:ro;/usr/share/icons:ro; and [Environment] GTK_THEME=Chicago95; otherwise every Flatpak renders in stock Adwaita and breaks the illusion."
+    },
+    {
+      "kind": "other",
+      "detail": "PLYMOUTH (optional). `plymouth-set-default-theme Chicago95` writes /etc/plymouth/plymouthd.conf, but on bootc the initramfs is prebuilt \u2014 you must regenerate it in the same build layer (`dracut --force --regenerate-all` or equivalent) or the boot splash will not change. Requires plymouth-plugin-script for the Chicago95 theme's script plugin. Arguably belongs in a boot/branding layer rather than the DE layer."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "Only relevant if you enable the Plymouth theme: ensure `rhgb quiet` remains on the kernel command line, otherwise the Chicago95 boot splash never displays."
+    },
+    {
+      "kind": "other",
+      "detail": "NO WAYLAND SESSION. Verified on Fedora 44: xfce4-session-4.20.3 ships /usr/share/xsessions/xfce.desktop and nothing under /usr/share/wayland-sessions; xfwm4-4.20.0 ships no Wayland compositor. This layer is X11-only, which cascades: use the proprietary NVIDIA X driver path rather than the Wayland one, expect no per-monitor fractional scaling, and note that XDG portal screencast/screenshot behave differently. It is also the right choice here \u2014 Chicago95's xfwm4 theme has no Wayland equivalent."
+    }
+  ],
+  "risks": [
+    "The Fedora `xfce-desktop` comps group mandates dnfdragora-updater, which offers to apply RPM transactions \u2014 on a bootc image that is at best a no-op and at worst confusing to users. It also mandates abrt-desktop, initial-setup-gui and vim-enhanced. Install the explicit package list instead of the group.",
+    "GTK4 / libadwaita applications completely ignore Chicago95 \u2014 there is no GTK4 port of the theme. Any modern app (GNOME Text Editor, newer Files, Fedora's own tools) will render in Adwaita and look jarring. Keep the app set in this layer GTK2/GTK3 (which is why mousepad/ristretto/galculator/xarchiver are chosen over their modern equivalents).",
+    "Chicago95's icon set is substantially derived from Windows 95 artwork. The repo is CC-BY-SA 4.0, but redistributing Microsoft-derived icons and the Windows 95 startup sound inside a published OS image is legally ambiguous in a way that a user-run installer script is not. If the image is distributed publicly, consider shipping the installer and a first-boot prompt rather than baking the assets.",
+    "Baking from git means pinning to a commit. Chicago95 has no release cadence to speak of; an unpinned clone in a Containerfile makes builds non-reproducible and can break `make install_all` when upstream reshuffles directories (it has done so before \u2014 the Plus! subtree and the hidpi cursors are recent additions).",
+    "`make install_all` calls `install_plus`, which installs ${BUILDDIR}/*.1.gz. Those files only exist after `make man`, which requires txt2man. A naive `make install_all` in a Containerfile fails with a confusing glob error. Run `make man` first, or call the individual install_* targets you actually want.",
+    "LightDM in Fedora is comparatively lightly maintained versus GDM; expect occasional greeter regressions. Mitigation is that lightdm-gtk is simple enough to debug, and /etc/lightdm/lightdm.conf.d/ drop-ins make config layering clean.",
+    "xfce4-screensaver and light-locker both exist and both want to own screen locking. Ship exactly one (recommended: xfce4-screensaver, since it integrates with xfce4-power-manager) and make sure the other is not pulled in transitively.",
+    "Antialiasing must be OFF for the retro look, which is genuinely harder to read on HiDPI panels. Chicago95 ships xfwm4_hidpi and HiDPI cursor variants but its HiDPI support is documented as partial. If the image targets modern laptops, expect to ship a per-machine fallback or accept blurry upscaling.",
+    "Package name traps that will silently break a Containerfile: `Thunar` (capital T), `lightdm-gtk` (not lightdm-gtk-greeter), `ImageMagick` (capital), `xfce-desktop` (not xfce-desktop-environment), `slick-greeter` (not lightdm-slick-greeter).",
+    "The Chicago95 Lightdm/ theme in the repo is dead weight on Fedora \u2014 it targets lightdm-webkit2-greeter, which Fedora does not package at all. Do not spend build time on it; `install_all` does not install it anyway (install_doc only copies its README).",
+    "Fedora's xorg-x11-fonts-* PCFs are in a directory fontconfig ignores. This is the single most likely cause of a 'the theme installed but it looks wrong' build \u2014 the fix is one conf.d file plus fc-cache, but nothing warns you it is missing."
+  ],
+  "services": [
+    "lightdm.service"
+  ],
+  "copr": [],
+  "external": [
+    {
+      "name": "grassmunk/Chicago95",
+      "method": "git clone --depth 1 --branch <pinned-tag-or-commit> https://github.com/grassmunk/Chicago95 /tmp/c95 && make -C /tmp/c95 man && make -C /tmp/c95 install_cursors install_fonts install_gtk_theme install_icons install_sounds install_backgrounds install_plus prefix=/usr && cp -r /tmp/c95/Theme/Chicago95/misc /usr/share/chicago95/misc && rm -rf /tmp/c95. Add install_login_sound only if you want the Win95 jingle on every login, and install_boot_screen only if you also regenerate the initramfs."
+    },
+    {
+      "name": "Microsoft Sans Serif pixel clone (optional)",
+      "method": "Only if you reject the bitmap-Helvetica default. Fetch a redistributable pixel-perfect MS Sans Serif TTF as a build asset, drop it in /usr/share/fonts/chicago95/, install Chicago95's Extras/99-ms-sans-serif.conf and 99-ms-sans-serif-bold.conf into /etc/fonts/conf.d/, and run fc-cache -sf. Not shipped by the Chicago95 Makefile and not in any Fedora repo."
+    },
+    {
+      "name": "Chicago95 Plus! theme packs (optional)",
+      "method": "Third-party .plus packs distributed via the upstream repo's wiki and community links; consumed at runtime by /usr/bin/PlusGUI into the user's ~/.themes. Nothing to bake \u2014 just ensure python3-gobject, python3-pillow, python3-svgwrite and python3-fonttools are installed."
+    }
+  ],
+  "flatpaks": [
+    "org.mozilla.firefox \u2014 if a browser belongs in this image at all, ship it as a Flatpak rather than the RPM the xfce-apps group would drag in; it moves too fast to bake and you get sandboxing for free. Pair with the /etc/flatpak/overrides/global theme grant so it still renders in Chicago95.",
+    "com.github.tchx84.Flatseal \u2014 managing the theme/filesystem overrides this layer depends on is far easier with a GUI, and it is Flatpak-only by nature.",
+    "io.github.dosbox_staging.dosbox_staging \u2014 thematically core to a Win95 desktop and exactly the kind of fast-moving emulator you do not want pinned into an image.",
+    "net.scummvm.ScummVM \u2014 Chicago95 ships Extras/chicago95_scummvm280.zip, a ScummVM theme pack, so ScummVM is clearly an intended companion; Flathub tracks it far more closely than Fedora does.",
+    "org.libreoffice.LibreOffice \u2014 Chicago95 ships Extras/libreoffice-chicago95-iconset. Deliver LibreOffice as a Flatpak (huge, fast-moving) and install the iconset into the Flatpak's config rather than baking a multi-hundred-MB office suite into every image."
+  ],
+  "notes": [
+    "Verified group IDs on Fedora 44 (dnf group list --hidden): xfce-desktop, xfce-apps, xfce-extra-plugins, xfce-media, xfce-office, xfce-software-development, critical-path-xfce, base-x. There is NO `xfce-desktop-environment`. All are Uservisible=no.",
+    "Belongs in desktop-common, not here: fonts (liberation-sans-fonts, dejavu-sans-fonts, google-noto-*), codecs (RPM Fusion gstreamer1-plugins-*, ffmpeg), PipeWire + wireplumber, flatpak, podman, cups + system-config-printer, NetworkManager itself, firewalld, xdg-desktop-portal (the generic one). This layer only adds the XFCE/X11-specific pieces on top: xdg-desktop-portal-gtk, the nm-applet GUI, and the X server stack.",
+    "Also belongs in desktop-common if it exists there already: the NetworkManager-*-gnome VPN plugins that the xfce-desktop group mandates (fortisslvpn, iodine, l2tp, libreswan, openconnect, openvpn, ssh, sstp, strongswan, vpnc). They are VPN-stack, not DE-stack.",
+    "Open question: whether the Plymouth theme belongs here or in a boot/branding layer. It requires an initramfs regeneration step that the DE layer otherwise does not need, and it conflicts with any other branding the image wants. Recommend splitting it out.",
+    "Open question: whether to lock the theme. xfconf channel roots accept a `locked` attribute restricting which users may change properties. Locking /Net/ThemeName guarantees the retro look survives, but it also means a user cannot switch to a readable theme when they need one. Recommend NOT locking, and instead shipping the defaults unlocked in /etc/xdg.",
+    "xfce4-statusnotifier-plugin is available and is the correct plugin for modern SNI/AppIndicator tray icons (many apps have dropped XEmbed tray support). Consider adding it alongside the panel plugins listed if the app set needs it.",
+    "xfdashboard and xfdashboard-themes are available but are the antithesis of a Win95 desktop \u2014 explicitly avoid, and note that the xfce-extra-plugins group mandates them.",
+    "If you want an authentic 'Ctrl+Alt+Del' shortcut, bind it to xfce4-taskmanager in /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml \u2014 that file follows the same XDG_CONFIG_DIRS default mechanism as the other channels.",
+    "xfwm4 compositing should be disabled for authenticity (no drop shadows, no transparency). This is set in xfwm4.xml as /general/use_compositing=false, but note it also disables the tabwin fade and can expose repaint artifacts on some drivers \u2014 test on the target GPU.",
+    "The Chicago95 Makefile hardcodes `prefix = /usr` and honors DESTDIR, so it is well-behaved in a container build. It uses $(shell which ...) for every coreutil at parse time, so the build stage must have awk, chmod, cp, find, grep, gzip, install, rm, sed, sort, xargs present \u2014 all in fedora-bootc's base, but worth knowing if you build in a minimal stage."
+  ],
+  "size_note": "Roughly 1.0\u20131.4 GB installed on top of quay.io/fedora/fedora-bootc. The X11 server plus Mesa/DRI drivers dominate (~400\u2013500 MB, and much more if you pull in every hardware driver); the dual GTK2+GTK3 stacks with their loaders and locale data are next (~250 MB); adwaita-icon-theme plus the Chicago95 icon/cursor sets add ~120 MB; the xorg-x11-fonts-* bitmap sets are ~40 MB. Chicago95 itself is small \u2014 roughly 45\u201360 MB installed, mostly the icon theme and animated cursors. The XFCE binaries and goodies are the cheapest part of the whole layer at well under 150 MB combined, which is the point of choosing XFCE. Trimming the biggest wins: drop xorg-x11-fonts-100dpi if you only target ~96 DPI, skip install_boot_screen/Plymouth, and drop tumbler-extras if raw/font thumbnails are not needed."
+}

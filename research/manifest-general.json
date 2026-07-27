@@ -1,0 +1,614 @@
+{
+  "key": "general",
+  "summary": "The \"General\" purpose is the baseline user-facing application set for an everyday Fedora 44 bootc desktop: a web browser, a full office suite with spellchecking, mail/PIM, media playback, image viewing, a PDF reader, archive handling (including non-free formats from RPM Fusion), calculator, text editors, screenshot, scanning, a password manager, disk/system inspection tools, and a remote-desktop client. It targets a normal human who wants a machine that opens whatever file or protocol they double-click without ever installing anything. Because the base is atomic, the emphasis is on the parts that must be baked in \u2014 MIME/default-application wiring, gvfs backends for phones/SMB/MTP, glycin image loaders, thumbnailers, browser enterprise policy files \u2014 while the fast-moving and proprietary apps (Chrome/Brave/Edge, Signal, Bitwarden, OnlyOffice, Discord, Spotify) are deliberately pushed to Flatpak so a browser CVE does not force an image rebuild and reboot. Everything here is a user-facing app or its direct data plumbing; fonts, codecs, PipeWire, portals, flatpak itself, cups and podman are assumed present from the shared desktop layer.",
+  "packages": [
+    {
+      "name": "firefox",
+      "why": "Default web browser; only browser in Fedora proper with a maintained, security-supported RPM. 296 MB installed."
+    },
+    {
+      "name": "thunderbird",
+      "why": "Mail/calendar/contacts client, DE-agnostic. 368 MB installed."
+    },
+    {
+      "name": "evolution",
+      "why": "Optional GNOME-native alternative to Thunderbird with proper GOA integration; pick one, not both."
+    },
+    {
+      "name": "evolution-ews",
+      "why": "Exchange/Office365 mail support for Evolution \u2014 the single most common reason a desktop image fails a corporate user."
+    },
+    {
+      "name": "libreoffice-writer",
+      "why": "Word processor."
+    },
+    {
+      "name": "libreoffice-calc",
+      "why": "Spreadsheet."
+    },
+    {
+      "name": "libreoffice-impress",
+      "why": "Presentations."
+    },
+    {
+      "name": "libreoffice-draw",
+      "why": "Vector/diagram editing and, importantly, PDF editing."
+    },
+    {
+      "name": "libreoffice-gtk4",
+      "why": "GTK4 VCL backend so LibreOffice matches the desktop theme and file chooser instead of falling back to its own X11 widgets."
+    },
+    {
+      "name": "libreoffice-langpack-en",
+      "why": "UI language pack; without it LO ships a partial UI."
+    },
+    {
+      "name": "libreoffice-pdfimport",
+      "why": "Opens PDFs in Draw for editing."
+    },
+    {
+      "name": "libreoffice-filters",
+      "why": "Extra import/export filters (legacy Word/WordPerfect/Lotus, etc.)."
+    },
+    {
+      "name": "libreoffice-help-en",
+      "why": "Offline help; on an immutable image users cannot add it later without a rebuild."
+    },
+    {
+      "name": "hunspell-en-US",
+      "why": "Spellchecking dictionary used by LibreOffice, Thunderbird and GTK text widgets."
+    },
+    {
+      "name": "hyphen-en",
+      "why": "Hyphenation patterns for LibreOffice justified text."
+    },
+    {
+      "name": "vlc",
+      "why": "Universal media player that plays anything; DE-agnostic fallback. Now in Fedora proper, not RPM Fusion."
+    },
+    {
+      "name": "mpv",
+      "why": "Lightweight player and the engine behind Celluloid; also useful headless/CLI."
+    },
+    {
+      "name": "celluloid",
+      "why": "GTK4 frontend for mpv \u2014 the sane GNOME-native video player choice."
+    },
+    {
+      "name": "rhythmbox",
+      "why": "Local music library player; only include if the user has a local collection, otherwise drop."
+    },
+    {
+      "name": "loupe",
+      "why": "Default GNOME image viewer in F44 (replaces eog); sandboxed, glycin-based."
+    },
+    {
+      "name": "glycin-loaders",
+      "why": "Out-of-process image loaders that give Loupe/GTK4 HEIF, AVIF, JXL and RAW support. This is what replaced the old *-pixbuf-loader packages and is easy to forget."
+    },
+    {
+      "name": "gthumb",
+      "why": "Image browser/organiser with basic editing and batch rename \u2014 fills the gap Loupe deliberately leaves."
+    },
+    {
+      "name": "ImageMagick",
+      "why": "CLI convert/identify; relied on by scripts and by a surprising number of file-manager actions."
+    },
+    {
+      "name": "papers",
+      "why": "GNOME document/PDF viewer in F44 (Evince successor). Use this or evince, not both."
+    },
+    {
+      "name": "evince",
+      "why": "Alternative/legacy PDF viewer; keep if the DE layer is not GNOME 48+ or if you need evince-djvu."
+    },
+    {
+      "name": "evince-djvu",
+      "why": "DjVu support \u2014 only meaningful alongside evince; papers has no equivalent yet."
+    },
+    {
+      "name": "xournalpp",
+      "why": "PDF annotation and handwritten notes; the common answer to 'how do I sign this PDF'."
+    },
+    {
+      "name": "pdfarranger",
+      "why": "Split/merge/rotate PDF pages \u2014 trivially small, constantly needed."
+    },
+    {
+      "name": "file-roller",
+      "why": "GUI archive manager."
+    },
+    {
+      "name": "file-roller-nautilus",
+      "why": "Right-click Extract Here / Compress in the file manager. Without it file-roller is nearly invisible."
+    },
+    {
+      "name": "7zip",
+      "why": "7z support (F44 name; p7zip is gone). Provides the 7zz binary file-roller shells out to."
+    },
+    {
+      "name": "7zip-standalone",
+      "why": "Provides the p7zip compatibility binary some tools still exec by name."
+    },
+    {
+      "name": "unrar",
+      "why": "RAR extraction. RPM Fusion nonfree \u2014 see risks re: redistribution."
+    },
+    {
+      "name": "unzip",
+      "why": "ZIP extraction backend."
+    },
+    {
+      "name": "zip",
+      "why": "ZIP creation backend for file-roller."
+    },
+    {
+      "name": "xz",
+      "why": "xz/lzma archives."
+    },
+    {
+      "name": "zstd",
+      "why": "zstd archives, increasingly common."
+    },
+    {
+      "name": "cabextract",
+      "why": "Microsoft CAB files."
+    },
+    {
+      "name": "lha",
+      "why": "LZH archives (still common in older/Japanese content)."
+    },
+    {
+      "name": "arj",
+      "why": "ARJ archives."
+    },
+    {
+      "name": "lzip",
+      "why": "lzip archives."
+    },
+    {
+      "name": "gnome-calculator",
+      "why": "Calculator with unit/currency conversion."
+    },
+    {
+      "name": "gnome-text-editor",
+      "why": "Default GTK4 plain-text editor in F44."
+    },
+    {
+      "name": "nano",
+      "why": "Terminal editor a normal user can actually exit."
+    },
+    {
+      "name": "vim-enhanced",
+      "why": "Terminal editor for everyone else; also provides a sane vi."
+    },
+    {
+      "name": "flameshot",
+      "why": "DE-agnostic screenshot tool with annotation. On GNOME the shell already handles PrintScreen, so this is mainly for non-GNOME DE layers."
+    },
+    {
+      "name": "swappy",
+      "why": "Annotation frontend for grim/slurp on wlroots-based DE layers."
+    },
+    {
+      "name": "grim",
+      "why": "Wayland screenshot capture for wlroots compositors (Hyprland/Sway)."
+    },
+    {
+      "name": "slurp",
+      "why": "Region selection to pair with grim."
+    },
+    {
+      "name": "remmina",
+      "why": "Remote desktop client \u2014 the requested RDP/VNC/SPICE frontend."
+    },
+    {
+      "name": "remmina-plugins-rdp",
+      "why": "RDP protocol support; Remmina is useless without it."
+    },
+    {
+      "name": "remmina-plugins-vnc",
+      "why": "VNC protocol support."
+    },
+    {
+      "name": "remmina-plugins-spice",
+      "why": "SPICE protocol support for local VMs."
+    },
+    {
+      "name": "gnome-connections",
+      "why": "Simple GNOME-native RDP/VNC client; lighter alternative to Remmina for casual users."
+    },
+    {
+      "name": "freerdp",
+      "why": "xfreerdp CLI plus the RDP libraries Remmina links against."
+    },
+    {
+      "name": "tigervnc",
+      "why": "vncviewer CLI client."
+    },
+    {
+      "name": "virt-viewer",
+      "why": "remote-viewer for SPICE/VNC console URLs handed out by virt hosts."
+    },
+    {
+      "name": "keepassxc",
+      "why": "Offline password manager; the sensible RPM answer when Bitwarden is not in Fedora."
+    },
+    {
+      "name": "seahorse",
+      "why": "GUI for gnome-keyring, GPG and SSH keys."
+    },
+    {
+      "name": "gvfs",
+      "why": "Virtual filesystem core \u2014 makes 'Other Locations' and trash work."
+    },
+    {
+      "name": "gvfs-mtp",
+      "why": "Android phone browsing over USB. Not pulled in by default and its absence is a classic complaint."
+    },
+    {
+      "name": "gvfs-gphoto2",
+      "why": "Camera/PTP device browsing."
+    },
+    {
+      "name": "gvfs-smb",
+      "why": "Windows/Samba network share browsing."
+    },
+    {
+      "name": "gvfs-nfs",
+      "why": "NFS share browsing."
+    },
+    {
+      "name": "gvfs-archive",
+      "why": "Browse inside archives from the file manager."
+    },
+    {
+      "name": "gvfs-fuse",
+      "why": "Exposes gvfs mounts at a real POSIX path so non-GTK apps (LibreOffice, terminals) can open them."
+    },
+    {
+      "name": "gvfs-goa",
+      "why": "Bridges GNOME Online Accounts (Google Drive, Nextcloud, WebDAV) into the file manager."
+    },
+    {
+      "name": "gnome-online-accounts",
+      "why": "Single sign-on store used by Evolution, Files, Calendar and Contacts."
+    },
+    {
+      "name": "sushi",
+      "why": "Spacebar quick-preview in Nautilus."
+    },
+    {
+      "name": "ffmpegthumbnailer",
+      "why": "Video thumbnails in the file manager."
+    },
+    {
+      "name": "gnome-epub-thumbnailer",
+      "why": "EPUB/PDF cover thumbnails."
+    },
+    {
+      "name": "tumbler",
+      "why": "Thumbnailing service for Thunar-based (XFCE) DE layers only; skip on GNOME."
+    },
+    {
+      "name": "simple-scan",
+      "why": "Document scanning GUI; pairs with the scanner udev/group integration below."
+    },
+    {
+      "name": "gnome-system-monitor",
+      "why": "Process/resource viewer."
+    },
+    {
+      "name": "gnome-disk-utility",
+      "why": "Partitioning, SMART health, disk image write/restore, benchmark."
+    },
+    {
+      "name": "baobab",
+      "why": "Disk usage analyser \u2014 essential on an image where /var fills up quietly."
+    },
+    {
+      "name": "gnome-logs",
+      "why": "GUI journal browser, useful for a user reporting a problem on an atomic system."
+    },
+    {
+      "name": "gnome-firmware",
+      "why": "GUI over fwupd for firmware updates; on an immutable OS this is the one 'installer' users still need."
+    },
+    {
+      "name": "transmission-gtk",
+      "why": "BitTorrent client; also registers the magnet: URI handler."
+    },
+    {
+      "name": "yt-dlp",
+      "why": "Media download CLI; also used as a backend by several GUI apps."
+    },
+    {
+      "name": "aria2",
+      "why": "Robust multi-connection downloader."
+    },
+    {
+      "name": "wl-clipboard",
+      "why": "wl-copy/wl-paste \u2014 clipboard access from scripts and terminal on Wayland."
+    },
+    {
+      "name": "xclip",
+      "why": "XWayland/X11 clipboard fallback still expected by many scripts."
+    },
+    {
+      "name": "xdg-user-dirs-gtk",
+      "why": "Creates and localises Documents/Downloads/Pictures on first login; without it a fresh user has a bare $HOME."
+    },
+    {
+      "name": "mailcap",
+      "why": "Provides run-mailcap and the legacy MIME association table CLI tools still consult."
+    },
+    {
+      "name": "gnome-clocks",
+      "why": "Alarms, world clocks, timer."
+    },
+    {
+      "name": "gnome-calendar",
+      "why": "Calendar frontend over GOA/Evolution Data Server."
+    },
+    {
+      "name": "gnome-contacts",
+      "why": "Address book frontend."
+    },
+    {
+      "name": "gnome-weather",
+      "why": "Weather, plus it populates the shell weather widget."
+    },
+    {
+      "name": "gnome-characters",
+      "why": "Emoji and special character picker."
+    },
+    {
+      "name": "gnome-font-viewer",
+      "why": "Font preview; borderline shared-layer, listed here as user-facing."
+    },
+    {
+      "name": "gnome-sound-recorder",
+      "why": "Simple voice recorder (audio-recorder does not exist in F44)."
+    },
+    {
+      "name": "foliate",
+      "why": "EPUB reader; replaces the retired gnome-books."
+    },
+    {
+      "name": "liferea",
+      "why": "RSS reader available as an RPM, since NewsFlash is Flatpak-only."
+    },
+    {
+      "name": "chromium",
+      "why": "Second browser engine for site compatibility and for testing; fully in Fedora proper, unlike chromium-freeworld."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "chromium-freeworld",
+      "alternative": "Dropped from RPM Fusion for F44. Use the Fedora `chromium` package (verified, now built with full ffmpeg codec support) or Flatpak org.chromium.Chromium."
+    },
+    {
+      "name": "google-chrome-stable",
+      "alternative": "External Google RPM repo (https://dl.google.com/linux/chrome/rpm/stable/x86_64) \u2014 note it appeared in repoquery here only because the build host has that repo; fedora-bootc does not. Prefer Flatpak com.google.Chrome."
+    },
+    {
+      "name": "brave-browser",
+      "alternative": "External Brave RPM repo (https://brave-browser-rpm-release.s3.brave.com/x86_64/) or Flatpak com.brave.Browser."
+    },
+    {
+      "name": "microsoft-edge-stable",
+      "alternative": "External Microsoft RPM repo (https://packages.microsoft.com/yumrepos/edge) or Flatpak com.microsoft.Edge."
+    },
+    {
+      "name": "vivaldi-stable",
+      "alternative": "External Vivaldi RPM repo (https://repo.vivaldi.com/archive/rpm/x86_64) or Flatpak com.vivaldi.Vivaldi."
+    },
+    {
+      "name": "librewolf",
+      "alternative": "External LibreWolf RPM repo (https://rpm.librewolf.net) or Flatpak io.gitlab.librewolf-community.LibreWolf."
+    },
+    {
+      "name": "onlyoffice-desktopeditors",
+      "alternative": "Flatpak org.onlyoffice.desktopeditors \u2014 the best-fidelity MS Office alternative and not packaged in Fedora."
+    },
+    {
+      "name": "signal-desktop",
+      "alternative": "Flatpak org.signal.Signal."
+    },
+    {
+      "name": "element-desktop",
+      "alternative": "Flatpak im.riot.Riot."
+    },
+    {
+      "name": "bitwarden",
+      "alternative": "Flatpak com.bitwarden.desktop; or use the verified RPM `keepassxc` for a fully offline manager."
+    },
+    {
+      "name": "newsflash",
+      "alternative": "Flatpak io.gitlab.news_flash.NewsFlash; RPM alternative is `liferea` (verified)."
+    },
+    {
+      "name": "mission-center",
+      "alternative": "Flatpak io.missioncenter.MissionCenter; RPM alternative is `gnome-system-monitor` or `btop` (both verified)."
+    },
+    {
+      "name": "resources",
+      "alternative": "Flatpak net.nokyan.Resources; same RPM alternatives as above."
+    },
+    {
+      "name": "satty",
+      "alternative": "none in Fedora. Use `flameshot` (verified) or `grim`+`slurp`+`swappy` (all verified)."
+    },
+    {
+      "name": "webp-pixbuf-loader",
+      "alternative": "Obsolete in F44 \u2014 image format support moved to `glycin-loaders` (verified), which covers WebP, AVIF, HEIF, JXL and RAW."
+    },
+    {
+      "name": "gdk-pixbuf2-modules",
+      "alternative": "Does not exist as a separate package; format support is in gdk-pixbuf2 itself plus glycin-loaders."
+    },
+    {
+      "name": "p7zip / p7zip-plugins",
+      "alternative": "Renamed. Use `7zip` and `7zip-standalone` (both verified)."
+    },
+    {
+      "name": "audio-recorder",
+      "alternative": "Use `gnome-sound-recorder` (verified)."
+    },
+    {
+      "name": "gnome-books",
+      "alternative": "Retired upstream. Use `foliate` (verified) or Flatpak com.calibre_ebook.calibre; note `calibre` is also available as an RPM (verified)."
+    },
+    {
+      "name": "zoom / slack / spotify / teams",
+      "alternative": "Not in Fedora and never will be. Flatpaks: us.zoom.Zoom, com.slack.Slack, com.spotify.Client; Teams is browser-only (PWA)."
+    },
+    {
+      "name": "neofetch",
+      "alternative": "Retired upstream and removed. Use `fastfetch` (verified)."
+    }
+  ],
+  "flatpaks": [
+    "com.google.Chrome",
+    "com.brave.Browser",
+    "io.gitlab.librewolf-community.LibreWolf",
+    "org.mozilla.firefox",
+    "org.mozilla.Thunderbird",
+    "org.onlyoffice.desktopeditors",
+    "com.bitwarden.desktop",
+    "org.signal.Signal",
+    "im.riot.Riot",
+    "com.discordapp.Discord",
+    "com.spotify.Client",
+    "us.zoom.Zoom",
+    "com.slack.Slack",
+    "io.missioncenter.MissionCenter",
+    "net.nokyan.Resources",
+    "io.gitlab.news_flash.NewsFlash",
+    "com.github.tchx84.Flatseal",
+    "org.gnome.World.Secrets",
+    "com.calibre_ebook.calibre"
+  ],
+  "integration": [
+    {
+      "kind": "mime",
+      "detail": "Ship /usr/share/applications/mimeapps.list (and /etc/xdg/mimeapps.list for admin override) setting defaults: firefox.desktop for x-scheme-handler/http(s), text/html; org.gnome.Papers.desktop for application/pdf; org.gnome.Loupe.desktop for image/*; io.github.celluloid_player.Celluloid.desktop for video/*; org.gnome.FileRoller.desktop for the archive types; transmission-gtk.desktop for x-scheme-handler/magnet and application/x-bittorrent; org.gnome.TextEditor.desktop for text/plain. This is the single highest-value thing to bake \u2014 on an atomic image a user cannot easily repair a wrong default, and 'Firefox is not your default browser' nags are the #1 first-boot complaint."
+    },
+    {
+      "kind": "config-file",
+      "detail": "/usr/lib64/firefox/distribution/policies.json: set DisableAppUpdate=true (RPM-managed, in-app updater is broken on a read-only /usr and will pester the user forever), DontCheckDefaultBrowser=true, OverrideFirstRunPage, DisableProfileImport as desired, and optionally DNSOverHTTPS. Without DisableAppUpdate, Firefox on bootc repeatedly fails self-update."
+    },
+    {
+      "kind": "config-file",
+      "detail": "/usr/lib64/thunderbird/distribution/policies.json with DisableAppUpdate=true, for the same read-only /usr reason."
+    },
+    {
+      "kind": "config-file",
+      "detail": "gschema override in /usr/share/glib-2.0/schemas/ (e.g. 90-general-purpose.gschema.override) to set org.gnome.shell favorite-apps to the actual installed app IDs, and org.gnome.desktop.interface / nautilus defaults. Must be followed by `glib-compile-schemas /usr/share/glib-2.0/schemas` in the Containerfile or the override silently does nothing."
+    },
+    {
+      "kind": "config-file",
+      "detail": "/etc/xdg/user-dirs.defaults + /etc/xdg/user-dirs.conf to control which XDG dirs get created; ensures xdg-user-dirs-update produces a consistent $HOME on first login rather than whatever the DE happens to do."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Environment default SAL_USE_VCLPLUGIN=gtk4 (via /usr/lib/environment.d/) or rely on libreoffice-gtk4; otherwise LibreOffice may pick the generic VCL backend and render with non-native file dialogs that cannot see gvfs mounts."
+    },
+    {
+      "kind": "group",
+      "detail": "Ensure the `scanner` and `lp` groups exist and that the primary user is added, so simple-scan can reach USB scanners. On an atomic image group membership must be baked or handled by a systemd-sysusers/first-boot unit, since post-install usermod is not part of the image."
+    },
+    {
+      "kind": "udev",
+      "detail": "libmtp and libgphoto2 ship the udev rules that tag Android/camera devices with ID_MTP_DEVICE / ID_GPHOTO2 and assign uaccess. These come with gvfs-mtp/gvfs-gphoto2 dependencies, but verify the rules land in /usr/lib/udev/rules.d \u2014 without them phone browsing silently fails with a permissions error."
+    },
+    {
+      "kind": "udev",
+      "detail": "sane-backends udev rules (pulled by simple-scan) grant uaccess to USB scanners. Confirm they are present; a scanner that needs root is indistinguishable from a broken scanner to a normal user."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Enable fstrim.timer \u2014 an atomic image on SSD/NVMe benefits and it is not on by default in all base images."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Enable switcheroo-control.service and iio-sensor-proxy.service if the hardware target includes hybrid-GPU laptops or convertibles; both are DBus-activated but explicit enablement avoids first-use races. (Arguably shared-layer; listed here because 'Launch using discrete GPU' is a user-facing menu item.)"
+    },
+    {
+      "kind": "systemd",
+      "detail": "Enable fwupd-refresh.timer so gnome-firmware has fresh metadata; firmware updates are one of the few update paths that still works normally on an immutable OS."
+    },
+    {
+      "kind": "other",
+      "detail": "Run `update-desktop-database /usr/share/applications` and `update-mime-database /usr/share/mime` as the final steps of the Containerfile layer. dnf triggers usually handle this, but in a container build with --nodocs / partial scriptlet execution the caches can be stale, producing an image where nothing has a default application."
+    },
+    {
+      "kind": "other",
+      "detail": "If any Flatpaks are pre-seeded, do it as a build-time `flatpak install --system` into /var/lib/flatpak \u2014 which is NOT persisted on bootc \u2014 so instead ship a systemd first-boot oneshot unit that installs the Flatpak set. This is the standard bootc gotcha and belongs in the shared layer, but the app ID list above is this purpose's contribution to it."
+    }
+  ],
+  "services": [
+    "fstrim.timer",
+    "fwupd-refresh.timer",
+    "switcheroo-control.service",
+    "iio-sensor-proxy.service",
+    "gnome-remote-desktop.service (ONLY if you want inbound RDP; the purpose spec asked for a client, so leave this disabled by default)"
+  ],
+  "copr": [],
+  "external": [
+    {
+      "name": "Google Chrome",
+      "method": "Official RPM repo dl.google.com/linux/chrome/rpm/stable/x86_64 with key linux_signing_key.pub. Note: it self-updates via a cron/repo drop-in that is meaningless on bootc \u2014 prefer Flatpak com.google.Chrome instead."
+    },
+    {
+      "name": "Brave Browser",
+      "method": "Official RPM repo brave-browser-rpm-release.s3.brave.com/x86_64 + brave-core.asc key."
+    },
+    {
+      "name": "Microsoft Edge",
+      "method": "Official RPM repo packages.microsoft.com/yumrepos/edge + microsoft.asc key."
+    },
+    {
+      "name": "Vivaldi",
+      "method": "Official RPM repo repo.vivaldi.com/archive/rpm/x86_64."
+    },
+    {
+      "name": "LibreWolf",
+      "method": "Official RPM repo rpm.librewolf.net (repo file at rpm.librewolf.net/librewolf-repo.repo)."
+    },
+    {
+      "name": "Flathub remote",
+      "method": "Not an RPM, but the flathub remote must be added at build time (flatpak remote-add --system flathub) for any of the Flatpak IDs above to resolve. This belongs in the shared desktop layer \u2014 flagged here because this purpose depends on it heavily."
+    }
+  ],
+  "risks": [
+    "Baking Firefox/Chromium/Thunderbird into the image means every browser CVE requires a full image build, push, pull and reboot. Flatpak versions update same-day with no reboot. Strongly consider shipping Firefox as the RPM (for the enterprise policies.json integration) but Chrome/Brave/Chromium as Flatpaks only.",
+    "firefox (296 MB) + thunderbird (368 MB) + libreoffice-core (302 MB) are roughly 85% of this purpose's footprint. If image size matters, moving Thunderbird and LibreOffice to Flatpak cuts the layer by more than half.",
+    "`discord` exists in rpmfusion-nonfree but is a repackaged upstream tarball that tries to self-update and hard-refuses to launch when it detects a newer version it cannot install on a read-only /usr. Use the Flatpak.",
+    "`unrar` is nonfree with redistribution restrictions. If this image is published to a public registry, shipping it may violate the license \u2014 `unrar-free` (verified) is the safe substitute at the cost of some RAR5 compatibility.",
+    "google-chrome-stable resolved during verification only because the build host has Google's repo configured. It is NOT in fedora-bootc. Do not copy that name into the manifest without also adding the repo.",
+    "Mixing `papers` and `evince` gives two PDF viewers competing for the application/pdf default, producing nondeterministic behaviour. Pick one and set the MIME default explicitly.",
+    "Every gnome-* app listed assumes the DE layer is GNOME. If this purpose is composed with a COSMIC, KDE or Hyprland layer, gnome-calculator/gnome-text-editor/loupe still work but drag in a large GNOME dependency tail and look foreign. Consider DE-conditional variants: galculator/kate/gwenview or qalculate-gtk (all verified) for non-GNOME layers.",
+    "`tumbler` is XFCE/Thunar-specific and does nothing on GNOME; `file-roller-nautilus` does nothing without Nautilus. Both are dead weight on the wrong DE layer.",
+    "glycin-loaders is easy to omit and its absence is silent \u2014 Loupe simply reports 'unsupported format' on HEIF photos straight off an iPhone, which reads as a broken image viewer.",
+    "gschema overrides that are not followed by glib-compile-schemas in the same build layer are silently ignored, giving an image that looks correct on inspection but behaves as if nothing was configured."
+  ],
+  "size_note": "The named packages sum to ~1.13 GiB installed; with dependencies not already provided by the shared desktop layer, budget 1.8-2.2 GiB for this purpose. Three packages dominate: thunderbird (368 MB), libreoffice-core (302 MB, before the per-app modules) and firefox (296 MB) \u2014 together ~85% of the total. The entire archive/CLI/utility tail (7zip, unzip, xz, zstd, cabextract, lha, arj, lzip, wl-clipboard, xclip, aria2, yt-dlp) is under 40 MB combined. Dropping Thunderbird and LibreOffice to Flatpak brings the layer to roughly 450 MB.",
+  "notes": [
+    "BOUNDARY \u2014 belongs in desktop.conf, not here: fonts of any kind, gstreamer1-plugins-* and ffmpeg-libs, pipewire/wireplumber, xdg-desktop-portal*, flatpak itself, cups/cups-filters, podman/toolbox, NetworkManager, gnome-keyring, libsecret, polkit, udisks2, upower, shared-mime-info, desktop-file-utils, xdg-utils, xdg-user-dirs (the base package \u2014 I list only xdg-user-dirs-gtk here as the user-facing first-login piece).",
+    "BOUNDARY \u2014 power-profiles-daemon, tuned, thermald, bolt, smartmontools, lm_sensors, fwupd, gvfs core: I listed gvfs and its backends under packages because the backends (mtp/gphoto2/smb/goa) are genuinely purpose-specific user capability, but the `gvfs` base package itself may already be in the desktop layer \u2014 dedupe at compose time. fwupd is almost certainly base; only gnome-firmware (the GUI) is arguably ours.",
+    "BOUNDARY \u2014 mozilla-openh264 / gstreamer1-plugin-openh264 (both verified) are needed for WebRTC video calls in Firefox. That is codec territory, so I have deliberately left them out of packages, but flag it: without them, video calls in Firefox fail and users blame the browser. Make sure the codec layer includes them.",
+    "dnf groups exist and were verified available (`libreoffice`, `office`, `sound-and-video`, `editors`, `system-tools`, `admin-tools`, `graphics`-adjacent). I deliberately did not use them: groups pull unpredictably large and shifting trees across Fedora releases, which is exactly the wrong property for a reproducible baked image. Explicit package lists only. If you do want one, `dnf group info libreoffice` before committing.",
+    "Browser choice recommendation: ship `firefox` as RPM (so the distribution/policies.json integration works and there is a functioning browser even if Flathub is unreachable at first boot), and ship Chrome/Brave/Chromium as Flatpaks. This gives fast security updates for the browsers most likely to need them, without leaving the image browserless.",
+    "Mail choice: `thunderbird` (DE-agnostic, 368 MB) vs `evolution` + `evolution-ews` (GNOME-native, GOA integration, Exchange support). Pick one. If the DE layer is GNOME and the target audience might be corporate, evolution+evolution-ews is the stronger choice; otherwise thunderbird.",
+    "PDF choice: `papers` is the F44 GNOME default and the forward path; `evince` is retained only for DjVu (evince-djvu) and non-GNOME layers. Ship exactly one.",
+    "Screenshot: on a GNOME DE layer the shell provides screenshot/screencast natively and flameshot is redundant (and its tray icon misbehaves under Wayland). On COSMIC/Hyprland/Sway, grim+slurp+swappy is the correct stack. Make screenshot tooling DE-conditional rather than unconditional.",
+    "Non-GNOME substitution table, all verified to exist: calculator galculator / qalculate-gtk / qalculate-qt; text editor kate / micro / gedit; image viewer gwenview / gthumb / imv; archive manager ark / xarchiver; PDF okular / zathura / qpdfview / mupdf; music audacious / lollypop; video vlc / clapper; remote desktop krdc.",
+    "Additional verified-but-not-included candidates if the purpose is meant to be broader: calibre (ebook management), gnome-boxes (local VMs), mediawriter (Fedora USB writer), gnome-tweaks, gnome-usage, transmission-qt/qbittorrent/fragments/deluge-gtk (torrent alternatives), fastfetch, btop, htop, ripgrep, fd-find, bat, eza, tree, rsync, git, curl, wget. Most of the CLI tail probably belongs in a base or dev layer rather than General.",
+    "Verified as existing but intentionally excluded as belonging to other purposes: gimp, inkscape, krita, darktable, rawtherapee, blender (creative/design purpose); audacity, obs-studio, HandBrake, HandBrake-gui, kdenlive, shotcut (av production purpose); hexchat, pidgin, dino, gajim, telegram-desktop (chat purpose).",
+    "Open question: does the shared desktop layer already set MIME defaults? If both layers ship a mimeapps.list they will conflict. Agree on ownership \u2014 my recommendation is that desktop.conf owns nothing MIME-related and each purpose layer contributes a numbered fragment that is merged at build time.",
+    "Open question: how are Flatpaks seeded? bootc does not persist /var/lib/flatpak from the build, so a first-boot systemd oneshot is required. That mechanism belongs in the shared layer; this purpose only contributes the app ID list.",
+    "No COPR repos are required for this purpose \u2014 everything wanted is either in Fedora/RPM Fusion, available as a Flatpak, or behind a vendor's own RPM repo (listed under external). I deliberately did not invent COPR owner/project names I could not verify from this machine."
+  ]
+}

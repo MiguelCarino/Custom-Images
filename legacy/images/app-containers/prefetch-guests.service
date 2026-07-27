@@ -1,0 +1,21 @@
+[Unit]
+Description=Pre-pull Distrobox guest container images
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/.distrobox-guests-pulled
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Pull each guest image declared in /etc/distrobox/medical-guests.ini
+ExecStart=/usr/bin/bash -c '\
+  if [[ -f /etc/distrobox/medical-guests.ini ]]; then \
+    grep "^image=" /etc/distrobox/medical-guests.ini | cut -d= -f2 | while read -r img; do \
+      echo "Pulling guest image: $img"; \
+      podman pull "$img" || echo "WARNING: could not pull $img"; \
+    done; \
+  fi'
+ExecStartPost=/usr/bin/touch /var/lib/.distrobox-guests-pulled
+
+[Install]
+WantedBy=multi-user.target

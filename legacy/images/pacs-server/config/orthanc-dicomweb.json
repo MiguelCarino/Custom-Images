@@ -1,0 +1,29 @@
+{
+  // =========================================================================
+  // Orthanc DICOMweb plugin configuration
+  // https://book.orthanc-server.com/plugins/dicomweb.html
+  // =========================================================================
+
+  "DicomWeb": {
+    "Enable": true,
+
+    // Root URL of the DICOMweb API
+    "Root": "/dicom-web/",
+
+    // Enable WADO-URI (classic WADO)
+    "EnableWado": true,
+    "WadoRoot": "/wado",
+
+    // SSL — handled by Nginx; Orthanc listens on plain HTTP
+    "Ssl": false,
+
+    // Host announced in capability statement
+    // "Host": "pacs.example.com",
+
+    // Metadata caching improves performance for large archives
+    "MetadataWorkerThreadsCount": 4,
+
+    // Enable STOW-RS (DICOMweb store)
+    "EnableStowRs": true
+  }
+}

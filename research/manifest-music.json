@@ -1,0 +1,863 @@
+{
+  "key": "music",
+  "summary": "A low-latency DAW workstation layer for a Fedora 44 bootc image, aimed at someone who tracks, mixes and masters on Linux with real hardware \u2014 a USB/PCI audio interface, MIDI controllers, and a plugin collection spanning LV2/LADSPA/DSSI/VST3/CLAP plus bridged Windows VSTs. It bakes the full Fedora audio-production stack (Ardour 9, Qtractor, LMMS, Carla as plugin host/bridge, Hydrogen, Rosegarden, MuseScore) on top of PipeWire's JACK ABI rather than a separate jackd, with qpwgraph/Helvum/qjackctl for patchbay work and a large verified plugin/synth corpus (LSP, Calf, x42, ZAM, SWH, ZynAddSubFX, Yoshimi, amsynth, the *v1 series, setBfree, Guitarix). The reason this is an image rather than a post-install script is almost entirely system integration: RT scheduling limits that must reach the systemd *user* manager (not just PAM), an rtkit override, threaded IRQs as a kernel arg, USB autosuspend inhibition via udev, and a PipeWire/WirePlumber quantum policy that is deliberately hostile to normal desktop power behaviour and therefore has to be a per-image decision. Windows VST bridging (yabridge) and modern JUCE synths (Surge XT, Vital, Dexed, Odin2) are not in Fedora and come from the ycollet/audinux COPR, which does have live fedora-44 chroots.",
+  "packages": [
+    {
+      "name": "ardour9",
+      "why": "Primary DAW. Fedora ships ardour6/7/8/9 in parallel; pin ardour9 explicitly so a rebuild does not silently move major versions and break session compatibility."
+    },
+    {
+      "name": "qtractor",
+      "why": "Lightweight MIDI/audio multitrack sequencer; much faster to open than Ardour for sketching."
+    },
+    {
+      "name": "lmms",
+      "why": "Pattern/step-sequencer DAW for electronic production."
+    },
+    {
+      "name": "Carla",
+      "why": "Plugin host and rack. Note the capital C in the package name. This is also the LV2/VST2/VST3 bridge that lets you run 32-bit and out-of-process plugins inside any host."
+    },
+    {
+      "name": "Carla-vst",
+      "why": "Carla itself exposed as a VST plugin, so a Carla rack (including bridged plugins) can be inserted on an Ardour track."
+    },
+    {
+      "name": "lv2-carla",
+      "why": "Carla as an LV2 plugin \u2014 the form Ardour actually prefers."
+    },
+    {
+      "name": "hydrogen",
+      "why": "Drum machine / pattern sequencer with JACK transport sync."
+    },
+    {
+      "name": "rosegarden4",
+      "why": "MIDI sequencer with notation editing. Package name is rosegarden4, not rosegarden."
+    },
+    {
+      "name": "sooperlooper",
+      "why": "Live looper with JACK sync, for layered performance capture."
+    },
+    {
+      "name": "audacity-freeworld",
+      "why": "RPM Fusion build of Audacity with unrestricted FFmpeg/MP3 support, for destructive editing and file surgery. Do not install plain 'audacity' alongside it \u2014 they conflict."
+    },
+    {
+      "name": "musescore",
+      "why": "Score editor and MIDI export; the practical notation front end for composition work."
+    },
+    {
+      "name": "musescore-soundfont",
+      "why": "MuseScore's GM soundfont (~51 MB) \u2014 required for MuseScore playback."
+    },
+    {
+      "name": "lilypond",
+      "why": "Engraving backend; MuseScore and Frescobaldi both target it for publication-grade output."
+    },
+    {
+      "name": "frescobaldi",
+      "why": "LilyPond editor with score preview and point-and-click."
+    },
+    {
+      "name": "pipewire-jack-audio-connection-kit",
+      "why": "The JACK ABI implemented on PipeWire. This is the correct choice over jack-audio-connection-kit: it lets Ardour/Carla/Hydrogen speak JACK while desktop audio keeps working. Installing real jackd instead would force a session-wide audio server switch."
+    },
+    {
+      "name": "pipewire-jack-audio-connection-kit-libs",
+      "why": "The libjack.so.0 / libjacknet ABI shims themselves; pulled by the above but pin it so a future split does not drop the 32-bit path needed by bridged plugins."
+    },
+    {
+      "name": "qpwgraph",
+      "why": "Qt patchbay for PipeWire \u2014 the practical replacement for the JACK connection manager. Shows audio, MIDI and video nodes and persists patch layouts per session."
+    },
+    {
+      "name": "helvum",
+      "why": "GTK PipeWire patchbay; lighter than qpwgraph, better fit on a GNOME-flavoured build. Ship both, they cost almost nothing."
+    },
+    {
+      "name": "qjackctl",
+      "why": "JACK control panel. Under pipewire-jack it still works for transport control, xrun counting and the connections tab \u2014 useful as an xrun readout."
+    },
+    {
+      "name": "a2jmidid",
+      "why": "ALSA sequencer to JACK MIDI bridge. Largely redundant with WirePlumber's built-in ALSA MIDI bridging, but still needed for hardware that only exposes a raw ALSA seq port and for older sessions that hardcode a2j port names."
+    },
+    {
+      "name": "jack-mixer",
+      "why": "Standalone JACK mixer for monitor/cue busses outside the DAW."
+    },
+    {
+      "name": "jack-keyboard",
+      "why": "Virtual MIDI keyboard on a JACK MIDI port \u2014 lets you test a synth chain with no hardware attached."
+    },
+    {
+      "name": "jack-tools",
+      "why": "jack_transport, jack_lsp and friends; scriptable transport and port inspection."
+    },
+    {
+      "name": "raysession",
+      "why": "Session manager (NSM-compatible) that saves and restores a whole rig of JACK/LV2 apps and their connections."
+    },
+    {
+      "name": "lash",
+      "why": "Legacy audio session handler; still required by a few older Fedora-packaged apps at link time."
+    },
+    {
+      "name": "qmidiarp",
+      "why": "MIDI arpeggiator / LFO / step sequencer with JACK MIDI and ALSA seq output."
+    },
+    {
+      "name": "lv2-qmidiarp",
+      "why": "The same arpeggiator engines as LV2 plugins, usable inside Ardour on a MIDI track."
+    },
+    {
+      "name": "vmpk",
+      "why": "Virtual MIDI Piano Keyboard \u2014 on-screen controller for auditioning instruments."
+    },
+    {
+      "name": "kmidimon",
+      "why": "ALSA sequencer monitor; essential for debugging why a controller's CC or SysEx is not arriving."
+    },
+    {
+      "name": "arpage",
+      "why": "ALSA-seq arpeggiator, part of Fedora's Audio Production group."
+    },
+    {
+      "name": "harmonyseq",
+      "why": "Pattern-based MIDI sequencer driving external ALSA-seq gear."
+    },
+    {
+      "name": "alsa-tools",
+      "why": "Card-specific control panels \u2014 hdspmixer, envy24control, hdajackretask. hdajackretask in particular is how you fix a mis-detected front-panel jack on an internal codec."
+    },
+    {
+      "name": "alsa-tools-firmware",
+      "why": "Firmware loaders for interfaces that need it at attach time (Echoaudio, Emu, Hammerfall, USX2Y). Without this some class-of-2010 interfaces never enumerate as sound cards."
+    },
+    {
+      "name": "alsa-firmware",
+      "why": "The firmware blobs those loaders consume."
+    },
+    {
+      "name": "alsa-sof-firmware",
+      "why": "SOF DSP firmware for modern Intel laptop codecs. If the base layer already carries it this is a no-op, but a DAW image that fails to bring up the internal codec is useless as a fallback monitor path."
+    },
+    {
+      "name": "alsa-plugins-jack",
+      "why": "ALSA-to-JACK plugin, so a legacy app that only speaks raw ALSA can still be routed into the graph."
+    },
+    {
+      "name": "qastools",
+      "why": "Qt ALSA mixer/control tools (qasmixer, qashctl) \u2014 exposes the raw hctl controls that PulseAudio-style mixers hide, which is how you set clock source and input impedance on many interfaces."
+    },
+    {
+      "name": "alsamixergui",
+      "why": "GUI alsamixer; trivial size, occasionally the fastest way to unmute a hidden capture switch."
+    },
+    {
+      "name": "ffado",
+      "why": "FireWire audio driver stack and mixer for pre-USB-3 interfaces (Focusrite Saffire, Presonus FireStudio, RME FireFace). Ships its own udev rules granting device access."
+    },
+    {
+      "name": "libffado",
+      "why": "The FFADO library ffado's tools and JACK backend link against."
+    },
+    {
+      "name": "lsp-plugins-lv2",
+      "why": "Linux Studio Plugins as LV2 \u2014 the workhorse mixing suite (EQ, compressor, gate, limiter, crossover, impulse loader). ~42 MB, the single biggest plugin package and worth every byte."
+    },
+    {
+      "name": "lsp-plugins-vst3",
+      "why": "Same suite in VST3, for hosts scanning VST3 paths (Bitwig, Reaper, bridged Windows hosts)."
+    },
+    {
+      "name": "lsp-plugins-clap",
+      "why": "Same suite in CLAP, for Bitwig/Reaper CLAP scanning."
+    },
+    {
+      "name": "lsp-plugins-ladspa",
+      "why": "LADSPA build, for the handful of tools that still only scan LADSPA."
+    },
+    {
+      "name": "lsp-plugins-jack",
+      "why": "Standalone JACK versions of each LSP plugin \u2014 useful as always-on outboard on the monitor bus, outside any DAW."
+    },
+    {
+      "name": "lv2-calf-plugins",
+      "why": "Calf Studio Gear as LV2 \u2014 the other core mixing/creative suite."
+    },
+    {
+      "name": "lv2-calf-plugins-gui",
+      "why": "Calf's custom GTK GUIs; without this you get generic parameter sliders only."
+    },
+    {
+      "name": "calf",
+      "why": "Calf standalone JACK host."
+    },
+    {
+      "name": "lv2-x42-plugins",
+      "why": "Robin Gareus's x42 suite: meters (EBU R128, K-meter, spectrogram), MIDI utilities, convolver, step sequencer. The metering here is what you actually master against."
+    },
+    {
+      "name": "lv2-zam-plugins",
+      "why": "ZamAudio suite \u2014 ZaMaximX2, ZamComp, ZamEQ2, ZamHeadX3. Strong mastering-chain compressors."
+    },
+    {
+      "name": "clap-zam-plugins",
+      "why": "ZAM suite in CLAP format."
+    },
+    {
+      "name": "ladspa-zam-plugins",
+      "why": "ZAM suite in LADSPA format."
+    },
+    {
+      "name": "lv2-swh-plugins",
+      "why": "Steve Harris's classic DSP collection as LV2 \u2014 huge, cheap, and referenced by countless old sessions."
+    },
+    {
+      "name": "lv2-eq10q",
+      "why": "EQ10Q parametric EQ / multiband compressor / linear-phase EQ."
+    },
+    {
+      "name": "lv2-abGate",
+      "why": "Noise gate with a proper GUI."
+    },
+    {
+      "name": "lv2-fabla",
+      "why": "Drum sampler LV2 (Open Audio Programming)."
+    },
+    {
+      "name": "lv2-sorcer",
+      "why": "Wavetable synth LV2."
+    },
+    {
+      "name": "lv2-newtonator",
+      "why": "Physical-modelling-ish LV2 synth."
+    },
+    {
+      "name": "lv2-vocoder-plugins",
+      "why": "Vocoder LV2s."
+    },
+    {
+      "name": "lv2-ir-plugins",
+      "why": "IR convolution reverb \u2014 loads third-party impulse responses, which is how you get usable rooms without a commercial reverb."
+    },
+    {
+      "name": "lv2-mdaEPiano",
+      "why": "MDA electric piano \u2014 the standard free Rhodes emulation."
+    },
+    {
+      "name": "lv2-mdala-plugins",
+      "why": "MDA plugin collection ported to LV2."
+    },
+    {
+      "name": "lv2-rubberband-plugins",
+      "why": "Rubber Band time-stretch/pitch-shift as LV2."
+    },
+    {
+      "name": "lv2-guitarix-plugins",
+      "why": "Guitarix amp/cab/pedal models as individual LV2s, insertable on any track."
+    },
+    {
+      "name": "lv2-triforce",
+      "why": "Chiptune-style LV2 synth."
+    },
+    {
+      "name": "lv2-bankstown",
+      "why": "Bass enhancer / psychoacoustic harmonic generator LV2."
+    },
+    {
+      "name": "lv2-ll-plugins",
+      "why": "Lars Luthman's LV2 set, including the LV2 host-side examples several tools probe for."
+    },
+    {
+      "name": "guitarix",
+      "why": "Standalone JACK guitar amp modeller with cabinet IR loading."
+    },
+    {
+      "name": "rakarrack",
+      "why": "Guitar multi-effects rack (JACK)."
+    },
+    {
+      "name": "zynaddsubfx",
+      "why": "Flagship additive/subtractive/PAD synth with a deep preset bank."
+    },
+    {
+      "name": "zynaddsubfx-lv2",
+      "why": "ZynAddSubFX as an LV2 instrument for in-DAW use."
+    },
+    {
+      "name": "zynaddsubfx-dssi",
+      "why": "DSSI build, for hosts that scan DSSI."
+    },
+    {
+      "name": "lv2-zynadd-plugins",
+      "why": "The zynadd LV2 wrapper variant referenced by Fedora's Audio Production group."
+    },
+    {
+      "name": "yoshimi",
+      "why": "ZynAddSubFX fork with a reworked engine and better multi-part handling."
+    },
+    {
+      "name": "amsynth",
+      "why": "Analogue-modelling virtual analogue synth, very light on CPU."
+    },
+    {
+      "name": "lv2-amsynth-plugin",
+      "why": "amsynth as LV2."
+    },
+    {
+      "name": "synthv1",
+      "why": "rncbc old-school polyphonic subtractive synth (standalone JACK)."
+    },
+    {
+      "name": "lv2-synthv1",
+      "why": "synthv1 as LV2."
+    },
+    {
+      "name": "samplv1",
+      "why": "rncbc polyphonic sampler."
+    },
+    {
+      "name": "lv2-samplv1",
+      "why": "samplv1 as LV2."
+    },
+    {
+      "name": "drumkv1",
+      "why": "rncbc drum-kit sampler."
+    },
+    {
+      "name": "lv2-drumkv1",
+      "why": "drumkv1 as LV2."
+    },
+    {
+      "name": "padthv1",
+      "why": "rncbc PADsynth-algorithm additive synth."
+    },
+    {
+      "name": "lv2-padthv1",
+      "why": "padthv1 as LV2."
+    },
+    {
+      "name": "setBfree",
+      "why": "Tonewheel organ emulation with Leslie. Note the capital B in the package name."
+    },
+    {
+      "name": "lv2-setBfree-plugins",
+      "why": "setBfree as LV2, so the organ lives on a MIDI track."
+    },
+    {
+      "name": "ams",
+      "why": "Alsa Modular Synth \u2014 patchable modular environment."
+    },
+    {
+      "name": "bristol",
+      "why": "Emulations of classic hardware synths (Minimoog, Prophet, Jupiter, B3)."
+    },
+    {
+      "name": "fluidsynth",
+      "why": "SoundFont2 synthesizer engine and CLI \u2014 the base for GM playback and MIDI file rendering."
+    },
+    {
+      "name": "qsynth",
+      "why": "Qt front end for fluidsynth with JACK routing and multiple soundfont stacks."
+    },
+    {
+      "name": "timidity++",
+      "why": "Software MIDI renderer; the fallback path for batch-rendering .mid to audio without a running session."
+    },
+    {
+      "name": "fluid-soundfont-gm",
+      "why": "FluidR3 General MIDI soundfont. ~148 MB installed and by far the largest single item in this manifest \u2014 but it is the default every GM-capable tool here expects to find."
+    },
+    {
+      "name": "fluid-soundfont-gs",
+      "why": "Roland GS variant bank for sessions authored against GS."
+    },
+    {
+      "name": "soundfont-utils",
+      "why": "SF2 manipulation CLI tools."
+    },
+    {
+      "name": "swami",
+      "why": "SoundFont/instrument editor \u2014 builds and edits SF2 banks."
+    },
+    {
+      "name": "lv2",
+      "why": "LV2 headers and the shared /usr/lib64/lv2 bundle root every plugin above installs into."
+    },
+    {
+      "name": "lilv",
+      "why": "LV2 host library \u2014 Ardour, Carla and Qtractor all discover plugins through it."
+    },
+    {
+      "name": "suil",
+      "why": "LV2 UI embedding library; without it a Gtk plugin GUI cannot be embedded into a Qt host (and vice versa) and you get generic controls."
+    },
+    {
+      "name": "dssi",
+      "why": "DSSI plugin API runtime, needed by zynaddsubfx-dssi and older instruments."
+    },
+    {
+      "name": "ladspa",
+      "why": "LADSPA runtime and the /usr/lib64/ladspa search root."
+    },
+    {
+      "name": "ladspa-caps-plugins",
+      "why": "CAPS \u2014 amp/cab sims and the well-regarded Plate reverb."
+    },
+    {
+      "name": "ladspa-tap-plugins",
+      "why": "TAP plugins: reverb, deesser, dynamics."
+    },
+    {
+      "name": "ladspa-swh-plugins",
+      "why": "Steve Harris LADSPA originals, for sessions that reference the LADSPA URIs."
+    },
+    {
+      "name": "ladspa-fil-plugins",
+      "why": "Fons Adriaensen's 4-band parametric EQ \u2014 the reference-quality free EQ."
+    },
+    {
+      "name": "ladspa-amb-plugins",
+      "why": "Ambisonic encode/decode/rotate \u2014 needed for any surround or spatial work."
+    },
+    {
+      "name": "ladspa-rev-plugins",
+      "why": "Fons Adriaensen's reverbs."
+    },
+    {
+      "name": "ladspa-vco-plugins",
+      "why": "Band-limited oscillators used by modular patches."
+    },
+    {
+      "name": "ladspa-blop-plugins",
+      "why": "Bandlimited LADSPA oscillator/filter set."
+    },
+    {
+      "name": "ladspa-mcp-plugins",
+      "why": "Fons Adriaensen's chorus/phaser/moog VCF set."
+    },
+    {
+      "name": "ladspa-cmt-plugins",
+      "why": "Computer Music Toolkit \u2014 the oldest LADSPA collection, still referenced by legacy sessions."
+    },
+    {
+      "name": "ladspa-autotalent-plugins",
+      "why": "Pitch correction (autotalent)."
+    },
+    {
+      "name": "ladspa-rubberband-plugins",
+      "why": "Rubber Band as LADSPA."
+    },
+    {
+      "name": "lv2dynparam",
+      "why": "Dynamic-parameter LV2 extension library required by zynadd's LV2 wrapper."
+    },
+    {
+      "name": "jaaa",
+      "why": "JACK/ALSA audio analyser \u2014 sine generator plus FFT display. This is how you actually verify an interface's I/O routing and check for a broken cable."
+    },
+    {
+      "name": "japa",
+      "why": "Perceptual spectrum analyser (JACK/ALSA)."
+    },
+    {
+      "name": "jmeters",
+      "why": "Multichannel level meters (VU/PPM/digital) as a standalone JACK client."
+    },
+    {
+      "name": "ebumeter",
+      "why": "EBU R128 loudness meter \u2014 required for any delivery spec (-14 LUFS streaming, -23 broadcast)."
+    },
+    {
+      "name": "meterbridge",
+      "why": "Classic JACK meter bridge with retro meter styles."
+    },
+    {
+      "name": "sonic-visualiser",
+      "why": "Analysis and annotation of audio files: spectrograms, onset/pitch/beat detection. Non-destructive forensic tool for mixing decisions."
+    },
+    {
+      "name": "Add64",
+      "why": "64-channel JACK audio device aggregator \u2014 combines multiple ALSA cards into one JACK graph. This is the supported way to run two interfaces at once. Capital A in the package name."
+    },
+    {
+      "name": "zita-alsa-pcmi-utils",
+      "why": "Fons Adriaensen's raw ALSA PCM test utilities \u2014 the ground-truth way to measure a card's real capabilities under load, bypassing PipeWire entirely."
+    },
+    {
+      "name": "zita-at1",
+      "why": "Autotuner (JACK)."
+    },
+    {
+      "name": "zita-rev1",
+      "why": "High-quality algorithmic reverb (JACK)."
+    },
+    {
+      "name": "zita-resampler",
+      "why": "High-quality resampling library used by the zita tools and several plugins."
+    },
+    {
+      "name": "zita-convolver",
+      "why": "Partitioned convolution engine backing IR-based reverbs and cab sims."
+    },
+    {
+      "name": "sox",
+      "why": "Swiss-army CLI for format conversion, batch processing and quick spectrograms."
+    },
+    {
+      "name": "rubberband",
+      "why": "Time-stretch/pitch-shift CLI and library; Ardour uses it for elastic audio."
+    },
+    {
+      "name": "libsndfile-utils",
+      "why": "sndfile-info / sndfile-convert \u2014 inspect and repair headers on files a DAW refuses to import."
+    },
+    {
+      "name": "sndfile-tools",
+      "why": "sndfile-spectrogram, sndfile-generate-chirp; measurement signal generation."
+    },
+    {
+      "name": "flac",
+      "why": "FLAC encode/decode CLI for lossless archival of stems."
+    },
+    {
+      "name": "wavpack",
+      "why": "WavPack lossless/hybrid CLI \u2014 the compact archival format for multitrack sessions."
+    },
+    {
+      "name": "shntool",
+      "why": "Lossless WAV splitting/joining and length reporting for stem sets."
+    },
+    {
+      "name": "normalize",
+      "why": "Batch peak/RMS normalisation for sample libraries."
+    },
+    {
+      "name": "lame",
+      "why": "MP3 encoder CLI for rough mixes and client references."
+    },
+    {
+      "name": "opus-tools",
+      "why": "Opus encode/decode CLI."
+    },
+    {
+      "name": "vorbis-tools",
+      "why": "Ogg Vorbis CLI."
+    },
+    {
+      "name": "soundconverter",
+      "why": "Batch GUI transcoder for delivering a mix in several formats at once."
+    },
+    {
+      "name": "easytag",
+      "why": "Tag editor for rendered output before delivery."
+    },
+    {
+      "name": "picard",
+      "why": "MusicBrainz Picard \u2014 canonical tagging and AcoustID fingerprinting for released material."
+    },
+    {
+      "name": "realtime-setup",
+      "why": "CENTRAL INTEGRATION PACKAGE. Ships /etc/security/limits.d/realtime.conf (@realtime: rtprio 99, nice -20, memlock unlimited, cpu unlimited), the sysusers line 'g realtime 71' that creates the group at image build, and /etc/udev/rules.d/99-rhel-rt.rules which chgrps /dev/cpu_dma_latency to 'realtime' so a userspace tool can pin C-states without being root."
+    },
+    {
+      "name": "realtime-tests",
+      "why": "cyclictest and friends \u2014 how you actually measure whether the RT tuning worked, rather than guessing from xrun counts."
+    },
+    {
+      "name": "rt-tests",
+      "why": "The upstream RT latency test suite (hackbench, signaltest, pi_stress) for validating the image."
+    },
+    {
+      "name": "rtkit",
+      "why": "RealtimeKit D-Bus service. PipeWire falls back to rtkit when PAM rlimits are unavailable, and it is what actually grants RT to a Flatpak'd or user-session process. Must be enabled AND its default caps raised (see integration)."
+    },
+    {
+      "name": "tuned",
+      "why": "Provides the latency-performance profile: sets the CPU governor to performance, writes 0 to /dev/cpu_dma_latency to block deep C-states, and lowers vm dirty ratios. This is the correct profile here \u2014 NOT tuned-profiles-realtime."
+    },
+    {
+      "name": "kernel-tools",
+      "why": "cpupower, for inspecting and forcing the governor and for turbostat-based verification that C-states are actually blocked."
+    },
+    {
+      "name": "multimedia-menus",
+      "why": "Installs the freedesktop 'AudioVideo/Audio Production' menu category so the ~40 apps above group sensibly instead of dumping into a flat Multimedia folder."
+    },
+    {
+      "name": "wine",
+      "why": "Required by yabridge for Windows VST2/VST3/CLAP bridging. Large (see size note) \u2014 omit the whole wine/yabridge path if you do not own Windows plugins."
+    },
+    {
+      "name": "wine-core",
+      "why": "Pull both the x86_64 and i686 builds explicitly (wine-core.i686) \u2014 32-bit VST2 plugins need the 32-bit Wine path and dnf will not select it for you."
+    },
+    {
+      "name": "winetricks",
+      "why": "Installs the runtime bits (vcrun, corefonts) that many commercial VST installers require before they will run under Wine."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "yabridge / yabridgectl",
+      "alternative": "COPR ycollet/audinux (packages 'yabridge' and 'yabridge-tui'; fedora-44 x86_64 chroot confirmed active). The upstream robbert-vdh COPR is gone and the patrickl/* and cappyishihara/* yabridge COPRs have no live fedora-44 chroots. yabridgectl must still be run per-user post-install ('yabridgectl add ~/.wine/drive_c/Program Files/Common Files/VST3; yabridgectl sync') \u2014 it writes into $HOME and cannot be baked."
+    },
+    {
+      "name": "Surge XT",
+      "alternative": "COPR ycollet/audinux ('surge-xt', also legacy 'surge'), or Flatpak org.surge_synth_team.surge-xt. Prefer the COPR: the Flatpak cannot be seen by a natively-installed Ardour's plugin scanner."
+    },
+    {
+      "name": "Vital / Vitalium",
+      "alternative": "None packaged. Vital's licence blocks redistribution; Vitalium (the free fork) has no Fedora or audinux package. Users must install the upstream binary into ~/.vst3 manually."
+    },
+    {
+      "name": "Dexed (DX7 FM)",
+      "alternative": "COPR ycollet/audinux ('dexed', 'lv2-dexed', 'dexed-extra-presets')."
+    },
+    {
+      "name": "Odin 2",
+      "alternative": "COPR ycollet/audinux ('odin2')."
+    },
+    {
+      "name": "sfizz (SFZ sampler)",
+      "alternative": "COPR ycollet/audinux ('sfizz', 'sfizz-ui'). 'liquidsfz' there is a lighter alternative. Nothing SFZ-capable exists in Fedora proper."
+    },
+    {
+      "name": "LinuxSampler / QSampler (GIG/SFZ)",
+      "alternative": "COPR ycollet/audinux ('linuxsampler', 'qsampler'). Excluded from Fedora over its non-commercial licence clause \u2014 this is a licensing block, not an oversight, so confirm you are comfortable with the terms."
+    },
+    {
+      "name": "DrumGizmo",
+      "alternative": "COPR ycollet/audinux ('drumgizmo')."
+    },
+    {
+      "name": "Zrythm",
+      "alternative": "COPR ycollet/audinux ('zrythm') or Flatpak org.zrythm.Zrythm."
+    },
+    {
+      "name": "MusE (sequencer)",
+      "alternative": "COPR ycollet/audinux ('muse'). Was dropped from Fedora; only rosegarden4 remains in-repo."
+    },
+    {
+      "name": "Tenacity",
+      "alternative": "COPR ycollet/audinux ('tenacity') or Flatpak org.tenacityaudio.Tenacity. audacity-freeworld from RPM Fusion covers the same ground natively and is the better default here."
+    },
+    {
+      "name": "alsa-scarlett-gui (Focusrite Scarlett/Clarett control panel)",
+      "alternative": "COPR ycollet/audinux ('alsa-scarlett-gui', also 'scarlett-mixer'). Not on Flathub (the com.github.geoffreybennett.* ID 404s). Mandatory if the interface is a Scarlett 2nd-gen or later \u2014 routing, air/pad and monitor mix are otherwise unreachable."
+    },
+    {
+      "name": "WineASIO",
+      "alternative": "COPR ycollet/audinux ('wineasio'). Needed for Windows DAWs/hosts under Wine to see JACK; not needed for yabridge-bridged plugins."
+    },
+    {
+      "name": "Geonkick, Cardinal, DISTRHO-Ports, airwindows, BespokeSynth, wolf-shaper, ninjas2, neural amp modeler",
+      "alternative": "All in COPR ycollet/audinux under those names. None are in Fedora or RPM Fusion."
+    },
+    {
+      "name": "new-session-manager / non-session-manager",
+      "alternative": "None. Use 'raysession' (in Fedora, also in audinux) \u2014 it implements the NSM protocol and is the maintained successor."
+    },
+    {
+      "name": "jack_capture / jack_delay",
+      "alternative": "COPR ycollet/audinux ('jack_capture', 'jack_delay'). jack_delay in particular is the standard round-trip latency measurement tool \u2014 worth pulling in for calibrating Ardour's latency compensation."
+    },
+    {
+      "name": "patchage / catia / cadence",
+      "alternative": "'patchance' in COPR ycollet/audinux. In practice qpwgraph (in Fedora) supersedes all of these under PipeWire."
+    },
+    {
+      "name": "Bitwig Studio, Reaper, Harrison Mixbus",
+      "alternative": "Proprietary. Flatpak com.bitwig.BitwigStudio and fm.reaper.Reaper. Mixbus is a direct download from Harrison. See the note about Flatpak plugin visibility before choosing this route."
+    },
+    {
+      "name": "rtirq (IRQ thread priority manager)",
+      "alternative": "Not packaged anywhere for Fedora. Replace with a small systemd oneshot that chrt's the audio interface's IRQ kernel thread \u2014 see integration entry."
+    },
+    {
+      "name": "kernel with low-latency patches",
+      "alternative": "COPR ycollet/audinux ships kernel-rt-mao / kernel-lqx-mao / kernel-xan-mao. Strongly discouraged for a bootc image: a COPR kernel breaks the bootc upgrade/rollback story and out-of-tree modules (NVIDIA from RPM Fusion) will not build against it. Fedora's stock PREEMPT_DYNAMIC kernel with preempt=full and threadirqs gets you within a few hundred microseconds of an RT kernel for buffer sizes >=64 frames."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "group",
+      "detail": "realtime-setup ships '/usr/lib/sysusers.d/realtime-setup.conf' containing 'g realtime 71', so the group is created at image build. Fedora's 'audio' group (GID 63, from setup) also exists but is vestigial \u2014 with logind/uaccess ACLs it no longer controls /dev/snd access and nothing in Fedora grants RT via it. Use 'realtime' as the canonical group and treat 'audio' as a compatibility alias only."
+    },
+    {
+      "kind": "group",
+      "detail": "THE HARD PART: adding the human user to 'realtime' cannot be baked, because in a bootc image the user is created at install/first boot. Three options, in order of preference: (1) document '-G wheel,realtime' in the kickstart/cloud-init user block; (2) ship '/usr/lib/sysusers.d/20-daw-membership.conf' with an 'm <user> realtime' line if the image bakes a fixed username; (3) ship a systemd oneshot 'daw-realtime-membership.service' (After=systemd-user-sessions.service, ConditionPathExists) that loops over getent passwd entries with UID>=1000 and runs 'usermod -aG realtime,audio'. Option 3 is the only one that works for an image handed to an unknown installer, but it silently grants RT to every human account \u2014 state that tradeoff."
+    },
+    {
+      "kind": "limits",
+      "detail": "Ship '/etc/security/limits.d/95-daw-realtime.conf':\n  @realtime  -  rtprio   95\n  @realtime  -  nice     -19\n  @realtime  -  memlock  unlimited\n  @audio     -  rtprio   95\n  @audio     -  nice     -19\n  @audio     -  memlock  unlimited\nDeliberately 95 and not 99: leave headroom above the DAW for kernel threads (threaded IRQs default to 50, migration/watchdog run at 99). A userspace thread at 99 can starve the RCU and watchdog threads and hang the box. realtime-setup's own realtime.conf uses rtprio 99 \u2014 this file must sort after it (95- prefix beats its default name) or set your own group."
+    },
+    {
+      "kind": "systemd",
+      "detail": "MOST-MISSED ITEM: PAM limits.d does NOT reach services started by the systemd *user* manager, and PipeWire, WirePlumber and Flatpak'd DAWs all run there. You must also ship '/usr/lib/systemd/system/user@.service.d/10-daw-limits.conf':\n  [Service]\n  LimitRTPRIO=95\n  LimitNICE=-19\n  LimitMEMLOCK=infinity\nWithout this, PipeWire silently falls back to rtkit and you inherit rtkit's much lower caps, and every 'why does JACK say it cannot get realtime' bug report traces here."
+    },
+    {
+      "kind": "systemd",
+      "detail": "rtkit's defaults are too tight for a plugin-heavy session. Ship '/usr/lib/systemd/system/rtkit-daemon.service.d/10-daw.conf' with a cleared ExecStart followed by:\n  ExecStart=/usr/libexec/rtkit-daemon --scheduling-policy=FIFO --our-realtime-priority=89 --max-realtime-priority=95 --min-nice-level=-19 --rttime-usec-max=2000000 --users-max=100 --processes-per-user-max=32 --threads-per-user-max=64\nThe critical value is --rttime-usec-max: the default 200000 (200 ms) means the kernel SIGKILLs an RT thread that runs 200 ms without blocking. A convolution reverb loading a long IR, or a Windows VST doing a synchronous disk read through yabridge, will exceed that and your DAW dies mid-take."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "bootc reads '/usr/lib/bootc/kargs.d/*.toml'. Ship '/usr/lib/bootc/kargs.d/20-audio.toml':\n  kargs = [\"threadirqs\", \"preempt=full\"]\n'threadirqs' converts hardirq handlers into schedulable kernel threads, which is what makes it possible to chrt the xHCI/PCI-audio interrupt above other work \u2014 it is the single highest-value low-latency knob on a stock kernel. 'preempt=full' selects the full-preemption path of Fedora's PREEMPT_DYNAMIC kernel (Fedora boots voluntary by default). Both are cheap and safe. IMPORTANT: kargs are image-global and cannot be scoped per-purpose \u2014 this is the strongest single argument for making music its own image rather than a package set on a shared base."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "Do NOT bake: 'isolcpus'/'nohz_full' (cripples a general-purpose workstation and tuned-profiles-realtime's assertion demands isolated_cores be set \u2014 it will hard-fail the profile without /etc/tuned/realtime-variables.conf), 'mitigations=off' (real xrun-headroom gain, unacceptable security posture for an image you hand to someone else), and 'intel_pstate=disable' (breaks laptop thermal management; use the passive/governor route instead)."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Pin the CPU governor via tuned rather than a raw sysfs write, so it survives suspend/resume: enable tuned.service and bake '/etc/tuned/active_profile' containing 'latency-performance' plus '/etc/tuned/profile_mode' containing 'manual'. latency-performance sets governor=performance, energy_perf_bias=performance and force_latency=cstate.id:1 (which writes to /dev/cpu_dma_latency and blocks deep C-states \u2014 the actual cause of the periodic 2 ms stalls people blame on the kernel). Explicitly reject tuned-profiles-realtime: its tuned.conf contains 'assert1=${f:assertion_non_equal:isolated_cores are set:...}' and refuses to load unless you have committed to CPU isolation."
+    },
+    {
+      "kind": "config-file",
+      "detail": "PipeWire quantum policy \u2014 ship in '/usr/share/pipewire/pipewire.conf.d/99-daw-lowlatency.conf' (image-owned, keeps /etc clean and lets a user override in /etc or ~/.config):\n  context.properties = {\n      default.clock.rate          = 48000\n      default.clock.allowed-rates = [ 44100 48000 88200 96000 176400 192000 ]\n      default.clock.quantum       = 256\n      default.clock.min-quantum   = 32\n      default.clock.max-quantum   = 2048\n      default.clock.quantum-limit = 8192\n  }\nallowed-rates is the part people forget: without it PipeWire will not follow a 44.1 kHz session and silently resamples everything."
+    },
+    {
+      "kind": "config-file",
+      "detail": "PipeWire-JACK client policy \u2014 '/usr/share/pipewire/jack.conf.d/99-daw.conf':\n  jack.properties = {\n      node.latency       = 256/48000\n      node.lock-quantum  = true\n      node.force-quantum = 256\n      jack.merge-monitor = true\n      jack.show-monitor  = true\n      jack.short-name    = true\n  }\njack.short-name=true makes ports appear as 'Scarlett 18i8:capture_1' rather than the full ALSA node path, which is what old session files and qjackctl patch presets expect. node.lock-quantum stops a browser or notification sound from renegotiating the graph mid-take. See the risks section \u2014 this setting is precisely what breaks desktop power behaviour."
+    },
+    {
+      "kind": "config-file",
+      "detail": "WirePlumber ALSA device policy \u2014 '/usr/share/wireplumber/wireplumber.conf.d/99-daw-alsa.conf':\n  monitor.alsa.rules = [\n    { matches = [ { node.name = \"~alsa_(input|output)\\\\..*\" } ]\n      actions = { update-props = {\n          api.alsa.period-size            = 128\n          api.alsa.periods                = 2\n          api.alsa.headroom               = 0\n          api.alsa.disable-batch          = true\n          session.suspend-timeout-seconds = 0\n      } } }\n  ]\nsession.suspend-timeout-seconds=0 keeps the card open permanently \u2014 stops the relay click and the 300 ms wake gap that eats the first note of a take, at the cost of blocking runtime PM. api.alsa.headroom=0 is only safe on a real interface; on an internal HDA codec you usually need 1024 or you get constant xruns."
+    },
+    {
+      "kind": "udev",
+      "detail": "USB autosuspend is the #1 cause of 'my interface randomly disappears / crackles after a few minutes'. Ship '/usr/lib/udev/rules.d/60-daw-usb-audio.rules':\n  ACTION==\"add\", SUBSYSTEM==\"usb\", ATTR{bInterfaceClass}==\"01\", TEST==\"../power/control\", ATTR{../power/control}=\"on\"\n  ACTION==\"add\", SUBSYSTEM==\"usb\", ENV{ID_USB_INTERFACES}==\"*:01*:*\", TEST==\"power/control\", ATTR{power/control}=\"on\"\n  ACTION==\"add\", SUBSYSTEM==\"sound\", TAG+=\"uaccess\"\nThe bInterfaceClass==01 match covers every class-compliant USB audio and USB MIDI device without needing a vendor ID table."
+    },
+    {
+      "kind": "udev",
+      "detail": "Give the audio device's IRQ thread RT priority. udev cannot set scheduling, so pair a rule with a helper: '/usr/lib/udev/rules.d/61-daw-irq.rules' with\n  ACTION==\"add\", SUBSYSTEM==\"sound\", KERNEL==\"card*\", TAG+=\"systemd\", ENV{SYSTEMD_WANTS}+=\"daw-irq-priority@%k.service\"\nand a templated oneshot that finds the matching 'irq/*-xhci_hcd' or 'irq/*-snd_*' kernel thread and runs 'chrt -f -p 85 <pid>' (below your DAW at 95 but above everything else). This is the replacement for the unpackaged rtirq script. Guard it with ConditionKernelCommandLine=threadirqs since it is a no-op without threaded IRQs."
+    },
+    {
+      "kind": "udev",
+      "detail": "MIDI and control-surface access: '/dev/snd/midiC*D*' and '/dev/snd/seq' are covered by the uaccess tag above, but USB-HID control surfaces (Novation Launchpad, Ableton Push, X-Touch) enumerate as hidraw and are root-only by default. Add:\n  KERNEL==\"hidraw*\", SUBSYSTEM==\"hidraw\", ATTRS{bInterfaceClass}==\"03\", TAG+=\"uaccess\"\nscoped by vendor ID if you want to be conservative. Without it the surface's LEDs and displays stay dark even though MIDI works."
+    },
+    {
+      "kind": "sysctl",
+      "detail": "Ship '/usr/lib/sysctl.d/60-daw.conf':\n  vm.swappiness = 10\n  vm.max_map_count = 1048576\n  fs.inotify.max_user_watches = 524288\n  dev.hpet.max-user-freq = 3072\nvm.max_map_count matters more than it looks: a session with 200 plugin instances (each dlopen'ing its own .so plus fonts and GL) routinely exceeds the 65530 default and the DAW dies with a bare 'cannot allocate memory'. inotify watches are consumed by sample-library scanning."
+    },
+    {
+      "kind": "sysctl",
+      "detail": "RT throttling: the kernel default kernel.sched_rt_runtime_us=950000 caps RT threads at 95% of each period and WILL throttle a heavy session, producing periodic xruns that look like hardware faults. Options: raise to 980000 (recommended \u2014 keeps a 2% escape hatch), or set -1 to disable entirely (what tuned-profiles-realtime does). Do NOT bake -1 unconditionally: a runaway RT thread with throttling off hard-locks the machine with no SysRq recovery, and users of this image will hit that."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Plugin search paths \u2014 ship '/usr/lib/environment.d/60-daw-plugin-paths.conf' so every host, including ones launched from a file manager, agrees on where plugins live:\n  LV2_PATH=$HOME/.lv2:/usr/lib64/lv2\n  VST_PATH=$HOME/.vst:/usr/lib64/vst\n  VST3_PATH=$HOME/.vst3:/usr/lib64/vst3\n  LXVST_PATH=$HOME/.lxvst:/usr/lib64/lxvst\n  CLAP_PATH=$HOME/.clap:/usr/lib64/clap\n  LADSPA_PATH=$HOME/.ladspa:/usr/lib64/ladspa\n  DSSI_PATH=$HOME/.dssi:/usr/lib64/dssi\nyabridge writes its generated .so/.vst3 shims into ~/.vst and ~/.vst3, so those entries are load-bearing for the Windows-plugin path."
+    },
+    {
+      "kind": "config-file",
+      "detail": "On an immutable image, ~/.config is the only writable plugin/preset location. Make that explicit: baked plugins live under /usr/lib64/{lv2,vst3,clap} and are read-only, so a user cannot 'install' a plugin into the system path. Document that user plugins go to ~/.lv2 / ~/.vst3, and consider a tmpfiles.d entry ('/usr/lib/tmpfiles.d/daw.conf') creating d %h/.lv2, %h/.vst3, %h/.clap, %h/.vst 0755 - - so the directories exist on first login and hosts do not skip them during scan."
+    },
+    {
+      "kind": "mime",
+      "detail": "multimedia-menus supplies the AudioVideo/Audio Production menu category. Beyond that, register the session/project MIME types that Fedora does not ship handlers for \u2014 .ardour, .qtr, .mmpz, .h2song, .carxp \u2014 via an XML file in /usr/share/mime/packages/ plus update-mime-database at build time, so double-clicking a project opens the right DAW instead of a text editor."
+    },
+    {
+      "kind": "selinux",
+      "detail": "Mostly a non-issue: RT priority and nice are DAC/rlimit-mediated, not SELinux-mediated, so no policy work is needed for the low-latency path. The two things that do bite: (1) Wine/yabridge executes bridged plugin code out of $HOME \u2014 fine under unconfined_t, but breaks if the image confines user sessions; (2) if you place plugins anywhere other than /usr/lib64, label it lib_t or hosts running under a confined domain cannot dlopen them. Verify with 'ausearch -m avc' after a full plugin scan rather than assuming."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Consider making the aggressive audio profile switchable rather than always-on, because the same tuning is actively bad for laptop/desktop use. Concretely: install the PipeWire/WirePlumber drop-ins to '/usr/share/daw/lowlatency/' instead of the conf.d directories, ship a 'daw-mode' script that symlinks them into /etc/pipewire/pipewire.conf.d and /etc/wireplumber/wireplumber.conf.d, applies 'tuned-adm profile latency-performance', and restarts the pipewire user units \u2014 with an 'off' path that removes the symlinks and returns to 'balanced'. The kernel args stay baked (they are cheap); everything else becomes a toggle."
+    },
+    {
+      "kind": "other",
+      "detail": "Round-trip latency calibration cannot be baked but must be documented in the image: Ardour's delay compensation is only correct once you feed the interface's output back into its input and run the calibration wizard (or jack_delay from the audinux COPR). Ship a short /usr/share/doc note. Similarly, 'yabridgectl sync' must be run per-user after every yabridge or plugin update \u2014 a build-time step cannot do it, so ship a user-level systemd path unit watching ~/.vst3 if you want it automated."
+    }
+  ],
+  "risks": [
+    "The low-latency PipeWire configuration directly conflicts with normal desktop audio defaults, and this is the central tension of putting music on a shared base. Specifically: (a) node.lock-quantum=true + force-quantum=256 denies a browser or video player the large quantum it would ask for to save power, so ALL system audio runs at the DAW's tiny buffer \u2014 measurable idle-power increase and far more CPU wakeups; (b) session.suspend-timeout-seconds=0 keeps the sound card powered forever, blocking runtime PM and preventing another app from taking exclusive access; (c) api.alsa.headroom=0 is safe on a dedicated interface but produces continuous xruns on a laptop's internal HDA codec; (d) the performance governor plus a 0 write to /dev/cpu_dma_latency pins C-states, which on a laptop costs a large fraction of battery life and spins the fans at idle. Treat the aggressive profile as toggleable (see the daw-mode integration entry), not as a base-layer default.",
+    "Kernel arguments (threadirqs, preempt=full) are image-global. bootc cannot scope /usr/lib/bootc/kargs.d per purpose, so if this manifest is composed into a multi-purpose image, every boot of that image pays for them. They are cheap, but if the same base must also serve a battery-sensitive laptop purpose, the honest answer is a separate image tag, not a shared one.",
+    "kernel.sched_rt_runtime_us=-1 (what tuned-profiles-realtime sets) removes the RT throttle globally. A misbehaving plugin or a spinning RT thread then hard-locks the machine with no recovery path. Recommend 980000 instead and say so explicitly in the image docs.",
+    "Setting @realtime rtprio to 99 (realtime-setup's shipped default) lets a userspace thread outrank migration, watchdog and RCU kernel threads. Override to 95 with a later-sorting limits.d file, or a stuck DAW takes the whole system with it.",
+    "Adding every UID>=1000 account to the 'realtime' group via a first-boot oneshot grants unlimited memlock and rtprio 95 to any user of the machine, including any process they run. On a single-operator workstation this is fine; on a shared machine it is a local DoS primitive. Prefer declaring the group in the kickstart user block.",
+    "Fedora ships ardour6, ardour7, ardour8 and ardour9 concurrently. An unpinned 'ardour' style install or a naive dnf update across a major release can move sessions to a version that will not open in the old one (Ardour session upgrades are one-way). Pin ardour9 and treat a major bump as a deliberate image change.",
+    "audacity-freeworld (RPM Fusion) file-conflicts with audacity (Fedora). Installing both in the same dnf transaction fails the build; make sure no other layer pulls plain audacity.",
+    "The Wine path for yabridge is enormous \u2014 wine-core alone is ~650 MB (x86_64) plus ~1.4 GB for the full multilib set \u2014 and roughly triples the size of this layer for a feature only useful to people who own Windows plugins. Strongly consider a separate image variant (music vs music-vst) rather than baking Wine for everyone.",
+    "yabridge lives only in COPR (ycollet/audinux). COPR chroots are not release-engineered: a Fedora 45 rebase can leave the chroot empty for weeks and the image build will fail closed. Pin the COPR with a repo priority, and have a fallback plan (Carla's own VST bridge covers some cases, badly).",
+    "Flatpak is a poor delivery mechanism for DAWs specifically, and this cuts against the usual advice. A Flatpak'd Ardour/Bitwig/Reaper cannot see /usr/lib64/lv2 or ~/.vst3 without explicit filesystem overrides, cannot see yabridge's generated shims at all, and gets RT only through rtkit inside the sandbox. Keep the DAWs native; reserve Flatpak for proprietary or fast-moving apps that do not need to scan a shared plugin tree.",
+    "tuned-ppd and power-profiles-daemon conflict. If the desktop layer installs power-profiles-daemon (GNOME and COSMIC power panels both expect it), do NOT add tuned-ppd here \u2014 install plain tuned and drive it with tuned-adm, or the two layers will not compose.",
+    "fluid-soundfont-gm (~148 MB) and musescore-soundfont (~51 MB) are ~20% of this layer's installed size and are only needed for GM playback. If the target user works with their own sample libraries, drop both and save 200 MB.",
+    "Sample libraries and impulse responses are user data and cannot be baked into an immutable image. Plan writable storage (a /var subvolume or an explicit mount) before shipping, or users will discover mid-session that /usr is read-only.",
+    "linuxsampler/qsampler are excluded from Fedora over a non-commercial-use licence clause. Pulling them from audinux into a distributed image means redistributing software with usage restrictions \u2014 check that against how the image will be shared.",
+    "A COPR kernel (kernel-rt-mao, kernel-lqx-mao, kernel-xan-mao from audinux) breaks the bootc upgrade and rollback model and will not have matching RPM Fusion NVIDIA modules. Stay on the stock Fedora PREEMPT_DYNAMIC kernel; the measured gap at buffer sizes >=64 frames does not justify the operational cost."
+  ],
+  "copr": [
+    "ycollet/audinux \u2014 the canonical Fedora audio COPR; fedora-44 x86_64 and aarch64 chroots confirmed live, ~1490 packages. Supplies everything Fedora is missing here: yabridge + yabridge-tui (Windows VST2/VST3/CLAP bridging), wineasio, surge-xt, dexed + lv2-dexed, odin2, sfizz + sfizz-ui, liquidsfz, drumgizmo, geonkick, zrythm, muse, tenacity, cardinal, DISTRHO-Ports, airwindows + lv2-airwindows, BespokeSynth, wolf-shaper, ninjas2, lv2-neural-amp-modeler, linuxsampler + qsampler, alsa-scarlett-gui + scarlett-mixer, hydrogen-drumkits, bandshed-drumkits, jack_capture, jack_delay, zita-ajbridge, zita-njbridge, patchance, clap-plugins/clap-validator, VCV Rack v1/v2 plus hundreds of rack modules. Enable with repo priority set so it cannot silently shadow Fedora builds of shared libraries.",
+    "ycollet/audinux (kernel subset) \u2014 also ships kernel-rt-mao, kernel-rt-stable-mao, kernel-lqx-mao, kernel-xan-mao and kernel-audio-tuned. Listed for completeness only; explicitly NOT recommended for a bootc image (breaks rollback and out-of-tree module builds). Fedora's stock PREEMPT_DYNAMIC kernel with threadirqs + preempt=full is the right call.",
+    "patrickl/wine-tkg \u2014 fedora-44 x86_64 and i386 chroots are live. Only relevant if yabridge needs Wine-staging behaviour that Fedora's wine lacks (some commercial VST3 installers and iLok/eLicenser-protected plugins). Adds a second full Wine stack, so avoid unless a specific plugin demands it.",
+    "NOT usable: patrickl/yabridge, patrickl/yabridge-stable and cappyishihara/yabridge all either no longer exist or have no active fedora-44 chroot as of this check. The upstream robbert-vdh COPR was retired. audinux is the only working yabridge source for F44."
+  ],
+  "external": [
+    {
+      "name": "yabridgectl per-user sync",
+      "method": "Not installable at build time. After yabridge is layered, each user must run 'yabridgectl add \"$HOME/.wine/drive_c/Program Files/Common Files/VST3\"' and 'yabridgectl sync', and re-run sync after every yabridge or plugin update. Optionally automate with a user-level systemd .path unit watching ~/.wine and ~/.vst3."
+    },
+    {
+      "name": "Vital / Vitalium",
+      "method": "Upstream binary only (vital.audio). Licence forbids redistribution, so it cannot be baked. Users extract the .so/.vst3 into ~/.vst3 by hand."
+    },
+    {
+      "name": "Commercial Windows VST plugins",
+      "method": "Installed by the user with 'wine <installer>.exe' into ~/.wine, then exposed to Linux hosts by yabridgectl. Nothing about this can be baked \u2014 it is inherently per-user, per-licence state in $HOME."
+    },
+    {
+      "name": "Harrison Mixbus / Mixbus32C",
+      "method": "Direct download from harrisonconsoles.com (their own .deb/.rpm-less tarball plus a licence file). Commercial, per-seat licensed, so it must be a post-install step regardless."
+    },
+    {
+      "name": "Impulse response and sample libraries",
+      "method": "Downloaded by the user into writable storage. Not packageable; ensure the image provides a writable location and that LV2 convolution plugins (lv2-ir-plugins, zita-convolver-based tools) are pointed at it."
+    },
+    {
+      "name": "Native Instruments / Waves / iLok-protected plugins",
+      "method": "Windows installers under Wine plus yabridge. iLok Cloud and eLicenser generally do not work; expect failures and do not promise this path in the image docs."
+    },
+    {
+      "name": "Firmware for legacy interfaces",
+      "method": "alsa-firmware and alsa-tools-firmware cover most, but a few (older Digidesign, some Focusrite Saffire generations) need blobs extracted from the vendor's Windows driver package by hand."
+    }
+  ],
+  "flatpaks": [
+    "com.bitwig.BitwigStudio \u2014 proprietary, fast-moving, ships its own runtime and does not want to be an RPM. Verified on Flathub. Needs --filesystem overrides for ~/.vst3 and ~/.clap to see any shared plugins, and gets RT via rtkit inside the sandbox, so buffer sizes below 128 frames may be unreliable.",
+    "fm.reaper.Reaper \u2014 proprietary, releases far faster than any distro cadence. Verified on Flathub. Same plugin-visibility caveat; many Reaper users prefer the upstream tarball installed to ~/opt for exactly that reason.",
+    "org.zrythm.Zrythm \u2014 verified on Flathub (also in ycollet/audinux). Fast-moving and pre-1.0-ish in feel; Flatpak keeps its churn out of the image. Prefer the COPR build if you want it in the same plugin namespace as Ardour.",
+    "org.surge_synth_team.surge-xt \u2014 verified on Flathub. Listed for completeness, but for a DAW image the audinux RPM is strictly better: a Flatpak'd synth cannot be loaded as a plugin by a native Ardour at all, only run standalone.",
+    "org.tenacityaudio.Tenacity \u2014 verified on Flathub. Only if you specifically want the Audacity fork; audacity-freeworld from RPM Fusion covers the same use case natively.",
+    "org.musescore.MuseScore \u2014 verified on Flathub. Upstream MuseScore 4 is substantially ahead of Fedora's package. Notation is a sandbox-friendly workload (no plugin scanning), so this is one of the few cases where Flatpak is genuinely the better delivery mechanism here.",
+    "org.audacityteam.Audacity \u2014 verified on Flathub. Newer than Fedora's; choose either this or audacity-freeworld, not both.",
+    "GENERAL RULE for this purpose: prefer native RPM for anything that hosts or provides plugins (DAWs, plugin suites, synths) because Flatpak sandboxing breaks the shared /usr/lib64/lv2 + ~/.vst3 + yabridge namespace that makes the whole rig work. Reserve Flatpak for proprietary apps, notation/editing tools, and anything whose release cadence you refuse to track in the image."
+  ],
+  "services": [
+    "rtkit-daemon.service \u2014 enable. Required for PipeWire and any sandboxed host to acquire RT when PAM rlimits are unavailable. Enable together with the drop-in that raises --max-realtime-priority to 95 and --rttime-usec-max to 2000000.",
+    "tuned.service \u2014 enable, with /etc/tuned/active_profile set to 'latency-performance' and /etc/tuned/profile_mode set to 'manual'. This is what pins the CPU governor and blocks deep C-states across suspend/resume.",
+    "daw-realtime-membership.service \u2014 ship and enable (custom oneshot). Adds human accounts to the 'realtime' group at first boot, since bootc cannot bake membership for a user that does not exist at build time. Guard with a ConditionPathExists flag file so it runs once.",
+    "daw-irq-priority@.service \u2014 ship (custom templated oneshot), triggered by udev via SYSTEMD_WANTS on sound card add. chrt's the matching audio IRQ kernel thread to FIFO 85. Add ConditionKernelCommandLine=threadirqs so it no-ops on a kernel booted without threaded IRQs.",
+    "DO NOT enable: realtime-entsk.service (shipped by realtime-setup but only meaningful on an RHEL-RT kernel; it is a no-op or worse on Fedora's stock kernel).",
+    "DO NOT enable: tuned-ppd.service \u2014 conflicts with power-profiles-daemon, which the desktop layer almost certainly installs for the GNOME/COSMIC power panel.",
+    "DO NOT enable a system-wide jackd/jackdbus unit. pipewire-jack-audio-connection-kit provides the JACK ABI in-process; starting a real jackd will fight PipeWire for the device and produce a dead graph.",
+    "User-session units (pipewire.service, pipewire-pulse.service, wireplumber.service) come from the shared desktop layer and should already be enabled there \u2014 do not re-enable them here, just supply the conf.d drop-ins."
+  ],
+  "size_note": "Measured with a dnf dry run of the verified list with install_weak_deps=False: 210 packages, ~341 MiB download, ~1.0 GiB installed (on a host that already had a desktop stack, so on a bare fedora-bootc base expect closer to 1.2-1.4 GiB once GTK/Qt/JUCE dependencies are counted). What dominates, in order: soundfonts ~200 MiB (fluid-soundfont-gm alone is 148 MiB, musescore-soundfont 51 MiB); ardour9 ~96 MiB; audacity-freeworld ~44 MiB; lsp-plugins-lv2 ~42 MiB (plus roughly the same again each for the vst3/clap/ladspa/jack builds of the same suite); Carla ~42 MiB; lmms ~26 MiB; lilypond ~26 MiB; hydrogen ~21 MiB; lv2-x42-plugins ~8 MiB; zynaddsubfx-common ~8 MiB. Easy trims if size matters: drop fluid-soundfont-gm + musescore-soundfont (-200 MiB, costs you GM playback), drop the redundant LSP format builds and keep only lsp-plugins-lv2 (-~90 MiB), drop lilypond/frescobaldi if notation is not part of the workflow (-~30 MiB). The Wine/yabridge path is the real cliff and is deliberately quoted separately: wine-core is ~650 MiB for x86_64 and ~1.4 GiB across the multilib set that 32-bit VST2 support requires, so enabling Windows VST bridging roughly doubles-to-triples this layer. Strongly consider shipping music and music-vst as two image tags rather than paying that for every user.",
+  "notes": [
+    "Everything below was verified by repoquery against live Fedora 44 + updates + RPM Fusion free/nonfree on 2026-07-26. Names with unusual capitalisation that WILL bite you in a Containerfile: Carla, Carla-vst, setBfree, lv2-setBfree-plugins, lv2-abGate, lv2-mdaEPiano, Add64, timidity++ (the ++ is literal), rosegarden4 (not rosegarden).",
+    "Fedora has a group 'audio' (Audio Production, ~90 default packages, uservisible). It is a reasonable starting point but is NOT recommended verbatim here: it pulls pavucontrol, pipewire-alsa, pipewire-pulseaudio, wireplumber and sbc \u2014 all shared-desktop-layer items that violate the layering rule \u2014 and it omits qpwgraph, helvum, sonic-visualiser, realtime-setup and rtkit, which are the parts that actually matter. Prefer the explicit list above. If you do use the group, install with --setopt=install_weak_deps=False and exclude the desktop-audio members.",
+    "BELONGS IN THE SHARED DESKTOP LAYER, not here: pipewire, pipewire-libs, pipewire-alsa, pipewire-pulseaudio, pipewire-utils, wireplumber, alsa-utils, alsa-ucm, pavucontrol, flatpak, xdg-desktop-portal*. This manifest assumes all of them are already present and only adds the JACK ABI (pipewire-jack-audio-connection-kit) plus configuration drop-ins on top. If the base layer does not already carry alsa-utils, add it there rather than here \u2014 amidi/aplaymidi/alsamixer are generic.",
+    "ALSO SHARED-LAYER: the multimedia codec stack (ffmpeg, gstreamer plugins, lame/flac/opus as codec dependencies). This manifest lists lame/flac/opus-tools/vorbis-tools as CLI tools for stem delivery, which is purpose-specific; the libraries behind them are base-layer concerns.",
+    "easyeffects is deliberately excluded. It is a desktop-audio-enhancement tool that inserts a system-wide filter chain and will fight the DAW for the sink, adding latency and confusing routing. If the desktop layer ships it, document that DAW users should disable it, or that daw-mode should stop it.",
+    "mixxx is in Fedora and verified to exist, but it is a DJ application rather than a production tool. Left out of the manifest on scope grounds \u2014 add it if the target user does both.",
+    "A note on JACK vs PipeWire that is worth writing into the image docs: jack-audio-connection-kit and jack-audio-connection-kit-dbus both exist in Fedora and both conflict operationally with pipewire-jack-audio-connection-kit at runtime (they will fight for the ALSA device). Do not install real jackd. Everything in this manifest that says 'JACK' runs on PipeWire's ABI, including qjackctl, jack-mixer, jack-tools, a2jmidid and the standalone LSP/zita/guitarix clients.",
+    "a2jmidid is largely redundant on modern PipeWire \u2014 WirePlumber's ALSA MIDI monitor already bridges hardware seq ports into the graph. It is included for legacy sessions that hardcode a2j port names and for the occasional device that only exposes a raw seq port. Do not enable an a2jmidid service by default; it will duplicate every MIDI port.",
+    "OPEN QUESTION for the parent: is the target machine a laptop or a desktop? The answer flips several defaults. On a laptop, api.alsa.headroom=0 and force-quantum=256 on the internal HDA codec will xrun, the performance governor is genuinely costly, and session.suspend-timeout-seconds=0 hurts battery. The daw-mode toggle approach handles both, but if the target is a dedicated desktop you can bake the aggressive settings and skip the toggle entirely.",
+    "OPEN QUESTION: does the target have a specific audio interface? Several integration items (the IRQ chrt helper, alsa-scarlett-gui from COPR, ffado for FireWire, per-vendor udev rules) are only worth shipping if you know the hardware. The generic bInterfaceClass==01 USB rule covers class-compliant devices without any vendor table, which is the safe default.",
+    "OPEN QUESTION: is Windows VST support actually required? It is the single largest size and fragility driver in this manifest (Wine, plus a COPR-only yabridge that can go dark across a Fedora rebase). If the answer is no, dropping wine/wine-core/winetricks and the yabridge COPR removes ~650 MiB-1.4 GiB and the main supply-chain risk.",
+    "Suggested Containerfile ordering: enable the audinux COPR with an explicit priority before any dnf install so it cannot shadow Fedora builds of shared libraries; install the Fedora/RPM Fusion set first in one transaction with --setopt=install_weak_deps=False; install the COPR set second so any conflict is visible and attributable; then copy in the limits.d / sysctl.d / udev / systemd drop-ins and the pipewire and wireplumber conf.d files; then run systemctl enable for rtkit-daemon, tuned and the two custom units; then set /etc/tuned/active_profile; and write /usr/lib/bootc/kargs.d/20-audio.toml last so a karg change is an obvious diff.",
+    "Worth validating in CI for this image: boot it, run 'cyclictest -m -Sp90 -d0 -h1000' from realtime-tests for 60s and assert max latency under ~200 us, and run a headless Ardour plugin scan to assert every LV2/VST3/CLAP bundle above is actually discovered. A silently-broken suil or a missing LV2_PATH entry is invisible until a user opens a session."
+  ]
+}

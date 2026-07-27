@@ -1,0 +1,1049 @@
+{
+  "key": "desktop-common",
+  "summary": "`desktop.conf` is the DE-agnostic graphical substrate that every graphical image inherits on top of `base.conf` \u2014 it contains everything a desktop needs that is *not* a desktop environment. Concretely: a complete font stack (Latin/CJK/emoji/math/symbols via Fedora's `default-fonts-*` metapackages), the full multimedia codec stack (RPM Fusion `ffmpeg` swapped in over `ffmpeg-free`, the four GStreamer plugin tiers, VA-API/VDPAU/Vulkan hardware decode), PipeWire + WirePlumber as the audio/video server, the DE-agnostic half of XDG desktop portals (`xdg-desktop-portal` + the universal `-gtk` fallback backend, `xdg-dbus-proxy`, `xdg-user-dirs`, `xdg-utils`, `xdg-terminal-exec`), Flatpak with a *declaratively* registered Flathub remote, the OCI container tooling (podman/buildah/skopeo/toolbox/distrobox with netavark, crun, container-selinux), printing via CUPS + Avahi + driver packs, scanning via SANE + sane-airscan, NetworkManager with its wifi/bluetooth/wwan submodules, BlueZ, and the freedesktop session plumbing (polkit, udisks2, upower, gvfs, gnome-keyring/libsecret, at-spi2, gsettings-desktop-schemas, Xwayland, plymouth). It is the layer that makes \"any DE dropped on top of this image just works\" true, so that a GNOME/KDE/Hyprland manifest only has to name its shell, its session manager, its portal backend, and its display manager. Source: this was previously fused with GNOME inside `/mnt/Andromeda/DEV/fedora-custom-images/config/profiles/workstation.conf`; the split below extracts the ~85% of that file that has nothing to do with GNOME, and fixes four package names in it that do not exist on Fedora 44.",
+  "packages": [
+    {
+      "name": "fontconfig",
+      "why": "Font matching/rendering config engine; everything below is inert without it."
+    },
+    {
+      "name": "fonts-filesystem",
+      "why": "Owns /usr/share/fonts hierarchy; dependency anchor for all font RPMs."
+    },
+    {
+      "name": "default-fonts-core-sans",
+      "why": "Fedora 44's supported way to get the default sans stack. Replaces hand-listing google-noto-sans-fonts."
+    },
+    {
+      "name": "default-fonts-core-serif",
+      "why": "Default serif stack metapackage."
+    },
+    {
+      "name": "default-fonts-core-mono",
+      "why": "Default monospace stack (terminals, editors)."
+    },
+    {
+      "name": "default-fonts-core-emoji",
+      "why": "Emoji coverage wired into fontconfig correctly \u2014 the right way to get emoji, not raw google-noto-emoji-fonts."
+    },
+    {
+      "name": "default-fonts-core-math",
+      "why": "Math/technical glyph coverage; avoids tofu in docs and web content."
+    },
+    {
+      "name": "default-fonts-cjk-sans",
+      "why": "CJK sans (Chinese/Japanese/Korean). This is the correct F44 name \u2014 google-noto-cjk-fonts does NOT exist."
+    },
+    {
+      "name": "default-fonts-cjk-serif",
+      "why": "CJK serif coverage."
+    },
+    {
+      "name": "default-fonts-cjk-mono",
+      "why": "CJK monospace, needed for terminals showing CJK."
+    },
+    {
+      "name": "default-fonts-other-sans",
+      "why": "Arabic, Hebrew, Devanagari, Thai, Ethiopic etc. \u2014 kills tofu for non-Latin non-CJK scripts."
+    },
+    {
+      "name": "default-fonts-other-serif",
+      "why": "Serif coverage for the same script set."
+    },
+    {
+      "name": "default-fonts-other-mono",
+      "why": "Monospace coverage for the same script set."
+    },
+    {
+      "name": "google-noto-color-emoji-fonts",
+      "why": "Explicit color emoji font; pulled by default-fonts-core-emoji but pin it so emoji never silently regress to monochrome."
+    },
+    {
+      "name": "google-noto-sans-symbols-2-fonts",
+      "why": "Geometric/technical symbols used by TUI apps, powerline-ish glyphs, waybar/polybar. Note the name is symbols-2, not symbols2."
+    },
+    {
+      "name": "liberation-fonts-all",
+      "why": "Metric-compatible Arial/Times/Courier substitutes \u2014 required for correct DOCX/PDF rendering. NOTE: bare 'liberation-fonts' does not exist on F44 and is a bug in the current workstation.conf."
+    },
+    {
+      "name": "dejavu-fonts-all",
+      "why": "Universal fallback face assumed by a lot of legacy toolkits."
+    },
+    {
+      "name": "abattis-cantarell-fonts",
+      "why": "Cantarell \u2014 referenced by many GTK/Adwaita stylesheets regardless of DE."
+    },
+    {
+      "name": "jetbrains-mono-fonts",
+      "why": "Good default programming font for terminals and editors across every DE."
+    },
+    {
+      "name": "cascadia-code-fonts",
+      "why": "Second programming font with strong ligature + powerline coverage."
+    },
+    {
+      "name": "adobe-source-code-pro-fonts",
+      "why": "Third monospace option; widely referenced in default configs."
+    },
+    {
+      "name": "fira-code-fonts",
+      "why": "Ligature programming font commonly expected by editor configs."
+    },
+    {
+      "name": "ffmpeg",
+      "why": "RPM Fusion full FFmpeg CLI. Must be installed with 'dnf swap ffmpeg-free ffmpeg' semantics \u2014 see risks."
+    },
+    {
+      "name": "ffmpeg-libs",
+      "why": "The unrestricted libav* shared libraries that everything else links against."
+    },
+    {
+      "name": "libavcodec-freeworld",
+      "why": "Patent-encumbered codec additions for apps built against Fedora's ffmpeg-free ABI (Firefox H.264, etc.)."
+    },
+    {
+      "name": "gstreamer1",
+      "why": "Core GStreamer framework."
+    },
+    {
+      "name": "gstreamer1-plugins-base",
+      "why": "Base plugin set \u2014 required by every GStreamer consumer."
+    },
+    {
+      "name": "gstreamer1-plugins-good",
+      "why": "LGPL good-quality plugins."
+    },
+    {
+      "name": "gstreamer1-plugins-good-extras",
+      "why": "Additional good plugins split out in Fedora."
+    },
+    {
+      "name": "gstreamer1-plugins-bad-free",
+      "why": "Free 'bad' tier \u2014 includes the modern VA plugin that supersedes gstreamer1-vaapi."
+    },
+    {
+      "name": "gstreamer1-plugins-bad-free-extras",
+      "why": "Extra free bad plugins."
+    },
+    {
+      "name": "gstreamer1-plugins-bad-freeworld",
+      "why": "RPM Fusion patent-encumbered bad plugins."
+    },
+    {
+      "name": "gstreamer1-plugins-ugly",
+      "why": "RPM Fusion ugly tier (full, unlike Fedora's ugly-free)."
+    },
+    {
+      "name": "gstreamer1-plugins-ugly-free",
+      "why": "Fedora's free ugly subset; harmless alongside and satisfies group deps."
+    },
+    {
+      "name": "gstreamer1-plugin-libav",
+      "why": "libav/FFmpeg bridge for GStreamer \u2014 the single most impactful codec plugin."
+    },
+    {
+      "name": "gstreamer1-plugin-openh264",
+      "why": "Cisco-provided H.264 for WebRTC and browser video calls."
+    },
+    {
+      "name": "gstreamer1-plugin-dav1d",
+      "why": "Fast AV1 decode \u2014 increasingly the default on YouTube/Netflix."
+    },
+    {
+      "name": "mesa-dri-drivers",
+      "why": "OpenGL DRI drivers. IMPORTANT F44 change: this now also provides the VA-API drivers \u2014 mesa-va-drivers and mesa-vdpau-drivers no longer exist as separate packages."
+    },
+    {
+      "name": "mesa-va-drivers-freeworld",
+      "why": "RPM Fusion VA-API with H.264/H.265/VC1 decode enabled on AMD/Intel."
+    },
+    {
+      "name": "mesa-vulkan-drivers",
+      "why": "Vulkan ICDs for AMD (RADV) and Intel (ANV)."
+    },
+    {
+      "name": "mesa-vulkan-drivers-freeworld",
+      "why": "RPM Fusion Vulkan build with additional codec extensions (Vulkan video decode)."
+    },
+    {
+      "name": "libva",
+      "why": "VA-API runtime."
+    },
+    {
+      "name": "libva-utils",
+      "why": "vainfo \u2014 the only sane way to debug 'why is hardware decode not working' on a deployed image."
+    },
+    {
+      "name": "libva-intel-media-driver",
+      "why": "Intel Gen9+ media driver (iHD). Fedora's free build; prefer over RPM Fusion's intel-media-driver."
+    },
+    {
+      "name": "vulkan-loader",
+      "why": "Vulkan ICD loader."
+    },
+    {
+      "name": "vulkan-tools",
+      "why": "vulkaninfo/vkcube for verifying GPU acceleration post-deploy."
+    },
+    {
+      "name": "lame",
+      "why": "MP3 encoding for any app that shells out to it."
+    },
+    {
+      "name": "x264",
+      "why": "H.264 encoding library (screen recording, OBS, ffmpeg encode)."
+    },
+    {
+      "name": "x265",
+      "why": "H.265/HEVC encoding library."
+    },
+    {
+      "name": "pipewire",
+      "why": "The audio/video server. Core of the modern Linux desktop media stack."
+    },
+    {
+      "name": "pipewire-libs",
+      "why": "PipeWire shared libraries."
+    },
+    {
+      "name": "pipewire-utils",
+      "why": "pw-cli, pw-top, pw-dump \u2014 mandatory for debugging audio on an immutable image where you cannot easily install tools later."
+    },
+    {
+      "name": "pipewire-alsa",
+      "why": "ALSA compatibility layer routed through PipeWire."
+    },
+    {
+      "name": "pipewire-pulseaudio",
+      "why": "PulseAudio server replacement \u2014 required for the ~90% of apps that still speak PA."
+    },
+    {
+      "name": "pipewire-jack-audio-connection-kit",
+      "why": "JACK API on PipeWire; makes pro-audio apps work without a second sound server."
+    },
+    {
+      "name": "pipewire-gstreamer",
+      "why": "GStreamer <-> PipeWire elements; needed for screencast portal recording."
+    },
+    {
+      "name": "pipewire-plugin-libcamera",
+      "why": "libcamera source for PipeWire \u2014 modern laptop MIPI webcams do not work through V4L2 alone."
+    },
+    {
+      "name": "pipewire-codec-aptx",
+      "why": "aptX/aptX-HD Bluetooth codecs (RPM Fusion) \u2014 noticeably better BT audio."
+    },
+    {
+      "name": "pipewire-config-raop",
+      "why": "AirPlay/RAOP sink config."
+    },
+    {
+      "name": "wireplumber",
+      "why": "The PipeWire session/policy manager. PipeWire does nothing useful without it."
+    },
+    {
+      "name": "wireplumber-libs",
+      "why": "WirePlumber libraries."
+    },
+    {
+      "name": "libcamera",
+      "why": "Camera stack for modern IPU6/MIPI sensors."
+    },
+    {
+      "name": "libcamera-ipa",
+      "why": "Image processing algorithms \u2014 without it libcamera cameras produce garbage or nothing."
+    },
+    {
+      "name": "alsa-utils",
+      "why": "alsamixer/amixer/aplay \u2014 lowest-level audio debugging."
+    },
+    {
+      "name": "alsa-ucm",
+      "why": "Use Case Manager configs; required for correct routing on many laptops and all ARM boards."
+    },
+    {
+      "name": "alsa-firmware",
+      "why": "Firmware for older sound hardware."
+    },
+    {
+      "name": "alsa-sof-firmware",
+      "why": "Sound Open Firmware \u2014 mandatory for audio on essentially every Intel laptop since Tiger Lake."
+    },
+    {
+      "name": "rtkit",
+      "why": "Grants realtime scheduling to PipeWire without needing custom limits.conf. This is the modern, correct mechanism."
+    },
+    {
+      "name": "sound-theme-freedesktop",
+      "why": "Standard event sounds so DEs have something to play."
+    },
+    {
+      "name": "libcanberra",
+      "why": "Event sound API used by GTK and many apps."
+    },
+    {
+      "name": "pulseaudio-utils",
+      "why": "pactl/pacmd \u2014 how you actually inspect PipeWire's PA layer."
+    },
+    {
+      "name": "xdg-desktop-portal",
+      "why": "The portal frontend. Sandboxed apps (Flatpak) and Wayland screencasting are broken without it."
+    },
+    {
+      "name": "xdg-desktop-portal-gtk",
+      "why": "The universal fallback backend. Every DE layer adds its own (-gnome/-kde/-hyprland) but -gtk must exist to service the interfaces the DE backend does not implement."
+    },
+    {
+      "name": "xdg-dbus-proxy",
+      "why": "D-Bus filtering proxy that Flatpak sandboxing depends on."
+    },
+    {
+      "name": "xdg-user-dirs",
+      "why": "Creates and manages ~/Desktop, ~/Downloads, ~/Documents."
+    },
+    {
+      "name": "xdg-user-dirs-gtk",
+      "why": "Locale-aware directory naming + first-login updates. GTK-linked but DE-agnostic in behavior."
+    },
+    {
+      "name": "xdg-utils",
+      "why": "xdg-open, xdg-mime, xdg-email \u2014 the scripts everything shells out to."
+    },
+    {
+      "name": "xdg-terminal-exec",
+      "why": "The freedesktop mechanism for 'open in terminal' that works without a DE-specific terminal setting."
+    },
+    {
+      "name": "desktop-file-utils",
+      "why": "update-desktop-database; needed at image build time for correct MIME/app association caches."
+    },
+    {
+      "name": "shared-mime-info",
+      "why": "The MIME database itself."
+    },
+    {
+      "name": "hicolor-icon-theme",
+      "why": "Base icon theme every other theme inherits from."
+    },
+    {
+      "name": "adwaita-icon-theme",
+      "why": "De-facto fallback icon theme \u2014 GTK apps on Hyprland/sway look broken without it."
+    },
+    {
+      "name": "flatpak",
+      "why": "Flatpak runtime. F44 ships 1.18, which supports declarative remotes.d and preinstall.d \u2014 see integration."
+    },
+    {
+      "name": "flatpak-libs",
+      "why": "Flatpak shared libraries."
+    },
+    {
+      "name": "flatpak-selinux",
+      "why": "SELinux policy for Flatpak. Mandatory on an enforcing bootc image."
+    },
+    {
+      "name": "flatpak-session-helper",
+      "why": "Provides the session bus helper and the /run/host bind setup Flatpak apps need."
+    },
+    {
+      "name": "flatpak-xdg-utils",
+      "why": "flatpak-spawn shim so xdg-open inside a sandbox reaches the host."
+    },
+    {
+      "name": "podman",
+      "why": "Primary OCI runtime; also what distrobox and toolbox drive."
+    },
+    {
+      "name": "podman-compose",
+      "why": "docker-compose workflows without Docker."
+    },
+    {
+      "name": "podman-docker",
+      "why": "docker CLI shim so muscle memory and third-party scripts work."
+    },
+    {
+      "name": "buildah",
+      "why": "Image building without a daemon."
+    },
+    {
+      "name": "skopeo",
+      "why": "Image inspection/copy; also how you debug your own bootc image registry."
+    },
+    {
+      "name": "toolbox",
+      "why": "Fedora's mutable dev container \u2014 the sanctioned escape hatch on an immutable OS."
+    },
+    {
+      "name": "distrobox",
+      "why": "Multi-distro containers with tight host integration; complements toolbox."
+    },
+    {
+      "name": "containers-common",
+      "why": "Shared registries.conf/policy.json/storage.conf. This is where image-level container policy lives."
+    },
+    {
+      "name": "container-selinux",
+      "why": "SELinux policy for containers. Non-optional on an enforcing image."
+    },
+    {
+      "name": "crun",
+      "why": "Default OCI runtime; faster and cgroupsv2-native."
+    },
+    {
+      "name": "netavark",
+      "why": "Default container network backend."
+    },
+    {
+      "name": "aardvark-dns",
+      "why": "DNS for container networks; container name resolution breaks without it."
+    },
+    {
+      "name": "passt",
+      "why": "Rootless networking (pasta) \u2014 the current default for rootless podman."
+    },
+    {
+      "name": "slirp4netns",
+      "why": "Legacy rootless networking fallback still required by some tooling."
+    },
+    {
+      "name": "fuse-overlayfs",
+      "why": "Rootless overlay storage driver fallback."
+    },
+    {
+      "name": "fuse",
+      "why": "FUSE v2 runtime."
+    },
+    {
+      "name": "fuse3",
+      "why": "FUSE v3 \u2014 required by fuse-overlayfs, gvfs-fuse, AppImages, and Flatpak's revokefs."
+    },
+    {
+      "name": "cups",
+      "why": "Print server."
+    },
+    {
+      "name": "cups-filters",
+      "why": "Filter chain; without it most printers accept nothing."
+    },
+    {
+      "name": "cups-browsed",
+      "why": "Discovers remote/shared queues."
+    },
+    {
+      "name": "cups-pk-helper",
+      "why": "polkit bridge so unprivileged GUI print dialogs can configure printers."
+    },
+    {
+      "name": "cups-pdf",
+      "why": "Print-to-PDF virtual queue \u2014 universally expected."
+    },
+    {
+      "name": "ghostscript",
+      "why": "PostScript/PDF rasterization for non-PDF printers."
+    },
+    {
+      "name": "gutenprint",
+      "why": "Broad driver coverage for Canon/Epson/HP inkjets."
+    },
+    {
+      "name": "gutenprint-cups",
+      "why": "CUPS backends for Gutenprint."
+    },
+    {
+      "name": "foomatic",
+      "why": "Foomatic filter glue."
+    },
+    {
+      "name": "foomatic-db",
+      "why": "PPD database for thousands of legacy printers."
+    },
+    {
+      "name": "hplip",
+      "why": "HP printer and multifunction support (also provides HP scanner SANE backend). ~29 MB \u2014 largest single printing cost."
+    },
+    {
+      "name": "splix",
+      "why": "Samsung/Xerox SPL driver."
+    },
+    {
+      "name": "ptouch-driver",
+      "why": "Brother P-touch label printers \u2014 common in labs/clinics."
+    },
+    {
+      "name": "paps",
+      "why": "UTF-8 text-to-PostScript; correct printing of non-Latin plain text."
+    },
+    {
+      "name": "mpage",
+      "why": "N-up text printing filter pulled by the printing group."
+    },
+    {
+      "name": "bluez-cups",
+      "why": "Printing to Bluetooth printers."
+    },
+    {
+      "name": "colord",
+      "why": "Color management daemon \u2014 used by both print and display calibration, DE-agnostic."
+    },
+    {
+      "name": "ipp-usb",
+      "why": "IPP-over-USB: makes modern driverless USB printers/scanners work with zero configuration."
+    },
+    {
+      "name": "system-config-printer",
+      "why": "GTK printer admin UI. Borderline DE-layer, but it is the only DE-independent printer config GUI that exists."
+    },
+    {
+      "name": "system-config-printer-udev",
+      "why": "udev rules that auto-configure a printer on hotplug. This is the piece that actually justifies baking it."
+    },
+    {
+      "name": "avahi",
+      "why": "mDNS/DNS-SD \u2014 driverless printing and scanning discovery."
+    },
+    {
+      "name": "avahi-tools",
+      "why": "avahi-browse for diagnosing 'printer not found'."
+    },
+    {
+      "name": "nss-mdns",
+      "why": "Resolves .local hostnames. Without it Avahi discovery finds devices you then cannot reach."
+    },
+    {
+      "name": "sane-backends",
+      "why": "Scanner backend framework."
+    },
+    {
+      "name": "sane-backends-drivers-scanners",
+      "why": "The actual scanner driver set (split out from sane-backends in Fedora)."
+    },
+    {
+      "name": "sane-airscan",
+      "why": "eSCL/WSD driverless network scanning \u2014 covers most scanners made after ~2016 with no driver at all."
+    },
+    {
+      "name": "NetworkManager",
+      "why": "Network stack. Already in base.conf, restated here because the desktop submodules below depend on it."
+    },
+    {
+      "name": "NetworkManager-wifi",
+      "why": "Wi-Fi support \u2014 not in the base/server profile, mandatory for any desktop."
+    },
+    {
+      "name": "NetworkManager-bluetooth",
+      "why": "Bluetooth PAN/DUN tethering."
+    },
+    {
+      "name": "NetworkManager-wwan",
+      "why": "Mobile broadband via ModemManager."
+    },
+    {
+      "name": "NetworkManager-adsl",
+      "why": "Completes the networkmanager-submodules set; trivial size."
+    },
+    {
+      "name": "NetworkManager-tui",
+      "why": "nmtui \u2014 the fallback when the DE's applet is broken or you are on a TTY."
+    },
+    {
+      "name": "NetworkManager-openvpn",
+      "why": "VPN plugin; DE-agnostic, DE applets all consume it."
+    },
+    {
+      "name": "ModemManager",
+      "why": "Cellular modem management for WWAN laptops."
+    },
+    {
+      "name": "bluez",
+      "why": "Bluetooth stack."
+    },
+    {
+      "name": "bluez-obexd",
+      "why": "OBEX file transfer \u2014 Bluetooth send/receive silently fails without it."
+    },
+    {
+      "name": "bluez-tools",
+      "why": "bluetoothctl companions for headless debugging."
+    },
+    {
+      "name": "linux-firmware",
+      "why": "GPU/Wi-Fi/Bluetooth firmware. Absolutely required for a desktop image and NOT implied by fedora-bootc."
+    },
+    {
+      "name": "iwlwifi-mvm-firmware",
+      "why": "Intel Wi-Fi firmware, explicitly pinned because it is the single most common 'no network after install' cause."
+    },
+    {
+      "name": "polkit",
+      "why": "Privilege escalation framework every desktop authorization dialog goes through."
+    },
+    {
+      "name": "udisks2",
+      "why": "Removable media mounting daemon used by every file manager."
+    },
+    {
+      "name": "upower",
+      "why": "Battery/power state for any status bar or DE."
+    },
+    {
+      "name": "gvfs",
+      "why": "Virtual filesystem layer."
+    },
+    {
+      "name": "gvfs-fuse",
+      "why": "Exposes gvfs mounts as real paths so non-GIO apps (and Flatpaks) can read them."
+    },
+    {
+      "name": "gvfs-mtp",
+      "why": "Android phone browsing."
+    },
+    {
+      "name": "gvfs-gphoto2",
+      "why": "Camera access."
+    },
+    {
+      "name": "gvfs-smb",
+      "why": "SMB/Windows share browsing."
+    },
+    {
+      "name": "gvfs-nfs",
+      "why": "NFS share browsing."
+    },
+    {
+      "name": "gvfs-archive",
+      "why": "Transparent archive browsing."
+    },
+    {
+      "name": "power-profiles-daemon",
+      "why": "Power profile switching; consumed identically by GNOME, KDE, and standalone bars."
+    },
+    {
+      "name": "switcheroo-control",
+      "why": "Hybrid-GPU app launching ('Launch on discrete GPU') \u2014 DE-agnostic D-Bus service."
+    },
+    {
+      "name": "iio-sensor-proxy",
+      "why": "Accelerometer/ambient-light \u2014 auto-rotate and auto-brightness on convertibles."
+    },
+    {
+      "name": "geoclue2",
+      "why": "Location service used by night-light/timezone across DEs."
+    },
+    {
+      "name": "bolt",
+      "why": "Thunderbolt device authorization \u2014 docks do not work without it."
+    },
+    {
+      "name": "fwupd",
+      "why": "Firmware updates. In base.conf, restated because desktop hardware is where it matters."
+    },
+    {
+      "name": "usbmuxd",
+      "why": "iOS device connection daemon."
+    },
+    {
+      "name": "libimobiledevice",
+      "why": "iPhone/iPad file and tethering access."
+    },
+    {
+      "name": "plymouth",
+      "why": "Boot splash; also the correct place for LUKS passphrase entry on a graphical image."
+    },
+    {
+      "name": "plymouth-system-theme",
+      "why": "Provides the actual theme; plymouth alone shows nothing."
+    },
+    {
+      "name": "xorg-x11-server-Xwayland",
+      "why": "X11 compatibility for every Wayland compositor. Required by all DE layers, so it belongs here."
+    },
+    {
+      "name": "libglvnd",
+      "why": "GL vendor-neutral dispatch \u2014 the mechanism that lets NVIDIA and Mesa coexist."
+    },
+    {
+      "name": "libglvnd-glx",
+      "why": "GLX dispatch."
+    },
+    {
+      "name": "libglvnd-egl",
+      "why": "EGL dispatch."
+    },
+    {
+      "name": "gtk3",
+      "why": "Explicitly pinned so GTK3 apps (including Flatpak host-theme integration and system-config-printer) always work on a non-GTK DE."
+    },
+    {
+      "name": "gtk4",
+      "why": "Same rationale for GTK4."
+    },
+    {
+      "name": "qt5-qtwayland",
+      "why": "Native Wayland for Qt5 apps regardless of DE \u2014 prevents blurry XWayland scaling."
+    },
+    {
+      "name": "qt6-qtwayland",
+      "why": "Same for Qt6."
+    },
+    {
+      "name": "gsettings-desktop-schemas",
+      "why": "Shared desktop schemas that non-GNOME apps still read."
+    },
+    {
+      "name": "dconf",
+      "why": "GSettings backend."
+    },
+    {
+      "name": "at-spi2-core",
+      "why": "Accessibility bus. Also required for some automation and for Qt/GTK a11y to not warn."
+    },
+    {
+      "name": "at-spi2-atk",
+      "why": "ATK bridge for GTK accessibility."
+    },
+    {
+      "name": "gnome-keyring",
+      "why": "Despite the name, this is the de-facto Secret Service provider on sway/Hyprland/i3 too. DE layers that ship kwallet can exclude it."
+    },
+    {
+      "name": "libsecret",
+      "why": "Secret Service client library used by browsers, git credential helpers, and Flatpaks."
+    },
+    {
+      "name": "pinentry",
+      "why": "GPG passphrase entry."
+    },
+    {
+      "name": "pinentry-gnome3",
+      "why": "Graphical pinentry that works via the Secret Service on any DE."
+    },
+    {
+      "name": "pcsc-lite",
+      "why": "Smartcard daemon \u2014 needed for YubiKey/PIV/eID on any desktop."
+    },
+    {
+      "name": "libnotify",
+      "why": "notify-send and the client-side notification API."
+    },
+    {
+      "name": "wl-clipboard",
+      "why": "wl-copy/wl-paste \u2014 the Wayland clipboard CLI every DE-agnostic script assumes."
+    },
+    {
+      "name": "xclip",
+      "why": "X11 clipboard CLI for XWayland-era tooling."
+    },
+    {
+      "name": "xsel",
+      "why": "Second X11 clipboard CLI; some tools hardcode one or the other."
+    },
+    {
+      "name": "7zip",
+      "why": "7z archive support. NOTE: p7zip no longer exists on F44 \u2014 the package is '7zip'."
+    },
+    {
+      "name": "unrar",
+      "why": "RAR extraction (RPM Fusion nonfree). See risks re: redistribution."
+    },
+    {
+      "name": "unzip",
+      "why": "Zip extraction."
+    },
+    {
+      "name": "zip",
+      "why": "Zip creation."
+    },
+    {
+      "name": "cabextract",
+      "why": "CAB extraction; needed by font/driver installers and Wine tooling."
+    },
+    {
+      "name": "zstd",
+      "why": "zstd CLI; also the compression the OS itself uses."
+    },
+    {
+      "name": "exfatprogs",
+      "why": "exFAT tooling for SD cards and cameras."
+    },
+    {
+      "name": "ntfs-3g",
+      "why": "NTFS read/write for external drives and Windows dual-boot."
+    },
+    {
+      "name": "ntfsprogs",
+      "why": "NTFS repair/resize utilities."
+    },
+    {
+      "name": "dosfstools",
+      "why": "FAT32 tooling (also for EFI partition maintenance)."
+    },
+    {
+      "name": "udftools",
+      "why": "UDF optical media."
+    },
+    {
+      "name": "btrfs-progs",
+      "why": "Btrfs tooling \u2014 the default desktop filesystem on Fedora."
+    },
+    {
+      "name": "ibus",
+      "why": "Input method framework. The DE-agnostic default on Fedora; CJK/Indic input is impossible without an IME even with the fonts installed."
+    },
+    {
+      "name": "ibus-libpinyin",
+      "why": "Simplified Chinese input."
+    },
+    {
+      "name": "ibus-libzhuyin",
+      "why": "Traditional Chinese (Bopomofo) input."
+    },
+    {
+      "name": "ibus-anthy",
+      "why": "Japanese input."
+    },
+    {
+      "name": "ibus-hangul",
+      "why": "Korean input."
+    },
+    {
+      "name": "ibus-m17n",
+      "why": "Indic and many other scripts via m17n tables."
+    },
+    {
+      "name": "ibus-typing-booster",
+      "why": "Predictive multilingual input and emoji-by-name."
+    },
+    {
+      "name": "setroubleshoot-server",
+      "why": "SELinux denial analysis. On an immutable image with custom udev/systemd units this is how you diagnose AVCs without rebuilding."
+    },
+    {
+      "name": "firewall-config",
+      "why": "Graphical firewalld config \u2014 base.conf enables firewalld headlessly, a desktop needs the UI."
+    },
+    {
+      "name": "systemd-oomd-defaults",
+      "why": "Userspace OOM policy that keeps a desktop responsive under memory pressure instead of hard-locking."
+    },
+    {
+      "name": "zram-generator-defaults",
+      "why": "zram swap \u2014 meaningful desktop responsiveness win, and the Fedora Workstation default."
+    },
+    {
+      "name": "colord-gtk",
+      "why": "Color management UI bindings shared by print and display tooling."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "liberation-fonts",
+      "alternative": "Does not exist on F44 (no package, no Provides). Use `liberation-fonts-all`, or the individual `liberation-sans-fonts` / `liberation-serif-fonts` / `liberation-mono-fonts` / `liberation-narrow-fonts`. This name is currently in workstation.conf and WILL fail the build."
+    },
+    {
+      "name": "google-noto-cjk-fonts",
+      "alternative": "Does not exist on F44. Use `default-fonts-cjk-sans` / `-serif` / `-mono`, or directly `google-noto-sans-cjk-fonts` / `google-noto-serif-cjk-fonts` / `google-noto-sans-cjk-vf-fonts`. Also currently in workstation.conf and will fail."
+    },
+    {
+      "name": "mesa-va-drivers",
+      "alternative": "Removed as a separate package on F44 \u2014 the VA-API drivers are now inside `mesa-dri-drivers` (verified: mesa-dri-drivers owns */dri/radeonsi_drv_video.so). Install `mesa-dri-drivers`, then swap to `mesa-va-drivers-freeworld` for the patent-encumbered build."
+    },
+    {
+      "name": "mesa-vdpau-drivers",
+      "alternative": "Likewise gone on F44; VDPAU is deprecated. Rely on VA-API (`mesa-dri-drivers` + `mesa-va-drivers-freeworld`) and Vulkan video."
+    },
+    {
+      "name": "google-noto-sans-symbols2-fonts",
+      "alternative": "Typo'd name. The real package is `google-noto-sans-symbols-2-fonts` (hyphen before the 2)."
+    },
+    {
+      "name": "p7zip / p7zip-plugins",
+      "alternative": "Retired on F44. Use `7zip` (upstream 7-Zip), which is what actually exists."
+    },
+    {
+      "name": "sof-firmware",
+      "alternative": "Fedora's name is `alsa-sof-firmware`."
+    },
+    {
+      "name": "fontawesome-fonts",
+      "alternative": "Split up. Use `fontawesome-fonts-all`, or `fontawesome-6-free-fonts` + `fontawesome-6-brands-fonts`."
+    },
+    {
+      "name": "langpacks-core-font-en",
+      "alternative": "No `langpacks-core-font-*` subpackages exist on F44 \u2014 only `langpacks-core-<lang>` and `langpacks-<lang>`. The font role they used to serve is now covered by the `default-fonts-*` metapackages."
+    },
+    {
+      "name": "pipewire-pulse",
+      "alternative": "Debian name. On Fedora it is `pipewire-pulseaudio`."
+    },
+    {
+      "name": "xdg-desktop-portal-hyprland",
+      "alternative": "Not in Fedora repos. COPR `solopasha/hyprland` (or `lionheartp/Hyprland`). Belongs in a Hyprland DE layer, not here."
+    },
+    {
+      "name": "libdvdcss",
+      "alternative": "Not in rpmfusion-free/nonfree \u2014 it lives in the separate `rpmfusion-free-tainted` repo, which is not enabled in the base layer. Enable rpmfusion-free-tainted explicitly if encrypted DVD playback is required, or omit."
+    },
+    {
+      "name": "epson-inkjet-printer-escpr",
+      "alternative": "Not in Fedora repos. Upstream RPM from download.ebz.epson.net, or COPR. Only add if Epson printers are in scope."
+    },
+    {
+      "name": "mtpfs",
+      "alternative": "Not in F44 repos. `gvfs-mtp` + `libmtp` cover MTP access via GIO/gvfs-fuse, which is what desktops actually use."
+    },
+    {
+      "name": "gstreamer1-vaapi",
+      "alternative": "Exists on F44 but only in the frozen `fedora` repo, not `updates` \u2014 it is deprecated upstream. Do NOT install it; the `va` plugin inside `gstreamer1-plugins-bad-free` is the supported replacement and coexisting can cause double-init crashes."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "config-file",
+      "detail": "Flathub remote, declaratively: write `/usr/share/flatpak/remotes.d/flathub.flatpakrepo` (or `/etc/flatpak/remotes.d/`) in the image. Flatpak 1.18 (F44) reads remotes.d at runtime with no D-Bus, no session bus, no network at build time. This replaces the current `RUN flatpak remote-add --system` line, which only appears to work because of the `|| true`."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Flatpak app pre-seeding: drop `.preinstall` files into `/usr/share/flatpak/preinstall.d/` (F44's flatpak ships this directory plus `flatpak-preinstall(1)`). This is the correct declarative mechanism; DE and purpose layers add their own files here, so desktop.conf only has to guarantee the directory and the trigger unit exist."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Ship a first-boot oneshot: `flatpak-preinstall.service` with `Type=oneshot`, `After=network-online.target flatpak-system-helper.service`, `ExecStart=/usr/bin/flatpak preinstall -y --system`, `ConditionPathExists=!/var/lib/flatpak/.preinstall-done`. Fedora does NOT ship such a unit (verified: no package provides flatpak-preinstall.service), so this is ours to write. Enable it via `systemctl enable`."
+    },
+    {
+      "kind": "systemd",
+      "detail": "PipeWire and WirePlumber are USER units. `systemctl enable pipewire` in a Containerfile is wrong/no-op. Use `systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service`, which writes into /etc/systemd/user/ and applies to every user. This is a real, easy-to-miss correctness bug."
+    },
+    {
+      "kind": "udev",
+      "detail": "SANE ships `/usr/lib/udev/rules.d/60-libsane.rules` which chgrp's scanner devices to the `scanner` group. On a bootc image with no traditional %post, guarantee the group exists via sysusers (below) or scanners are root-only."
+    },
+    {
+      "kind": "group",
+      "detail": "Create desktop-relevant groups declaratively with `/usr/lib/sysusers.d/desktop-common.conf`: `g scanner -`, `g plugdev -`, `g lp -`, `g render -`, `g video -`, `g input -`, `g dialout -`. systemd-sysusers runs on every boot and is the only reliable way to guarantee group existence on an image whose /etc is a merged overlay."
+    },
+    {
+      "kind": "config-file",
+      "detail": "Rootless podman needs `/etc/subuid` and `/etc/subgid` entries per user. Set `SUB_UID_MIN`/`SUB_GID_MIN`/`SUB_UID_COUNT` in `/etc/login.defs` and ensure `useradd` allocates ranges (`USE_SUBORDINATE_IDS yes`), so users created after deploy get ranges automatically. Baking /etc/subuid entries for a user that does not exist yet is a common bootc mistake."
+    },
+    {
+      "kind": "config-file",
+      "detail": "`/etc/containers/registries.conf.d/00-unqualified.conf` setting `unqualified-search-registries = [\"registry.fedoraproject.org\", \"quay.io\", \"docker.io\"]` so `podman run alpine` and distrobox work without full URLs. Also `/etc/containers/storage.conf` driver=overlay with `mountopt=nodev,metacopy=on`."
+    },
+    {
+      "kind": "config-file",
+      "detail": "`/etc/xdg/user-dirs.defaults` and `/etc/xdg/user-dirs.conf` to control which XDG dirs get created (e.g. drop Templates/Public) uniformly across all DEs."
+    },
+    {
+      "kind": "selinux",
+      "detail": "`container-selinux` and `flatpak-selinux` must be installed, and the build should NOT relabel /var. Also consider `setsebool -P cups_execmem on` only if a driver needs it \u2014 do not blanket-permissive."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "Plymouth requires `rhgb quiet` in the kernel cmdline to actually show. On bootc, set this via `/usr/lib/bootc/kargs.d/10-desktop.toml` with `kargs = [\"rhgb\", \"quiet\"]` \u2014 this is the bootc-native mechanism and survives upgrades, unlike editing grub."
+    },
+    {
+      "kind": "kernel-arg",
+      "detail": "Optionally `/usr/lib/bootc/kargs.d/20-audio.toml` for `snd_hda_intel.dmic_detect=0` on machines where SOF misdetects; leave commented as a documented escape hatch rather than default-on."
+    },
+    {
+      "kind": "systemd",
+      "detail": "`systemctl set-default graphical.target` \u2014 belongs here, not in a DE layer, since every graphical image needs it and DE layers only differ in which display manager they enable."
+    },
+    {
+      "kind": "mime",
+      "detail": "Run `update-desktop-database /usr/share/applications` and `update-mime-database /usr/share/mime` as the last step of the layer's RUN, plus `fc-cache -f` \u2014 RPM scriptlets write these caches, but layering order across multiple Containerfile stages can leave them stale, producing 'no application found to open this file' on a fresh deploy."
+    },
+    {
+      "kind": "sysctl",
+      "detail": "`/usr/lib/sysctl.d/60-desktop.conf`: `fs.inotify.max_user_watches=524288` (editors/file managers/Syncthing exhaust the default), `fs.inotify.max_user_instances=1024`, `kernel.dmesg_restrict=0` only if you want unprivileged journal diagnostics (otherwise leave hardened)."
+    },
+    {
+      "kind": "limits",
+      "detail": "`/etc/security/limits.d/95-pipewire.conf` with `@audio - rtprio 95` / `- memlock 4194304` is the traditional approach, but with `rtkit` installed it is unnecessary and arguably worse. Prefer rtkit; only add limits.conf if a purpose layer does pro-audio."
+    },
+    {
+      "kind": "systemd",
+      "detail": "Mask `systemd-networkd` / `systemd-resolved` conflicts are already handled by NetworkManager's preset, but explicitly enable `NetworkManager-wait-online.service` ONLY if a purpose layer needs it \u2014 it adds boot latency on every laptop and should be off by default in a desktop layer."
+    },
+    {
+      "kind": "other",
+      "detail": "`ostree container commit` / `bootc container lint` as the final Containerfile step, and `dnf clean all && rm -rf /var/cache/* /var/lib/dnf` \u2014 anything left in /var bloats the image and is then discarded at deploy anyway."
+    }
+  ],
+  "services": [
+    "cups.service",
+    "cups-browsed.service",
+    "avahi-daemon.service",
+    "ipp-usb.service",
+    "bluetooth.service",
+    "NetworkManager.service",
+    "ModemManager.service",
+    "power-profiles-daemon.service",
+    "switcheroo-control.service",
+    "bolt.service",
+    "systemd-oomd.service",
+    "flatpak-preinstall.service (custom oneshot, see integration)",
+    "--global: pipewire.socket",
+    "--global: pipewire-pulse.socket",
+    "--global: wireplumber.service",
+    "--global: xdg-user-dirs-update.service"
+  ],
+  "flatpaks": [
+    "org.gnome.Platform and org.kde.Platform runtimes (pre-seed both so first launch of any app is fast on either DE)",
+    "org.freedesktop.Platform.ffmpeg-full (codec extension \u2014 makes Flatpak media apps decode everything without the host codec stack)",
+    "org.freedesktop.Platform.openh264",
+    "com.github.tchx84.Flatseal (permission management; the one Flatpak-management tool that is genuinely DE-agnostic)",
+    "io.github.flattool.Warehouse (Flatpak inspection/cleanup, DE-agnostic)",
+    "org.mozilla.firefox (fast-moving, sandboxed, upstream-built \u2014 better as Flatpak than as an RPM baked into an immutable image)",
+    "com.brave.Browser / com.google.Chrome / com.microsoft.Edge (proprietary browsers: Flatpak avoids adding a third-party RPM repo to the image and the associated GPG-key and upgrade-breakage risk)",
+    "com.spotify.Client",
+    "com.valvesoftware.Steam (proprietary, huge, self-updating \u2014 never bake as RPM)",
+    "org.videolan.VLC",
+    "org.libreoffice.LibreOffice (moves ~1 GB out of the image)"
+  ],
+  "copr": [
+    "solopasha/hyprland \u2014 xdg-desktop-portal-hyprland and friends. Listed only to be explicit that it is NOT needed here; it belongs to the Hyprland DE layer.",
+    "(none required for desktop.conf itself \u2014 every package above is in fedora/updates/rpmfusion-free/rpmfusion-nonfree, which is a deliberate design goal for this layer: the shared layer must not depend on any COPR, because a COPR going stale would break every image at once.)"
+  ],
+  "external": [
+    {
+      "name": "Flathub remote definition (flathub.flatpakrepo)",
+      "method": "Fetch `https://dl.flathub.org/repo/flathub.flatpakrepo` at build time and COPY it into `/usr/share/flatpak/remotes.d/`. Do NOT use `RUN flatpak remote-add`. Alternatively install the `fedora-flathub-remote` RPM, but note it ships only the *filtered* Fedora-approved subset (`/usr/share/flatpak/fedora-flathub.filter`), which excludes many apps \u2014 usually not what you want."
+    },
+    {
+      "name": "rpmfusion-free-tainted repo",
+      "method": "Only if libdvdcss (encrypted DVD) is required: `dnf install rpmfusion-free-release-tainted` then `dnf install libdvdcss`. Adds legal exposure; recommend leaving out of the shared layer."
+    },
+    {
+      "name": "Epson ESC/P-R printer driver",
+      "method": "Upstream RPM from download.ebz.epson.net. Purpose-layer concern, not shared."
+    }
+  ],
+  "risks": [
+    "ffmpeg vs ffmpeg-free is the #1 build-breaker. Fedora's base pulls `ffmpeg-free`, and `gstreamer1-plugin-libav` links its ABI. Plain `dnf install ffmpeg` will fail on file conflicts. The layer MUST use `dnf swap ffmpeg-free ffmpeg --allowerasing -y` (or `dnf install --allowerasing`) BEFORE installing the gstreamer set, and then reinstall gstreamer1-plugin-libav so it rebinds. Verified both packages exist and both own libav* paths.",
+    "mesa-va-drivers-freeworld / mesa-vulkan-drivers-freeworld conflict with the Fedora originals. On F44 the VA drivers were folded into `mesa-dri-drivers`, so the freeworld swap semantics changed \u2014 test `dnf swap mesa-va-drivers mesa-va-drivers-freeworld` fails now. Use `dnf install --allowerasing mesa-va-drivers-freeworld` and verify with `vainfo` in a smoke test, because a silent fallback to software decode is invisible until a user complains about battery life.",
+    "`RUN flatpak install --system` inside a container build is unreliable and should be removed from the current Containerfile. Two independent failure modes: (1) there is no session/system D-Bus in a buildah/podman build, so flatpak-system-helper cannot be reached \u2014 running as root sometimes bypasses this, which is exactly why the failure is intermittent rather than clean; (2) more fundamentally, flatpak installs into /var/lib/flatpak, and bootc treats /var as machine-local mutable state. Image /var is only seeded on *initial install* and is NOT updated on `bootc upgrade`, so baked Flatpaks either vanish or silently freeze at the version from the day the machine was first provisioned. Correct mechanism: declarative remote in /usr/share/flatpak/remotes.d + /usr/share/flatpak/preinstall.d entries + a first-boot systemd oneshot running `flatpak preinstall -y --system`. Everything in /usr, nothing in /var at build time.",
+    "Similarly, `flatpak remote-add --system` writes to /var/lib/flatpak/repo/config \u2014 same /var problem. The `|| true` in the current Containerfile masks the failure entirely.",
+    "Baking RPM Fusion codecs (x264, x265, ffmpeg, gstreamer1-plugins-ugly, libavcodec-freeworld, unrar) into a published image is a redistribution act, not a personal-use act. If the image is pushed to a public registry, patent (H.264/HEVC) and license (unrar is non-free, no redistribution of derived source) exposure attaches to whoever publishes it. Consider splitting a `desktop-codecs.conf` that private builds include and public builds omit.",
+    "`system-config-printer` and `xdg-user-dirs-gtk` and `gnome-keyring` are GTK/GNOME-linked. They are behaviorally DE-agnostic (all three work fine under KDE/Hyprland), but a KDE layer will want to swap gnome-keyring for kwallet and system-config-printer for print-manager. Make these three overridable rather than hard-coded, or a KDE image ships two secret services and users get double password prompts.",
+    "`hplip` is ~29 MB installed plus a large dependency tail (Python, Qt for hplip-gui). If the fleet has no HP printers this is pure waste; consider gating it.",
+    "`pipewire-jack-audio-connection-kit` Provides/Obsoletes jack-audio-connection-kit. Any purpose layer that installs real JACK (audio production) will conflict. Document it.",
+    "`libva-intel-media-driver` (Fedora, free) and `intel-media-driver` (RPM Fusion nonfree) both exist and conflict. This manifest picks the Fedora one. If a purpose layer needs the nonfree build for a specific codec, it must swap, not add.",
+    "`toolbox` and `distrobox` overlap heavily (~12 MB for toolbox alone). Shipping both is defensible for a shared layer but is a deliberate choice, not an accident.",
+    "systemd user-unit enablement: `systemctl enable pipewire` at build time silently succeeds-as-noop or errors depending on dnf5/systemd version. If audio is dead on first deploy, this is why. Must be `systemctl --global enable`.",
+    "The `fonts` and `multimedia` dnf groups exist and are tempting, but `dnf group install multimedia` pulls `PackageKit-gstreamer-plugin`, which drags PackageKit into an image where PackageKit cannot function (immutable /usr). Prefer the explicit package list above over @multimedia.",
+    "SELinux: adding custom systemd units and udev rules under /usr/lib on a bootc image requires correct labels at build time. If the build container has SELinux disabled, labels may be wrong and units will fail to start on an enforcing host. Run `restorecon -R /usr/lib/systemd /usr/lib/udev` as part of the layer, or build with an SELinux-aware buildah."
+  ],
+  "size_note": "Roughly 2.5-3.5 GB installed on top of fedora-bootc, before any DE. Dominated by: fonts ~700-900 MB (CJK alone is ~350-450 MB via the default-fonts-cjk-* metapackages pulling google-noto-*-cjk-vf-fonts; drop CJK and the layer loses ~400 MB); graphics/mesa ~250 MB (mesa-dri-drivers alone is 52 MB, plus vulkan drivers and the freeworld variants); printing ~350 MB (hplip 29 MB + gutenprint 28 MB + foomatic-db 9 MB + ghostscript + the Python/Qt tail behind hplip-gui and system-config-printer); containers ~250 MB (podman 49 MB, toolbox 12 MB, plus buildah/skopeo/crun/netavark); linux-firmware and the firmware subpackage tail ~400-700 MB depending on how many *-firmware subpackages get pulled \u2014 this is the single largest and most variable item and the best candidate for trimming on known-hardware fleets; multimedia/gstreamer ~200 MB; scanning ~50 MB; IMEs ~100 MB. The three cheapest big wins if size matters: drop non-CJK `default-fonts-other-*` and the IME set (~150 MB) for Latin-only fleets, drop `hplip` + `foomatic-db` + `gutenprint` (~70 MB plus tail) for driverless-only printing via ipp-usb/sane-airscan, and replace `linux-firmware` with the specific `*-firmware` subpackages for the actual hardware.",
+  "notes": [
+    "THE SPLIT \u2014 what came OUT of workstation.conf into desktop.conf: xdg-user-dirs, xdg-utils, xorg-x11-server-Xwayland, all fonts, all ffmpeg/gstreamer, pipewire/pipewire-pulseaudio/wireplumber, podman/buildah/skopeo/toolbox/distrobox, flatpak, cups/system-config-printer, sane-backends, GRAPHICAL_TARGET=true, and the Flathub remote registration. That is 26 of the 30 lines in the current rhel package list.",
+    "DELIBERATELY EXCLUDED \u2014 belongs to a DE layer, not here: @gnome-desktop (or @kde-desktop/@cosmic-desktop), gdm/sddm/lightdm and any display manager, gnome-tweaks, gnome-extensions-app, gnome-shell/plasma-desktop, gnome-software / plasma-discover (app-store frontends are DE-specific and gnome-software drags PackageKit), the DE's portal backend (xdg-desktop-portal-gnome / -kde / -cosmic / -lxqt / -hyprland \u2014 desktop.conf ships only the frontend plus the -gtk fallback), the DE's file manager, terminal, text editor and archive tool, DE-specific theming (gnome-themes-extra, breeze), blueman (GTK tray \u2014 GNOME and KDE both have native BT UIs), simple-scan / skanlite (GTK vs Qt scanner frontends \u2014 the DE layer picks one; desktop.conf ships only the SANE backends they both drive), gnome-disk-utility, kwallet vs gnome-keyring choice, and `systemctl enable gdm` (the DE layer enables its own DM; desktop.conf only sets graphical.target).",
+    "DELIBERATELY EXCLUDED \u2014 belongs to a purpose layer: development toolchains, LibreOffice, browsers, Steam/gaming (gamemode, mangohud, the vm.max_map_count bump), medical/DICOM tooling, VPN clients beyond the NetworkManager plugin, NVIDIA drivers (that is a hardware layer \u2014 akmod-nvidia has its own kargs, secureboot signing, and RPM Fusion nonfree-nvidia-driver repo concerns that must not be forced on every graphical image).",
+    "DELIBERATELY EXCLUDED \u2014 already in base.conf, not duplicated except where the desktop adds submodules: NetworkManager (core), firewalld, fwupd, openssh-server, audit, bootc, the CLI utility set. NetworkManager and fwupd appear above only because the desktop needs *additional* subpackages (-wifi, -bluetooth, -wwan) that a server profile must not get.",
+    "The current workstation.conf carries a PKGS_debian list. If the refactor keeps multi-distro support, desktop.conf needs a parallel PKGS_debian \u2014 but note the Fedora-specific wins here (default-fonts-* metapackages, RPM Fusion, /usr/share/flatpak/preinstall.d) have no clean Debian equivalent, and the ffmpeg swap dance is Fedora-only. Consider whether the Debian path is still worth maintaining, or whether desktop.conf should be declared Fedora-only and the Debian images stay on the old combined profile.",
+    "OPEN QUESTION: should `desktop.conf` also own `/usr/lib/bootc/kargs.d/`? Plymouth needs `rhgb quiet` and that is genuinely shared, but kargs.d files from multiple layers merge by filename, so the layers need a numbering convention (10- shared desktop, 20- hardware, 30- purpose) agreed up front or they will silently clobber each other.",
+    "OPEN QUESTION: `container-management` and `printing` and `fonts` all exist as real dnf groups (verified). Using @printing would pull samba-client and colord automatically and stay current with Fedora's decisions. The tradeoff is reproducibility \u2014 group membership changes between releases without warning. Recommend explicit packages for this shared layer (as above) precisely because it is the one layer where an unexpected change breaks every image.",
+    "Recommend a build-time smoke test baked as a script (not a service): verify `fc-list | grep -c CJK`, `vainfo` exits 0, `gst-inspect-1.0 avdec_h264` resolves, `flatpak remotes` lists flathub, `pactl info` after boot. On an immutable image, a codec regression is invisible until deployed."
+  ]
+}

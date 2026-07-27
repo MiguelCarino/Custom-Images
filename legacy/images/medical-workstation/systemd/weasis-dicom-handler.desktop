@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Weasis DICOM Viewer
+GenericName=DICOM Viewer
+Comment=View and analyze DICOM medical images
+Exec=weasis %f
+Icon=weasis
+Terminal=false
+Type=Application
+Categories=Graphics;MedicalSoftware;Viewer;
+MimeType=application/dicom;
+StartupNotify=true
+Keywords=DICOM;radiology;imaging;medical;

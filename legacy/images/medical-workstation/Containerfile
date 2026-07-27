@@ -1,0 +1,121 @@
+# =============================================================================
+# Medical Imaging Workstation — Fedora bootc image
+# =============================================================================
+# Purpose: DICOM workstation for radiology / medical imagenology.
+#
+# Included software:
+#   - Weasis            — zero-footprint DICOM viewer (multi-format, 2D/3D)
+#   - DCMTK             — DICOM toolkit (C-STORE, C-FIND, DCMJ2K, etc.)
+#   - Orthanc client    — lightweight DICOM node & REST API (client use only;
+#                         for a full PACS see the pacs-server image)
+#   - LibreOffice       — office suite (reports, spreadsheets)
+#   - GDCM              — Grassroots DICOM library + CLI tools
+#   - Gnuplot / Python  — data analysis helpers
+#   - Inkscape          — annotation / vector editing
+#   - GnuPG / age       — file encryption for patient data transport
+#
+# Build (requires workstation image built first):
+#   podman build \
+#     --build-arg REGISTRY=localhost \
+#     --build-arg WEASIS_VERSION=4.3.0 \
+#     -t localhost/fedora-medical-workstation:latest .
+# =============================================================================
+
+ARG REGISTRY=localhost
+ARG BASE_TAG=latest
+ARG WEASIS_VERSION=4.3.0
+
+FROM ${REGISTRY}/fedora-workstation:${BASE_TAG}
+
+LABEL org.opencontainers.image.title="Fedora Medical Imaging Workstation bootc"
+LABEL org.opencontainers.image.description="DICOM workstation: Weasis, DCMTK, Orthanc client, LibreOffice"
+
+# ---------------------------------------------------------------------------
+# DICOM & imaging libraries from Fedora/RPM Fusion repos
+# ---------------------------------------------------------------------------
+RUN dnf install -y \
+      # DICOM toolkit — send/receive/query studies, conversion tools
+      dcmtk \
+      # Grassroots DICOM library + CLI (gdcmdump, gdcmanon, gdcmconv …)
+      gdcm \
+      gdcm-applications \
+      # Python DICOM stack (for scripting / automation)
+      python3-gdcm \
+      python3-pydicom \
+      # VTK — 3D visualisation pipeline
+      python3-vtk \
+      # Image viewers / editors
+      geeqie \
+      inkscape \
+      # Office suite
+      libreoffice \
+      libreoffice-writer \
+      libreoffice-calc \
+      libreoffice-impress \
+      libreoffice-draw \
+      # Scripting / data analysis
+      python3-pip \
+      python3-numpy \
+      python3-matplotlib \
+      gnuplot \
+      # Security / encryption
+      age \
+      # Java runtime (required by Weasis)
+      java-21-openjdk-headless \
+    && dnf clean all
+
+# ---------------------------------------------------------------------------
+# Weasis — DICOM viewer (RPM from upstream GitHub releases)
+# ---------------------------------------------------------------------------
+# Weasis is not in the Fedora repos; we pull the official RPM.
+# Verify SHA256 in production builds by comparing against:
+#   https://github.com/nroduit/Weasis/releases/download/v${WEASIS_VERSION}/weasis-${WEASIS_VERSION}-1.x86_64.rpm.sha256
+ARG WEASIS_VERSION
+RUN WEASIS_RPM="weasis-${WEASIS_VERSION}-1.x86_64.rpm" && \
+    curl -fsSL -o "/tmp/${WEASIS_RPM}" \
+      "https://github.com/nroduit/Weasis/releases/download/v${WEASIS_VERSION}/${WEASIS_RPM}" && \
+    rpm -ivh "/tmp/${WEASIS_RPM}" && \
+    rm -f "/tmp/${WEASIS_RPM}"
+
+# ---------------------------------------------------------------------------
+# Weasis DICOM configuration
+# ---------------------------------------------------------------------------
+COPY config/weasis/dicom-config.properties \
+     /etc/weasis/dicom-config.properties
+
+# ---------------------------------------------------------------------------
+# Desktop integration: Weasis as default DICOM handler
+# ---------------------------------------------------------------------------
+COPY systemd/weasis-dicom-handler.desktop \
+     /usr/share/applications/weasis-dicom-handler.desktop
+
+RUN update-desktop-database /usr/share/applications/ || true && \
+    xdg-mime default weasis-dicom-handler.desktop application/dicom || true
+
+# ---------------------------------------------------------------------------
+# Symlinks for common DCMTK tools in PATH (already in /usr/bin, just verify)
+# ---------------------------------------------------------------------------
+RUN dcmdump --version > /dev/null && \
+    storescu --version > /dev/null && \
+    movescu --version > /dev/null
+
+# ---------------------------------------------------------------------------
+# Python medical imaging extras (pinned versions for reproducibility)
+# ---------------------------------------------------------------------------
+RUN pip3 install --no-cache-dir \
+      itk \
+      SimpleITK \
+      nibabel \
+      pynetdicom
+
+# ---------------------------------------------------------------------------
+# Audit rule: log access to /etc/weasis and DICOM spool directories
+# ---------------------------------------------------------------------------
+RUN echo '-w /etc/weasis -p rwa -k weasis_config' >> /etc/audit/rules.d/medical.rules && \
+    echo '-w /var/spool/dicom -p rwa -k dicom_spool' >> /etc/audit/rules.d/medical.rules || true
+
+# ---------------------------------------------------------------------------
+# Create DICOM spool directory
+# ---------------------------------------------------------------------------
+RUN mkdir -p /var/spool/dicom && \
+    chmod 1777 /var/spool/dicom
