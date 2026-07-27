@@ -14,7 +14,7 @@ RUN dnf -y install 'dnf5-command(copr)'
 RUN dnf -y copr enable lionheartp/Hyprland
 
 # Packages
-RUN dnf -y install cosmic-session cosmic-comp cosmic-greeter greetd cosmic-settings cosmic-panel cosmic-applets cosmic-launcher cosmic-files cosmic-term cosmic-icon-theme xdg-desktop-portal-cosmic hyprland xdg-desktop-portal-hyprland swaylock swayidle swaybg waybar fuzzel mako grim slurp foot mate-polkit gnome-keyring xorg-x11-server-Xwayland qt6-qtwayland && dnf clean all
+RUN dnf -y install cosmic-session cosmic-comp cosmic-greeter greetd cosmic-settings cosmic-panel cosmic-applets cosmic-launcher cosmic-files cosmic-term cosmic-icon-theme xdg-desktop-portal-cosmic hyprland xdg-desktop-portal-hyprland swaylock swayidle swaybg waybar fuzzel mako grim slurp foot mate-polkit gnome-keyring xorg-x11-server-Xwayland qt6-qtwayland cosmic-initial-setup && dnf clean all
 
 # Services (enable)
 RUN systemctl enable cosmic-greeter.service

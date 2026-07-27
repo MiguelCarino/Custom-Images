@@ -57,6 +57,7 @@ load_build_conf() {
   local env_tag="${TAG-}"
   local env_base_image="${BASE_IMAGE-}"
   local env_rootfs="${ROOTFS-}"
+  local env_firstboot="${FIRSTBOOT-}"
 
   # shellcheck source=../config/build.conf
   source "$conf"
@@ -66,6 +67,7 @@ load_build_conf() {
   [[ -n "$env_registry"       ]] && REGISTRY="$env_registry"
   [[ -n "$env_tag"            ]] && TAG="$env_tag"
   [[ -n "$env_rootfs"         ]] && ROOTFS="$env_rootfs"
+  [[ -n "$env_firstboot"      ]] && FIRSTBOOT="$env_firstboot"
   if [[ -n "$env_base_image" ]]; then
     BASE_IMAGE="$env_base_image"
   elif [[ -n "$env_fedora_version" ]]; then
