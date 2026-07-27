@@ -10,13 +10,13 @@ LABEL org.opencontainers.image.title="carino-layer-desktop-common" \
       org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
 
 # Packages
-RUN dnf -y install pipewire wireplumber pipewire-alsa pipewire-pulseaudio xdg-desktop-portal xdg-desktop-portal-gtk flatpak fontconfig default-fonts-core-sans mesa-dri-drivers mesa-vulkan-drivers adwaita-icon-theme xdg-user-dirs power-profiles-daemon wl-clipboard && dnf clean all
+RUN dnf -y install pipewire wireplumber pipewire-alsa pipewire-pulseaudio xdg-desktop-portal xdg-desktop-portal-gtk flatpak fontconfig default-fonts-core-sans mesa-dri-drivers mesa-vulkan-drivers adwaita-icon-theme xdg-user-dirs power-profiles-daemon wl-clipboard initial-setup && dnf clean all
 
 # Static files (context = files/desktop-common)
 COPY ./ /
 
 # Services (enable)
-RUN systemctl enable flatpak-setup.service
+RUN systemctl enable flatpak-setup.service initial-setup.service
 
 # Lint the resulting bootc image
 RUN bootc container lint

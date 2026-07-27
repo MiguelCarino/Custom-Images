@@ -1,9 +1,12 @@
 # config/iso.toml.example — bootc-image-builder ISO customizations.
 #
 # Copy to config/iso.toml (gitignored — it holds a password) and edit.
-# Without a config/iso.toml the installed system has NO user accounts at all:
-# the generic bootc base images ship none, and the unattended Anaconda ISO
-# creates none, so nobody can log in.
+# OPTIONAL with FIRSTBOOT=interactive (config/build.conf default): the image
+# then ships Fedora initial-setup, which prompts for the first user on the
+# console at first boot. Bake credentials here for unattended fleet installs
+# (set FIRSTBOOT=none and rebuild to also drop the first-boot prompt).
+# With FIRSTBOOT=none and no iso.toml the installed system has NO user
+# accounts at all and nobody can log in.
 #
 # Full option reference: https://osbuild.org/docs/user-guide/blueprint-reference
 # (not all blueprint options are supported by bootc-image-builder).

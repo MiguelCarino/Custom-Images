@@ -210,14 +210,17 @@ _iso_one() {
   fi
 
   # User accounts — the bootc base images ship none and the unattended
-  # installer creates none, so without config/iso.toml nobody can log in.
+  # installer creates none. FIRSTBOOT=interactive images prompt on first boot;
+  # otherwise config/iso.toml credentials are the only way in.
   local -a cfg_mount=() cfg_flag=()
   if [[ -f "${CONFIG_DIR}/iso.toml" ]]; then
     cfg_mount=(-v "${CONFIG_DIR}/iso.toml:/config.toml:ro")
     cfg_flag=(--config /config.toml)
     info "using config/iso.toml (users etc.)"
+  elif [[ "${FIRSTBOOT:-interactive}" == "interactive" ]]; then
+    info "no config/iso.toml — first boot will prompt for the initial user (initial-setup)"
   else
-    warn "no config/iso.toml — the installed system will have NO user accounts;"
+    warn "no config/iso.toml and FIRSTBOOT=none — the installed system will have NO user accounts;"
     warn "copy config/iso.toml.example to config/iso.toml and set a user first."
   fi
 
