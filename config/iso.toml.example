@@ -1,0 +1,15 @@
+# config/iso.toml.example — bootc-image-builder ISO customizations.
+#
+# Copy to config/iso.toml (gitignored — it holds a password) and edit.
+# Without a config/iso.toml the installed system has NO user accounts at all:
+# the generic bootc base images ship none, and the unattended Anaconda ISO
+# creates none, so nobody can log in.
+#
+# Full option reference: https://osbuild.org/docs/user-guide/blueprint-reference
+# (not all blueprint options are supported by bootc-image-builder).
+
+[[customizations.user]]
+name = "carino"
+password = "changeme"
+# key = "ssh-ed25519 AAAA... you@host"
+groups = ["wheel"]
