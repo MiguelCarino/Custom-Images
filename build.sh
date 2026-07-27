@@ -5,7 +5,7 @@
 #   ./build.sh list                          # catalog: image, DE, description, pin reason
 #   ./build.sh generate [IMAGE|all]          # emit Containerfiles (chain-aware)
 #   ./build.sh build    [IMAGE|all] [--push] # generate + podman build in dependency order
-#   ./build.sh iso      IMAGE                # bootc-image-builder → output/IMAGE/install.iso
+#   ./build.sh iso      IMAGE|all            # bootc-image-builder → output/IMAGE/install.iso
 #   ./build.sh blueprint [IMAGE|all]         # emit osbuild blueprint TOML (experimental)
 #   ./build.sh clean                         # rm -rf generated/
 #
@@ -38,8 +38,8 @@ Commands:
   build     [IMAGE|all] [--push]
                                 Generate + podman build in dependency order; --push
                                 publishes the final images (never carino-layer-* intermediates)
-  iso       IMAGE               Build an installer ISO via bootc-image-builder
-                                into output/<image>/install.iso (needs sudo + a built image)
+  iso       IMAGE|all           Build installer ISOs via bootc-image-builder
+                                into output/<image>/install.iso (needs sudo + built images)
   blueprint [IMAGE|all]         Emit an osbuild blueprint TOML (experimental, default: all)
   clean                         Remove the generated/ directory
 
@@ -190,16 +190,24 @@ cmd_build() {
   fi
 }
 
-cmd_iso() {
-  [[ -n "$TARGET" ]] || die "iso requires an IMAGE argument (see ./build.sh list)"
-  local p name ref out_dir
-  p="$(resolve_image "$TARGET")"
+# _iso_one — $1 = purpose id -> installer ISO at output/<image>/install.iso.
+_iso_one() {
+  local p="$1" name ref out_dir
   name="$(image_name "$p")"
   ref="$(layer_image_ref "purpose:$p")"
   out_dir="${REPO_ROOT}/output/${name}"
 
-  podman image exists "$ref" \
+  # bootc-image-builder reads root's container storage, but build.sh builds
+  # rootless — sync the image across when root's copy is missing or stale.
+  local uid rid
+  uid="$(podman image inspect --format '{{.Id}}' "$ref" 2>/dev/null || true)"
+  rid="$(sudo podman image inspect --format '{{.Id}}' "$ref" 2>/dev/null || true)"
+  [[ -n "$uid" || -n "$rid" ]] \
     || die "image ${ref} not found locally — run: ./build.sh build $p"
+  if [[ -n "$uid" && "$uid" != "$rid" ]]; then
+    info "copying ${ref} into root container storage (needed by bootc-image-builder)"
+    podman save "$ref" | sudo podman load
+  fi
 
   mkdir -p "$out_dir"
   info "building ISO for ${ref} → output/${name}/install.iso (privileged, needs sudo)"
@@ -216,6 +224,17 @@ cmd_iso() {
   else
     warn "expected ${out_dir}/bootiso/install.iso not found — check builder output above"
   fi
+}
+
+cmd_iso() {
+  [[ -n "$TARGET" ]] \
+    || die "iso requires an IMAGE argument or 'all' (see ./build.sh list)"
+  local p targets
+  # Plain assignment so resolve_targets' die() propagates under set -e.
+  targets="$(resolve_targets "$TARGET")"
+  for p in $targets; do
+    _iso_one "$p"
+  done
 }
 
 cmd_blueprint() {

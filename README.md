@@ -33,7 +33,7 @@ Requires bash and podman (ISO builds additionally need `sudo`).
 ./build.sh generate all                  # emit Containerfiles (chain-aware)
 ./build.sh build gaming                  # build one image (bare purpose or full name)
 ./build.sh build all --push              # build everything; push the six published images
-./build.sh iso carino-gaming   # installer ISO → output/IMAGE/install.iso
+./build.sh iso carino-gaming   # installer ISO → output/IMAGE/install.iso ('all' for every image)
 ```
 
 Already on a Fedora bootc/Atomic install? Adopt an image in place — no reinstall:

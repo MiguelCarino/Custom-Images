@@ -127,7 +127,7 @@ layer, derived. Files dir is `files/purposes/<PURPOSE>/`.
 ./build.sh list                          # catalog: image, DE, description, pin reason
 ./build.sh generate [IMAGE|all]          # emit Containerfiles (chain-aware)
 ./build.sh build    [IMAGE|all] [--push] # generate + podman build in dependency order
-./build.sh iso      IMAGE                # bootc-image-builder → output/IMAGE/install.iso
+./build.sh iso      IMAGE|all            # bootc-image-builder → output/IMAGE/install.iso
 ./build.sh blueprint [IMAGE|all]         # emit osbuild blueprint TOML (experimental)
 ./build.sh clean                         # rm -rf generated/
 ```
@@ -144,6 +144,9 @@ Behavior requirements:
 - `iso` runs bootc-image-builder via `sudo podman run --privileged --rm
   -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage
   quay.io/centos-bootc/bootc-image-builder:latest --type iso --local <image-ref>`.
+  The builder reads **root's** container storage while `build` runs rootless, so
+  `iso` first syncs the image into root storage (`podman save | sudo podman load`)
+  whenever root's copy is missing or its image ID differs from the rootless one.
 
 ## 6. `lib/common.sh` interface (binding for all scripts)
 
