@@ -150,8 +150,11 @@ Behavior requirements:
   passed as `--config` — the unattended installer creates no accounts itself.
   With `FIRSTBOOT=interactive` (config/build.conf default) the images ship
   Fedora initial-setup, which prompts for the first user on the console at
-  first boot, so `config/iso.toml` is optional; with `FIRSTBOOT=none` a missing
-  iso.toml means an uninstallable-into system and `iso` warns accordingly.
+  first boot, so `config/iso.toml` is optional — but Anaconda disables
+  initial-setup by default on kickstart installs, so when no iso.toml is given
+  `iso` injects a `firstboot --enable` kickstart fragment via a generated
+  config. With `FIRSTBOOT=none` a missing iso.toml means an
+  uninstallable-into system and `iso` warns accordingly.
   The builder reads **root's** container storage while `build` runs rootless, so
   `iso` first syncs the image into root storage (`podman save | sudo podman load`)
   whenever root's copy is missing or its image ID differs from the rootless one.
