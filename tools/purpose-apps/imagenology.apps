@@ -38,10 +38,10 @@ nibabel      | python3-nibabel      | python3-nibabel              | both |
 
 # --- Viewers: the purpose is not usable without one --------------------------
 # A study can be parsed with the toolchain above but not looked at. Setup
-# installs three viewers and xmedcon; the image installs none. These are the
-# rows this check exists for, and they are deliberately left as violations
-# rather than exempted — the image column carries the name the image would use
-# so the row flips to clean the moment the package phase adds it.
+# installs three viewers and xmedcon; the image ships Weasis as a first-boot
+# flatpak (its row is clean). The remaining rows are deliberately left as
+# violations rather than exempted — the image column carries the name the
+# image would use, so each flips to clean the moment the package phase adds it.
 weasis       | io.github.nroduit.Weasis | io.github.nroduit.Weasis | both |
 aliza        | com.github.AlizaMedicalImaging.AlizaMS | com.github.AlizaMedicalImaging.AlizaMS | both |
 invesalius   | br.gov.cti.invesalius | br.gov.cti.invesalius       | both |

@@ -12,5 +12,9 @@ LABEL org.opencontainers.image.title="carino-imagenology" \
 # Packages
 RUN dnf -y install dcmtk gdcm gdcm-applications python3-pydicom python3-pynetdicom dcm2niix python3-nibabel python3-numpy python3-scipy python3-matplotlib argyllcms colord-extra-profiles && dnf clean all
 
+# Flatpak list (installed on first boot by flatpak-setup.service)
+RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \
+    printf '%s\n' io.github.nroduit.Weasis > /usr/share/fedora-images/flatpaks.d/40-imagenology.list
+
 # Lint the resulting bootc image
 RUN bootc container lint

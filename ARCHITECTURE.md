@@ -288,10 +288,10 @@ as `../SimpleSetup`. If it is not found the check **skips loudly and exits 2** �
 that could not run must never read as a pass. Default output is a report (exit 0); `--strict`
 exits non-zero, which is how it should be wired once the package phase in §11 lands.
 
-Only `imagenology` has a manifest today. It currently reports four missing viewers
-(Weasis, Aliza MS, InVesalius, xmedcon): the image ships the DICOM toolchain but nothing to
-look at a study with. That is scheduled §11 work, not an oversight, and it is left as a
-visible violation on purpose.
+Only `imagenology` has a manifest today. Weasis ships as a first-boot flatpak (§8), so its
+row is clean; the check still reports three missing viewers (Aliza MS, InVesalius,
+xmedcon). That is scheduled §11 work, not an oversight, and it is left as a visible
+violation on purpose.
 
 ## 11c. Reference check
 
