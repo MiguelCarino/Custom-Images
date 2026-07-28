@@ -218,7 +218,15 @@ _iso_one() {
     cfg_flag=(--config /config.toml)
     info "using config/iso.toml (users etc.)"
   elif [[ "${FIRSTBOOT:-interactive}" == "interactive" ]]; then
-    info "no config/iso.toml — first boot will prompt for the initial user (initial-setup)"
+    # Anaconda disables initial-setup by default on kickstart installs, which
+    # would silently undo the enablement baked into the image — the kickstart
+    # must say firstboot --enable for the first-boot prompt to survive.
+    local gen_cfg="${GENERATED_DIR}/iso-firstboot.toml"
+    mkdir -p "${GENERATED_DIR}"
+    printf '[customizations.installer.kickstart]\ncontents = """\nfirstboot --enable\n"""\n' > "$gen_cfg"
+    cfg_mount=(-v "${gen_cfg}:/config.toml:ro")
+    cfg_flag=(--config /config.toml)
+    info "no config/iso.toml — injecting 'firstboot --enable'; first boot prompts for the initial user"
   else
     warn "no config/iso.toml and FIRSTBOOT=none — the installed system will have NO user accounts;"
     warn "copy config/iso.toml.example to config/iso.toml and set a user first."
