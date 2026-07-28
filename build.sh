@@ -242,8 +242,10 @@ _iso_one() {
     --type iso --rootfs "${ROOTFS:-ext4}" "${cfg_flag[@]}" --local "$ref"
 
   # bootc-image-builder emits bootiso/install.iso; surface it at the §5 path.
+  # The builder ran as root, so the move and ownership fix need sudo too.
   if [[ -f "${out_dir}/bootiso/install.iso" ]]; then
-    mv -f "${out_dir}/bootiso/install.iso" "${out_dir}/install.iso"
+    sudo mv -f "${out_dir}/bootiso/install.iso" "${out_dir}/install.iso"
+    sudo chown "$(id -u):$(id -g)" "${out_dir}/install.iso"
     info "ISO ready: output/${name}/install.iso"
   else
     warn "expected ${out_dir}/bootiso/install.iso not found — check builder output above"
