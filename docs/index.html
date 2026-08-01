@@ -251,6 +251,8 @@
 <body>
 <script src="carino-navbar.js" data-app="Images" defer></script> <!-- self-injects at the top of <body> and loads carino-clock.js from this same site -->
 <script src="carino-lang.js" defer></script>
+<script src="i18n.js" defer></script> <!-- after the fleet lang script, so CarinoLang is resolved before applyI18n runs on DOMContentLoaded -->
+
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
     <symbol id="i-general" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
@@ -263,15 +265,15 @@
 
 <header class="hero">
     <div class="container">
-        <div class="pain">Another fresh install to configure? It drifts within weeks anyway.</div>
+        <div class="pain" data-i18n>Another fresh install to configure? It drifts within weeks anyway.</div>
         <h1>
-            <span class="lead">The whole system, set up for your work,</span>
-            <span class="punch">before you ever boot it.</span>
+            <span class="lead" data-i18n>The whole system, set up for your work,</span>
+            <span class="punch" data-i18n>before you ever boot it.</span>
         </h1>
-        <p>Six Fedora images. Pick the one that matches what you do — the tools, the drivers and the tuning are already in it, and an update that goes wrong is one command back.</p>
+        <p data-i18n>Six Fedora images. Pick the one that matches what you do — the tools, the drivers and the tuning are already in it, and an update that goes wrong is one command back.</p>
         <div class="tabbar" role="tablist" aria-label="Section">
-            <button type="button" class="tabbtn active" role="tab" id="tab-get" data-tab="get" aria-controls="pane-get" aria-selected="true"><b>Get an image</b><span class="sub">ISO · Container</span></button>
-            <button type="button" class="tabbtn" role="tab" id="tab-build" data-tab="build" aria-controls="pane-build" aria-selected="false"><b>Build it yourself</b><span class="sub">bash · podman</span></button>
+            <button type="button" class="tabbtn active" role="tab" id="tab-get" data-tab="get" aria-controls="pane-get" aria-selected="true"><b data-i18n>Get an image</b><span class="sub">ISO · Container</span></button>
+            <button type="button" class="tabbtn" role="tab" id="tab-build" data-tab="build" aria-controls="pane-build" aria-selected="false"><b data-i18n>Build it yourself</b><span class="sub">bash · podman</span></button>
         </div>
     </div>
 </header>
@@ -281,10 +283,10 @@
 <section id="pane-get" role="tabpanel" aria-labelledby="tab-get">
 
     <div class="rowhead">
-        <h2>Editions</h2>
-        <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener">Based on Fedora 44</a>
+        <h2 data-i18n>Editions</h2>
+        <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener" data-i18n>Based on Fedora 44</a>
         <span class="depill">COSMIC + Hyprland</span>
-        <span class="hint">Image-based Fedora — transactional updates, identical on every machine, one-command rollback.</span>
+        <span class="hint" data-i18n>Image-based Fedora — transactional updates, identical on every machine, one-command rollback.</span>
     </div>
 
     <div class="split">
@@ -298,9 +300,9 @@
 
     <div class="bar">
         <div class="txt">
-            <span class="prov">This is Fedora, not a fork — every package and security update comes from <a href="https://fedoraproject.org/" target="_blank" rel="noopener">Fedora</a>, on Fedora's schedule. What this project maintains is the integration: session, kernel arguments, masked services, decided once.</span>
-            <b>Already installed?</b> Set up the machine you have instead — Carino Setup configures an existing system across many distributions and desktops, in one command.</div>
-        <a class="go" href="https://setup.carino.systems/">Setup instead</a>
+            <span class="prov"><span data-i18n>This is Fedora, not a fork — every package and security update comes from</span> <a href="https://fedoraproject.org/" target="_blank" rel="noopener">Fedora</a><span data-i18n>, on Fedora's schedule. What this project maintains is the integration: session, kernel arguments, masked services, decided once.</span></span>
+            <b data-i18n>Already installed?</b> <span data-i18n>Set up the machine you have instead — Carino Setup configures an existing system across many distributions and desktops, in one command.</span></div>
+        <a class="go" href="https://setup.carino.systems/" data-i18n>Setup instead</a>
     </div>
 
 </section>
@@ -308,23 +310,23 @@
 <section id="pane-build" role="tabpanel" aria-labelledby="tab-build" hidden>
 
     <div class="rowhead">
-        <h2>Build it yourself</h2>
-        <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener">Based on Fedora 44</a>
-        <span class="hint">Clone the repo and run four commands. Every image is a chain of bootc layers, each an OCI image built from its parent.</span>
+        <h2 data-i18n>Build it yourself</h2>
+        <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener" data-i18n>Based on Fedora 44</a>
+        <span class="hint" data-i18n>Clone the repo and run four commands. Every image is a chain of bootc layers, each an OCI image built from its parent.</span>
     </div>
 
     <div class="buildwrap">
         <div class="panel">
-            <h3>How an image is assembled</h3>
+            <h3 data-i18n>How an image is assembled</h3>
             <div class="chain" role="img" aria-label="Layer chain: quay.io/fedora/fedora-bootc:44, then base, then desktop-common, then de/cosmic-hyprland, which the six published purposes build on">
                 <div class="chain-inner">
-                    <div class="node upstream"><span class="nm">quay.io/fedora/fedora-bootc:44</span><span class="ds">upstream base</span></div>
+                    <div class="node upstream"><span class="nm">quay.io/fedora/fedora-bootc:44</span><span class="ds" data-i18n>upstream base</span></div>
                     <div class="connector"></div>
-                    <div class="node"><span class="nm">base</span><span class="ds">hardening, common CLI tools</span></div>
+                    <div class="node"><span class="nm">base</span><span class="ds" data-i18n>hardening, common CLI tools</span></div>
                     <div class="connector"></div>
-                    <div class="node"><span class="nm">desktop-common</span><span class="ds">DE-agnostic desktop infrastructure</span></div>
+                    <div class="node"><span class="nm">desktop-common</span><span class="ds" data-i18n>DE-agnostic desktop infrastructure</span></div>
                     <div class="connector"></div>
-                    <div class="node"><span class="nm">de/cosmic-hyprland</span><span class="ds">COSMIC + Hyprland sessions</span></div>
+                    <div class="node"><span class="nm">de/cosmic-hyprland</span><span class="ds" data-i18n>COSMIC + Hyprland sessions</span></div>
                     <div class="connector"></div>
                     <div class="plist">
                         <div class="node published"><span class="nm">general</span></div>
@@ -336,27 +338,27 @@
                     </div>
                 </div>
             </div>
-            <p style="margin-top:11px">Each layer is an OCI image built <code>FROM</code> its parent, so the four shared layers are built once and reused by all six. The gold leaves are the published images; intermediates are build infrastructure.</p>
+            <p style="margin-top:11px"><span data-i18n>Each layer is an OCI image built</span> <code>FROM</code> <span data-i18n>its parent, so the four shared layers are built once and reused by all six. The gold leaves are the published images; intermediates are build infrastructure.</span></p>
         </div>
 
         <div class="panel">
-            <h3>Four commands — plain bash and podman</h3>
+            <h3 data-i18n>Four commands — plain bash and podman</h3>
             <ol class="steps">
-                <li><b>See the catalog.</b>
+                <li><b data-i18n>See the catalog.</b>
                     <div class="cmdline">./build.sh list</div>
-                    <div class="say">Every image with its DE, description and pin reason.</div>
+                    <div class="say" data-i18n>Every image with its DE, description and pin reason.</div>
                 </li>
-                <li><b>Generate Containerfiles.</b>
+                <li><b data-i18n>Generate Containerfiles.</b>
                     <div class="cmdline">./build.sh generate all</div>
-                    <div class="say">Chain-aware Containerfiles under <code>generated/</code>.</div>
+                    <div class="say"><span data-i18n>Chain-aware Containerfiles under</span> <code>generated/</code>.</div>
                 </li>
-                <li><b>Build the images.</b>
+                <li><b data-i18n>Build the images.</b>
                     <div class="cmdline">./build.sh build all       <span class="rem"># --push to publish</span></div>
-                    <div class="say">Each shared layer built once, in dependency order.</div>
+                    <div class="say" data-i18n>Each shared layer built once, in dependency order.</div>
                 </li>
-                <li><b>Make an ISO.</b>
+                <li><b data-i18n>Make an ISO.</b>
                     <div class="cmdline">./build.sh iso carino-gaming</div>
-                    <div class="say">bootc-image-builder (needs <code>sudo</code>) → <code>output/IMAGE/install.iso</code>.</div>
+                    <div class="say"><span data-i18n>bootc-image-builder (needs</span> <code>sudo</code>) → <code>output/IMAGE/install.iso</code>.</div>
                 </li>
             </ol>
         </div>
@@ -364,28 +366,28 @@
 
     <div class="folds">
         <details class="fold">
-            <summary>Classic (non-atomic) images — experimental</summary>
+            <summary data-i18n>Classic (non-atomic) images — experimental</summary>
             <div class="fb">
-                <p><code>./build.sh blueprint IMAGE</code> flattens an image's whole layer chain into an osbuild blueprint for the traditional Workstation backend. It is an <b>export, not a build path</b> — nothing here depsolves or builds it, so you hand it to <code>composer-cli</code> yourself:</p>
+                <p id="fold-bp-1"><code>./build.sh blueprint IMAGE</code> flattens an image's whole layer chain into an osbuild blueprint for the traditional Workstation backend. It is an <b>export, not a build path</b> — nothing here depsolves or builds it, so you hand it to <code>composer-cli</code> yourself:</p>
                 <pre>./build.sh blueprint carino-general
 composer-cli blueprints push generated/carino-general/blueprint.toml
 composer-cli compose start carino-general image-installer</pre>
-                <p>A blueprint is a <b>lossy</b> copy, never an equivalent. COPR packages need the repo configured host-side or the depsolve fails; Flatpaks, static files and post-install scripts are dropped; and a service whose unit ships only in the image's own file tree is omitted from <code>enabled</code>, because osbuild runs <code>systemctl enable</code> during the build and a missing unit fails it. Every omission is listed in the TOML header and warned about on the terminal.</p>
+                <p id="fold-bp-2">A blueprint is a <b>lossy</b> copy, never an equivalent. COPR packages need the repo configured host-side or the depsolve fails; Flatpaks, static files and post-install scripts are dropped; and a service whose unit ships only in the image's own file tree is omitted from <code>enabled</code>, because osbuild runs <code>systemctl enable</code> during the build and a missing unit fails it. Every omission is listed in the TOML header and warned about on the terminal.</p>
             </div>
         </details>
 
         <details class="fold">
-            <summary>Why only COSMIC and Hyprland?</summary>
+            <summary data-i18n>Why only COSMIC and Hyprland?</summary>
             <div class="fb">
-                <p>Because every desktop shipped is a desktop that has to be verified against every purpose, and the combinations nobody tests are the ones that break. One session, built once, means the integration work — tearing control, per-output VRR, no file indexer, no automounter — is done once and inherited by all six images.</p>
-                <p>Both sessions come from the same layer and the same greeter: pick COSMIC at login for pointer-driven use, or Hyprland when you want tiling. Purposes still declare which session they are pinned to, so adding a second desktop later stays a one-line change rather than a rewrite.</p>
+                <p data-i18n>Because every desktop shipped is a desktop that has to be verified against every purpose, and the combinations nobody tests are the ones that break. One session, built once, means the integration work — tearing control, per-output VRR, no file indexer, no automounter — is done once and inherited by all six images.</p>
+                <p data-i18n>Both sessions come from the same layer and the same greeter: pick COSMIC at login for pointer-driven use, or Hyprland when you want tiling. Purposes still declare which session they are pinned to, so adding a second desktop later stays a one-line change rather than a rewrite.</p>
             </div>
         </details>
 
         <details class="fold">
-            <summary>Why atomic, and what do updates look like?</summary>
+            <summary data-i18n>Why atomic, and what do updates look like?</summary>
             <div class="fb">
-                <p>The value of a purpose-built system is the <em>integration</em> — kernel args, service masking, session configuration — and on a mutable system that integration drifts. With bootc the whole OS is one versioned image: every install is identical, updates are transactional, and a bad one is a <code>bootc rollback</code> away.</p>
+                <p id="fold-atomic-1">The value of a purpose-built system is the <em>integration</em> — kernel args, service masking, session configuration — and on a mutable system that integration drifts. With bootc the whole OS is one versioned image: every install is identical, updates are transactional, and a bad one is a <code>bootc rollback</code> away.</p>
                 <pre>bootc upgrade        <span class="rem"># staged, applied on reboot</span>
 bootc switch &lt;ref&gt;   <span class="rem"># move between purposes</span>
 bootc rollback       <span class="rem"># back to the previous deployment</span></pre>
@@ -393,9 +395,9 @@ bootc rollback       <span class="rem"># back to the previous deployment</span><
         </details>
 
         <details class="fold">
-            <summary>Add your own purpose</summary>
+            <summary data-i18n>Add your own purpose</summary>
             <div class="fb">
-                <p>Create one file, <code>config/purposes/&lt;name&gt;.conf</code> — plain bash, sourced by the build system. Four fields are required, the rest are optional:</p>
+                <p id="fold-own-1">Create one file, <code>config/purposes/&lt;name&gt;.conf</code> — plain bash, sourced by the build system. Four fields are required, the rest are optional:</p>
                 <pre>PURPOSE="mything"          <span class="rem"># must match the filename</span>
 DE="cosmic-hyprland"       <span class="rem"># must match config/layers/de/&lt;DE&gt;.conf</span>
 PIN_REASON="…"             <span class="rem"># one line: why this session</span>
@@ -403,7 +405,7 @@ DESCRIPTION="…"            <span class="rem"># one line: what it is for</span>
 PACKAGES="pkg @group"  COPRS="owner/project"  KARGS="…"
 SERVICES_ENABLE="a.service"  SERVICES_MASK="b.service"
 FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
-                <p>The catalog is derived by scanning <code>config/purposes/*.conf</code>, so <code>./build.sh list</code> picks it up immediately. Everything that is "just a package list" for an <em>already-installed</em> system lives in <a href="https://setup.carino.systems/">Carino Setup</a> instead.</p>
+                <p id="fold-own-2">The catalog is derived by scanning <code>config/purposes/*.conf</code>, so <code>./build.sh list</code> picks it up immediately. Everything that is "just a package list" for an <em>already-installed</em> system lives in <a href="https://setup.carino.systems/">Carino Setup</a> instead.</p>
             </div>
         </details>
     </div>
@@ -413,13 +415,13 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
 </main>
 
 <dialog class="modal" id="med-modal" aria-labelledby="med-title">
-    <div class="mh"><span class="badge">Regulatory notice</span></div>
-    <h3 id="med-title">This is not a medical device</h3>
-    <p>The Medical Imaging image bundles a DICOM toolchain and scientific Python for <b>research, education and PACS tooling</b>. It is <b>not intended for diagnosis</b>, and must not be used to interpret patient studies for clinical decisions.</p>
-    <p>The long-term goal is a validated, reproducible build suitable for FDA submission — every install running the same image, byte for byte. It has <b>not been submitted, reviewed or cleared</b> by the FDA or any other regulator.</p>
+    <div class="mh"><span class="badge" data-i18n>Regulatory notice</span></div>
+    <h3 id="med-title" data-i18n>This is not a medical device</h3>
+    <p><span data-i18n>The Medical Imaging image bundles a DICOM toolchain and scientific Python for</span> <b data-i18n>research, education and PACS tooling</b><span data-i18n>. It is</span> <b data-i18n>not intended for diagnosis</b><span data-i18n>, and must not be used to interpret patient studies for clinical decisions.</span></p>
+    <p><span data-i18n>The long-term goal is a validated, reproducible build suitable for FDA submission — every install running the same image, byte for byte. It has</span> <b data-i18n>not been submitted, reviewed or cleared</b> <span data-i18n>by the FDA or any other regulator.</span></p>
     <div class="macts">
-        <button type="button" class="mbtn" id="med-cancel">Cancel</button>
-        <button type="button" class="mbtn primary" id="med-proceed">I understand — proceed</button>
+        <button type="button" class="mbtn" id="med-cancel" data-i18n>Cancel</button>
+        <button type="button" class="mbtn primary" id="med-proceed" data-i18n>I understand — proceed</button>
     </div>
 </dialog>
 
@@ -448,6 +450,11 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
           desc: 'Ollama, llama.cpp, whisper.cpp and ramalama on the leanest session, so the desktop holds least VRAM.' }
     ];
 
+    /* The dictionary script is deferred, so it runs after this inline script:
+       resolve t() lazily and fall back to English until it exists. It then
+       re-renders the picker/preview on load and on every language switch. */
+    const tr = s => (typeof window.t === 'function' ? window.t(s) : s);
+
     const byId = id => IMAGES.find(i => i.id === id);
     const icon = (id, cls) => '<span class="' + (cls || 'ico') + '"><svg aria-hidden="true"><use href="#i-' + id + '"></use></svg></span>';
 
@@ -464,12 +471,13 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
     function renderPicker() {
         document.getElementById('picker').innerHTML = IMAGES.map(im => {
             const iso = RELEASES.iso[im.id], ctr = RELEASES.registry;
+            const nm = tr(im.name), ds = tr(im.desc); /* translations contain no double quotes, so the title attribute stays safe */
             return '<article class="row" data-id="' + im.id + '" tabindex="0">'
                  + icon(im.id)
-                 + '<div class="meta"><div class="nm">' + im.name + '</div><div class="ds" title="' + im.desc + '">' + im.desc + '</div></div>'
+                 + '<div class="meta"><div class="nm">' + nm + '</div><div class="ds" title="' + ds + '">' + ds + '</div></div>'
                  + '<div class="acts">'
-                 + '<button type="button" class="dl' + (iso ? '' : ' pending') + '" data-kind="iso" data-id="' + im.id + '">Download ISO</button>'
-                 + '<button type="button" class="dl ghost' + (ctr ? '' : ' pending') + '" data-kind="ctr" data-id="' + im.id + '">Container</button>'
+                 + '<button type="button" class="dl' + (iso ? '' : ' pending') + '" data-kind="iso" data-id="' + im.id + '">' + tr('Download ISO') + '</button>'
+                 + '<button type="button" class="dl ghost' + (ctr ? '' : ' pending') + '" data-kind="ctr" data-id="' + im.id + '">' + tr('Container') + '</button>'
                  + '</div></article>';
         }).join('');
     }
@@ -489,9 +497,9 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
             video.load(); /* without this the previous clip keeps painting behind the empty state */
             video.hidden = true;
             pvEmpty.hidden = false;
-            pvEmpty.innerHTML = icon(id) + '<div class="t">' + im.name + '</div><div class="s">Preview coming soon</div>';
+            pvEmpty.innerHTML = icon(id) + '<div class="t">' + tr(im.name) + '</div><div class="s">' + tr('Preview coming soon') + '</div>';
         }
-        pvCap.innerHTML = '<b>' + im.name + '</b> — ' + im.image;
+        pvCap.innerHTML = '<b>' + tr(im.name) + '</b> — ' + im.image;
     }
 
     function flash(btn, label) {
@@ -504,16 +512,16 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
     function deliver(kind, id, btn) {
         if (kind === 'iso') {
             const url = RELEASES.iso[id];
-            if (!url) return flash(btn, 'Not published yet');
+            if (!url) return flash(btn, tr('Not published yet'));
             location.href = url;
         } else {
             const reg = RELEASES.registry;
-            if (!reg) return flash(btn, 'Registry pending');
+            if (!reg) return flash(btn, tr('Registry pending'));
             const cmd = 'sudo bootc switch ' + reg + '/' + byId(id).image + ':latest';
             navigator.clipboard.writeText(cmd).then(() => {
                 btn.classList.add('done');
                 const old = btn.textContent;
-                btn.textContent = 'Copied';
+                btn.textContent = tr('Copied');
                 setTimeout(() => { btn.classList.remove('done'); btn.textContent = old; }, 2000);
             }).catch(() => flash(btn, 'Ctrl+C')); /* the clipboard API is unavailable on insecure origins and when permission is denied */
         }
@@ -525,8 +533,8 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
         pending = { kind, id, btn };
         const ready = kind === 'iso' ? !!RELEASES.iso[id] : !!RELEASES.registry;
         proceedBtn.disabled = false;
-        proceedBtn.textContent = ready ? 'I understand — proceed'
-                                       : (kind === 'iso' ? 'I understand — not published yet' : 'I understand — copy command');
+        proceedBtn.textContent = ready ? tr('I understand — proceed')
+                                       : (kind === 'iso' ? tr('I understand — not published yet') : tr('I understand — copy command'));
         modal.showModal(); /* <dialog> gives focus trapping and Esc-to-close for free */
     }
 
