@@ -10,7 +10,7 @@ LABEL org.opencontainers.image.title="carino-gaming" \
       org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
 
 # Packages
-RUN dnf -y install steam-devices lutris gamescope mangohud gamemode wine winetricks antimicrox solaar libratbag-ratbagd nvtop radeontop vulkan-tools && dnf clean all
+RUN dnf -y install steam-devices lutris gamescope mangohud gamemode wine winetricks antimicrox solaar libratbag-ratbagd nvtop radeontop vulkan-tools mpv htop fastfetch && dnf clean all
 
 # Services (enable)
 RUN systemctl enable ratbagd.service
@@ -21,7 +21,7 @@ RUN mkdir -p /usr/lib/bootc/kargs.d && \
 
 # Flatpak list (installed on first boot by flatpak-setup.service)
 RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \
-    printf '%s\n' net.davidotek.pupgui2 > /usr/share/fedora-images/flatpaks.d/40-gaming.list
+    printf '%s\n' net.davidotek.pupgui2 com.heroicgameslauncher.hgl com.valvesoftware.Steam net.pcsx2.PCSX2 net.rpcs3.RPCS3 org.duckstation.DuckStation org.ppsspp.PPSSPP net.kuribo64.melonDS io.github.azahar_emu.Azahar app.xemu.xemu org.flycast.Flycast info.cemu.Cemu > /usr/share/fedora-images/flatpaks.d/40-gaming.list
 
 # Lint the resulting bootc image
 RUN bootc container lint

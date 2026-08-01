@@ -22,5 +22,9 @@ RUN systemctl mask power-profiles-daemon.service
 RUN mkdir -p /usr/lib/bootc/kargs.d && \
     echo 'kargs = ["threadirqs"]' > /usr/lib/bootc/kargs.d/40-music.toml
 
+# Flatpak list (installed on first boot by flatpak-setup.service)
+RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \
+    printf '%s\n' org.musescore.MuseScore org.audacityteam.Audacity > /usr/share/fedora-images/flatpaks.d/40-music.list
+
 # Lint the resulting bootc image
 RUN bootc container lint

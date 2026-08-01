@@ -15,5 +15,9 @@ RUN dnf -y install ollama llama-cpp whisper-cpp ramalama python3-huggingface-hub
 # Services (enable)
 RUN systemctl enable ollama.service
 
+# Flatpak list (installed on first boot by flatpak-setup.service)
+RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \
+    printf '%s\n' com.jeffser.Alpaca io.podman_desktop.PodmanDesktop > /usr/share/fedora-images/flatpaks.d/40-llms.list
+
 # Lint the resulting bootc image
 RUN bootc container lint

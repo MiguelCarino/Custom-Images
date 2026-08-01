@@ -10,7 +10,11 @@ LABEL org.opencontainers.image.title="carino-general" \
       org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
 
 # Packages
-RUN dnf -y install firefox thunderbird libreoffice-writer libreoffice-calc libreoffice-impress mpv keepassxc transmission-gtk yt-dlp && dnf clean all
+RUN dnf -y install thunderbird libreoffice-writer libreoffice-calc libreoffice-impress mpv keepassxc transmission-gtk yt-dlp && dnf clean all
+
+# Flatpak list (installed on first boot by flatpak-setup.service)
+RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \
+    printf '%s\n' org.signal.Signal io.missioncenter.MissionCenter com.calibre_ebook.calibre com.github.tchx84.Flatseal > /usr/share/fedora-images/flatpaks.d/40-general.list
 
 # Lint the resulting bootc image
 RUN bootc container lint

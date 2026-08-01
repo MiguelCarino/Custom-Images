@@ -14,7 +14,7 @@ RUN dnf -y install dcmtk gdcm gdcm-applications python3-pydicom python3-pynetdic
 
 # Flatpak list (installed on first boot by flatpak-setup.service)
 RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \
-    printf '%s\n' io.github.nroduit.Weasis > /usr/share/fedora-images/flatpaks.d/40-imagenology.list
+    printf '%s\n' io.github.nroduit.Weasis com.github.AlizaMedicalImaging.AlizaMS br.gov.cti.invesalius org.deidentifier.arx > /usr/share/fedora-images/flatpaks.d/40-imagenology.list
 
 # Lint the resulting bootc image
 RUN bootc container lint

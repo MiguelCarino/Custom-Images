@@ -6,7 +6,7 @@
 FROM localhost/carino-layer-base:latest
 
 LABEL org.opencontainers.image.title="carino-layer-desktop-common" \
-      org.opencontainers.image.description="DE-agnostic desktop infrastructure: audio, portals, flatpak, fonts" \
+      org.opencontainers.image.description="DE-agnostic desktop infrastructure: audio, portals, flatpak, fonts, browser" \
       org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
 
 # Packages
@@ -17,6 +17,10 @@ COPY ./ /
 
 # Services (enable)
 RUN systemctl enable flatpak-setup.service initial-setup.service
+
+# Flatpak list (installed on first boot by flatpak-setup.service)
+RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \
+    printf '%s\n' org.mozilla.firefox > /usr/share/fedora-images/flatpaks.d/20-desktop-common.list
 
 # Lint the resulting bootc image
 RUN bootc container lint

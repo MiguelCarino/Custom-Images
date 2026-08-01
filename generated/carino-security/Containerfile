@@ -12,5 +12,9 @@ LABEL org.opencontainers.image.title="carino-security" \
 # Packages
 RUN dnf -y install wireshark tcpdump nmap aircrack-ng sleuthkit testdisk foremost binwalk yara radare2 python3-scapy lynis aide && dnf clean all
 
+# Flatpak list (installed on first boot by flatpak-setup.service)
+RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \
+    printf '%s\n' org.ghidra_sre.Ghidra org.zaproxy.ZAP re.rizin.cutter > /usr/share/fedora-images/flatpaks.d/40-security.list
+
 # Lint the resulting bootc image
 RUN bootc container lint
