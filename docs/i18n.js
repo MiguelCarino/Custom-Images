@@ -12,6 +12,10 @@
 
 const I18N = {
     es: {
+        'Late shift.': 'Turno nocturno.',
+        'Good morning.': 'Buenos días.',
+        'Good afternoon.': 'Buenas tardes.',
+        'Good evening.': 'Buenas noches.',
         // Hero + tabs
         'Another fresh install to configure? It drifts within weeks anyway.': '¿Otra instalación nueva por configurar? Total, en unas semanas ya se ha desviado.',
         'The whole system, set up for your work,': 'Todo el sistema, preparado para tu trabajo,',
@@ -94,6 +98,10 @@ const I18N = {
         'Layer chain: quay.io/fedora/fedora-bootc:44, then base, then desktop-common, then de/cosmic-hyprland, which the six published purposes build on': 'Cadena de capas: quay.io/fedora/fedora-bootc:44, luego base, luego desktop-common, luego de/cosmic-hyprland, sobre la que se construyen los seis propósitos publicados',
     },
     'pt-BR': {
+        'Late shift.': 'Turno da noite.',
+        'Good morning.': 'Bom dia.',
+        'Good afternoon.': 'Boa tarde.',
+        'Good evening.': 'Boa noite.',
         'Another fresh install to configure? It drifts within weeks anyway.': 'Mais uma instalação nova para configurar? Em poucas semanas ela já se desvia mesmo.',
         'The whole system, set up for your work,': 'O sistema inteiro, pronto para o seu trabalho,',
         'before you ever boot it.': 'antes mesmo do primeiro boot.',
@@ -169,6 +177,10 @@ const I18N = {
         'Layer chain: quay.io/fedora/fedora-bootc:44, then base, then desktop-common, then de/cosmic-hyprland, which the six published purposes build on': 'Cadeia de camadas: quay.io/fedora/fedora-bootc:44, depois base, depois desktop-common, depois de/cosmic-hyprland, sobre a qual os seis propósitos publicados são construídos',
     },
     ja: {
+        'Late shift.': '夜勤お疲れさま。',
+        'Good morning.': 'おはようございます。',
+        'Good afternoon.': 'こんにちは。',
+        'Good evening.': 'こんばんは。',
         'Another fresh install to configure? It drifts within weeks anyway.': 'また新規インストールの設定から？どうせ数週間で構成は崩れていく。',
         'The whole system, set up for your work,': 'システム全体が、あなたの仕事に合わせて、',
         'before you ever boot it.': '起動する前から整っている。',
@@ -244,6 +256,10 @@ const I18N = {
         'Layer chain: quay.io/fedora/fedora-bootc:44, then base, then desktop-common, then de/cosmic-hyprland, which the six published purposes build on': 'レイヤーチェーン: quay.io/fedora/fedora-bootc:44、次に base、次に desktop-common、次に de/cosmic-hyprland。公開されている6つの用途はこの上に構築されます',
     },
     ru: {
+        'Late shift.': 'Ночная смена.',
+        'Good morning.': 'Доброе утро.',
+        'Good afternoon.': 'Добрый день.',
+        'Good evening.': 'Добрый вечер.',
         'Another fresh install to configure? It drifts within weeks anyway.': 'Опять настраивать свежую установку? Всё равно через пару недель она «поплывёт».',
         'The whole system, set up for your work,': 'Вся система, настроенная под вашу работу,',
         'before you ever boot it.': 'ещё до первой загрузки.',
