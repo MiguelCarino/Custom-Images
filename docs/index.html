@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/webp" href="logo.webp">
 <title>Carino Custom Images — purpose-built Fedora</title>
-<meta name="description" content="Purpose-built Fedora on COSMIC + Hyprland: six images, each shipping the integration one kind of work needs. Installer ISO or bootc container image.">
+<meta name="description" content="Purpose-built Fedora: six COSMIC + Hyprland desktops and a headless Asterisk/FreePBX appliance, each shipping the integration one kind of work needs. Installer ISO or bootc container image.">
 <link rel="stylesheet" href="fonts/carino-fonts.css">
 <style>
     :root {
@@ -211,6 +211,14 @@
     .node.published .nm { color: var(--accent); }
     .connector { width: 1px; height: 0.85rem; background: var(--border); }
     .plist { display: grid; grid-template-columns: repeat(3, auto); gap: 5px; }
+    .plist.one { grid-template-columns: auto; } /* the appliance branch has a single leaf */
+    /* base forks two ways: the desktop branch and the headless one. The crossbar
+       is drawn on the fork itself so the two branches read as siblings rather
+       than as one column that happens to be wider. */
+    .fork { position: relative; display: flex; align-items: flex-start; gap: 16px; padding-top: 0.85rem; }
+    .fork::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--border); } /* full width, so the crossbar meets both branch stubs whatever they measure */
+    .branch { position: relative; display: flex; flex-direction: column; align-items: center; }
+    .branch::before { content: ''; position: absolute; top: -0.85rem; left: 50%; height: 0.85rem; width: 1px; background: var(--border); }
 
     .folds { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 14px; }
     .fold { min-width: 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); align-self: start; }
@@ -232,7 +240,7 @@
         .rowhead { margin: 10px 0 7px; }
         .folds { margin-top: 10px; }
         .row { padding: 8px 11px; }
-        .row .ds { -webkit-line-clamp: 1; } /* one line rather than two: six rows x one line is what keeps the picker on screen */
+        .row .ds { -webkit-line-clamp: 1; } /* one line rather than two: seven rows x one line is what keeps the picker on screen */
         .bar { padding: 7px 11px; }
         .buildwrap { margin-top: 9px; }
         .panel { padding: 11px 13px; }
@@ -240,6 +248,7 @@
     }
     @media (max-width: 1100px) { .split { grid-template-columns: 1fr; } .preview { order: -1; aspect-ratio: 16 / 9; min-height: 0; } } /* stacked, the clip's own ratio governs — and min-height has to go, or it back-solves into a width wider than the screen */ /* preview above the list once they stack, so it is not below the fold */
     @media (max-width: 900px)  { .buildwrap, .folds { grid-template-columns: 1fr; } }
+    @media (max-width: 620px)  { .fork { flex-direction: column; align-items: center; gap: 0.85rem; } .fork::before { display: none; } } /* stacked, the crossbar would point at nothing */
     @media (max-width: 620px)  {
         .row { flex-wrap: wrap; }
         .row .acts { width: 100%; }
@@ -260,6 +269,7 @@
     <symbol id="i-security" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
     <symbol id="i-gaming" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="6"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15.5" y1="13.5" x2="15.51" y2="13.5"/><line x1="18" y1="10.5" x2="18.01" y2="10.5"/></symbol>
     <symbol id="i-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+    <symbol id="i-pbx" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L15 14l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/><line x1="15" y1="3" x2="21" y2="3"/><line x1="18" y1="3" x2="18" y2="9"/></symbol>
     <symbol id="i-llms" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></symbol>
 </defs></svg>
 
@@ -270,7 +280,7 @@
             <span class="lead" data-i18n>The whole system, set up for your work,</span>
             <span class="punch" data-i18n>before you ever boot it.</span>
         </h1>
-        <p data-i18n>Six Fedora images. Pick the one that matches what you do — the tools, the drivers and the tuning are already in it, and an update that goes wrong is one command back.</p>
+        <p data-i18n>Seven Fedora images: six desktops and one telephony appliance. Pick the one that matches what you do — the tools, the drivers and the tuning are already in it, and an update that goes wrong is one command back.</p>
         <div class="tabbar" role="tablist" aria-label="Section">
             <button type="button" class="tabbtn active" role="tab" id="tab-get" data-tab="get" aria-controls="pane-get" aria-selected="true"><b data-i18n>Get an image</b><span class="sub">ISO · Container</span></button>
             <button type="button" class="tabbtn" role="tab" id="tab-build" data-tab="build" aria-controls="pane-build" aria-selected="false"><b data-i18n>Build it yourself</b><span class="sub">bash · podman</span></button>
@@ -286,6 +296,7 @@
         <h2 data-i18n>Editions</h2>
         <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener" data-i18n>Based on Fedora 44</a>
         <span class="depill">COSMIC + Hyprland</span>
+        <span class="depill" data-i18n>plus one headless appliance</span>
         <span class="hint" data-i18n>Image-based Fedora — transactional updates, identical on every machine, one-command rollback.</span>
     </div>
 
@@ -318,27 +329,38 @@
     <div class="buildwrap">
         <div class="panel">
             <h3 data-i18n>How an image is assembled</h3>
-            <div class="chain" role="img" aria-label="Layer chain: quay.io/fedora/fedora-bootc:44, then base, then desktop-common, then de/cosmic-hyprland, which the six published purposes build on">
+            <div class="chain" role="img" aria-label="Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx appliance">
                 <div class="chain-inner">
                     <div class="node upstream"><span class="nm">quay.io/fedora/fedora-bootc:44</span><span class="ds" data-i18n>upstream base</span></div>
                     <div class="connector"></div>
                     <div class="node"><span class="nm">base</span><span class="ds" data-i18n>hardening, common CLI tools</span></div>
                     <div class="connector"></div>
-                    <div class="node"><span class="nm">desktop-common</span><span class="ds" data-i18n>DE-agnostic desktop infrastructure</span></div>
-                    <div class="connector"></div>
-                    <div class="node"><span class="nm">de/cosmic-hyprland</span><span class="ds" data-i18n>COSMIC + Hyprland sessions</span></div>
-                    <div class="connector"></div>
-                    <div class="plist">
-                        <div class="node published"><span class="nm">general</span></div>
-                        <div class="node published"><span class="nm">imagenology</span></div>
-                        <div class="node published"><span class="nm">security</span></div>
-                        <div class="node published"><span class="nm">gaming</span></div>
-                        <div class="node published"><span class="nm">music</span></div>
-                        <div class="node published"><span class="nm">llms</span></div>
+                    <div class="fork">
+                        <div class="branch">
+                            <div class="node"><span class="nm">desktop-common</span><span class="ds" data-i18n>DE-agnostic desktop infrastructure</span></div>
+                            <div class="connector"></div>
+                            <div class="node"><span class="nm">de/cosmic-hyprland</span><span class="ds" data-i18n>COSMIC + Hyprland sessions</span></div>
+                            <div class="connector"></div>
+                            <div class="plist">
+                                <div class="node published"><span class="nm">general</span></div>
+                                <div class="node published"><span class="nm">imagenology</span></div>
+                                <div class="node published"><span class="nm">security</span></div>
+                                <div class="node published"><span class="nm">gaming</span></div>
+                                <div class="node published"><span class="nm">music</span></div>
+                                <div class="node published"><span class="nm">llms</span></div>
+                            </div>
+                        </div>
+                        <div class="branch">
+                            <div class="node"><span class="nm">de/headless</span><span class="ds" data-i18n>console and SSH, no desktop</span></div>
+                            <div class="connector"></div>
+                            <div class="plist one">
+                                <div class="node published"><span class="nm">pbx</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <p style="margin-top:11px"><span data-i18n>Each layer is an OCI image built</span> <code>FROM</code> <span data-i18n>its parent, so the four shared layers are built once and reused by all six. The gold leaves are the published images; intermediates are build infrastructure.</span></p>
+            <p style="margin-top:11px"><span data-i18n>Each layer is an OCI image built</span> <code>FROM</code> <span data-i18n>its parent, so a shared layer is built once and reused by everything below it. The appliance branch skips the desktop entirely. The gold leaves are the published images; intermediates are build infrastructure.</span></p>
         </div>
 
         <div class="panel">
@@ -379,8 +401,16 @@ composer-cli compose start carino-general image-installer</pre>
         <details class="fold">
             <summary data-i18n>Why only COSMIC and Hyprland?</summary>
             <div class="fb">
-                <p data-i18n>Because every desktop shipped is a desktop that has to be verified against every purpose, and the combinations nobody tests are the ones that break. One session, built once, means the integration work — tearing control, per-output VRR, no file indexer, no automounter — is done once and inherited by all six images.</p>
+                <p data-i18n>Because every desktop shipped is a desktop that has to be verified against every purpose, and the combinations nobody tests are the ones that break. One session, built once, means the integration work — tearing control, per-output VRR, no file indexer, no automounter — is done once and inherited by all six desktop images.</p>
                 <p data-i18n>Both sessions come from the same layer and the same greeter: pick COSMIC at login for pointer-driven use, or Hyprland when you want tiling. Purposes still declare which session they are pinned to, so adding a second desktop later stays a one-line change rather than a rewrite.</p>
+            </div>
+        </details>
+
+        <details class="fold">
+            <summary data-i18n>The telephony image has no desktop — why?</summary>
+            <div class="fb">
+                <p id="fold-pbx-1">A PBX is an appliance, not a workstation: you reach it through its web UI and over SSH, and nobody sits in front of it. So <code>carino-pbx</code> pins the <code>headless</code> session, which branches off <code>base</code> and never touches <code>desktop-common</code> — no Wayland, no PipeWire, no portals, no Flatpak, no browser. Fewer packages to patch on the one machine in the building that answers the phones.</p>
+                <p id="fold-pbx-2">One caveat stated plainly: <b>FreePBX itself is not part of the image.</b> It writes to <code>/var</code>, and a bootc image copies <code>/var</code> into the machine once at install and never again — so baking it in would freeze it at the version you first installed from. The image ships Asterisk, MariaDB, Apache and the PHP 8.2 runtime FreePBX requires as RPMs that <em>do</em> update transactionally, and FreePBX installs itself on first boot, then updates with <code>fwconsole ma upgradeall</code>. <code>bootc rollback</code> covers the OS underneath it; it does not roll back a FreePBX module upgrade.</p>
             </div>
         </details>
 
@@ -399,10 +429,11 @@ bootc rollback       <span class="rem"># back to the previous deployment</span><
             <div class="fb">
                 <p id="fold-own-1">Create one file, <code>config/purposes/&lt;name&gt;.conf</code> — plain bash, sourced by the build system. Four fields are required, the rest are optional:</p>
                 <pre>PURPOSE="mything"          <span class="rem"># must match the filename</span>
-DE="cosmic-hyprland"       <span class="rem"># must match config/layers/de/&lt;DE&gt;.conf</span>
+DE="cosmic-hyprland"       <span class="rem"># or "headless" for an appliance</span>
 PIN_REASON="…"             <span class="rem"># one line: why this session</span>
 DESCRIPTION="…"            <span class="rem"># one line: what it is for</span>
 PACKAGES="pkg @group"  COPRS="owner/project"  KARGS="…"
+REPO_RPMS="https://…/x-release.rpm"          <span class="rem"># non-COPR third-party repos</span>
 SERVICES_ENABLE="a.service"  SERVICES_MASK="b.service"
 FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
                 <p id="fold-own-2">The catalog is derived by scanning <code>config/purposes/*.conf</code>, so <code>./build.sh list</code> picks it up immediately. Everything that is "just a package list" for an <em>already-installed</em> system lives in <a href="https://setup.carino.systems/">Carino Setup</a> instead.</p>
@@ -431,9 +462,9 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
        PREVIEWS take a .webm per image, played in the pane on hover/focus. */
     const RELEASES = {
         registry: '',                                                                      // e.g. 'ghcr.io/miguelcarino' — fills the bootc switch commands
-        iso:      { general: '', imagenology: '', security: '', gaming: '', music: '', llms: '' }
+        iso:      { general: '', imagenology: '', security: '', gaming: '', music: '', llms: '', pbx: '' }
     };
-    const PREVIEWS = { general: '', imagenology: '', security: '', gaming: '', music: '', llms: '' }; // e.g. 'previews/general.webm'
+    const PREVIEWS = { general: '', imagenology: '', security: '', gaming: '', music: '', llms: '', pbx: '' }; // e.g. 'previews/general.webm'
 
     const IMAGES = [
         { id: 'general',     name: 'General',         image: 'carino-general',
@@ -447,7 +478,9 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
         { id: 'music',       name: 'Music',           image: 'carino-music',
           desc: 'Ardour, Qtractor, Hydrogen and Carla on a low-latency stack: threadirqs, tuned, no file indexer.' },
         { id: 'llms',        name: 'Local LLMs',      image: 'carino-llms',
-          desc: 'Ollama, llama.cpp, whisper.cpp and ramalama on the leanest session, so the desktop holds least VRAM.' }
+          desc: 'Ollama, llama.cpp, whisper.cpp and ramalama on the leanest session, so the desktop holds least VRAM.' },
+        { id: 'pbx',         name: 'Telephony',       image: 'carino-pbx',
+          desc: 'Asterisk with the FreePBX web UI, MariaDB and PHP 8.2. Headless appliance — no desktop at all.' }
     ];
 
     /* The dictionary script is deferred, so it runs after this inline script:

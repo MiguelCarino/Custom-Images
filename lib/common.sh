@@ -25,7 +25,7 @@ GENERATED_DIR="${REPO_ROOT}/generated"
 # Every variable a layer/purpose conf may set. Unset before each load so a
 # previously sourced conf can never leak values into the next one.
 CONF_VARS=(
-  LAYER DESCRIPTION PARENT PACKAGES COPRS
+  LAYER DESCRIPTION PARENT PACKAGES COPRS REPO_RPMS
   SERVICES_ENABLE SERVICES_MASK KARGS FLATPAKS POST_SCRIPT
   PURPOSE DE PIN_REASON
 )
@@ -120,8 +120,8 @@ _reset_conf_vars() {
 # dir; the dir may not exist — callers must check).
 #
 # After a call the following are always set (possibly empty where optional):
-#   LAYER PARENT DESCRIPTION PACKAGES COPRS SERVICES_ENABLE SERVICES_MASK
-#   KARGS FLATPAKS POST_SCRIPT FILES_DIR
+#   LAYER PARENT DESCRIPTION PACKAGES COPRS REPO_RPMS SERVICES_ENABLE
+#   SERVICES_MASK KARGS FLATPAKS POST_SCRIPT FILES_DIR
 # and for purposes additionally: PURPOSE DE PIN_REASON.
 load_layer_conf() {
   local id="$1"
@@ -159,6 +159,7 @@ load_layer_conf() {
   # Default the optional fields so `set -u` callers can expand them freely.
   PACKAGES="${PACKAGES:-}"
   COPRS="${COPRS:-}"
+  REPO_RPMS="${REPO_RPMS:-}"
   SERVICES_ENABLE="${SERVICES_ENABLE:-}"
   SERVICES_MASK="${SERVICES_MASK:-}"
   KARGS="${KARGS:-}"

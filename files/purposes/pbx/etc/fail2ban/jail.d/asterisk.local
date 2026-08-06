@@ -1,0 +1,20 @@
+# SIP brute-force protection (carino-pbx).
+#
+# A PBX reachable from the internet gets registration-guessing traffic within
+# hours, and a successful guess is billed to the owner as international call
+# minutes. fail2ban ships the asterisk filter; this enables it against the log
+# FreePBX configures Asterisk to write.
+#
+# It is NOT a substitute for keeping SIP off the public internet. If this box
+# needs remote extensions, put them behind a VPN or a session border
+# controller rather than opening 5060 to the world.
+
+[asterisk]
+enabled  = true
+backend  = auto
+port     = 5060,5061
+protocol = udp
+logpath  = /var/log/asterisk/full
+maxretry = 5
+findtime = 10m
+bantime  = 1h

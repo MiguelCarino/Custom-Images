@@ -94,6 +94,7 @@ emit_layer_containerfile() {
   load_layer_conf "$id"
   local description="$DESCRIPTION" parent="$PARENT" files_dir="$FILES_DIR"
   local packages="$PACKAGES" coprs="$COPRS" kargs="$KARGS" flatpaks="$FLATPAKS"
+  local repo_rpms="$REPO_RPMS"
   local services_enable="$SERVICES_ENABLE" services_mask="$SERVICES_MASK"
   local post_script="$POST_SCRIPT"
 
@@ -132,6 +133,15 @@ emit_layer_containerfile() {
     printf 'LABEL org.opencontainers.image.title="%s" \\\n' "$out_name"
     printf '      org.opencontainers.image.description="%s" \\\n' "$description"
     printf '      org.opencontainers.image.base.name="%s"\n' "$BASE_IMAGE" # machine-readable upstream credit: the lineage belongs in a label, not in the leading token of the image name
+
+    # Repository-definition RPMs (§4) — third-party repos that are not COPRs
+    # (Remi, RPM Fusion …) arrive as a release RPM installed from its URL.
+    # First, because COPRs and PACKAGES may both resolve against them.
+    if [[ -n "$repo_rpms" ]]; then
+      printf '\n# Third-party repository definitions\n'
+      # shellcheck disable=SC2086 — word-splitting the list is intended
+      printf 'RUN dnf -y install %s\n' "$(echo $repo_rpms)"
+    fi
 
     # COPRs — enabled before install, left enabled (§4). fedora-bootc ships
     # dnf5 without the copr subcommand, so the plugin is installed first.

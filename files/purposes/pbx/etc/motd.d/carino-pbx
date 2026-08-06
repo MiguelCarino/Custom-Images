@@ -1,0 +1,11 @@
+
+  carino-pbx — Asterisk + FreePBX telephony appliance
+
+  Web UI      http://<this host>/          (first visit creates the admin account)
+  Setup log   journalctl -u freepbx-setup  (FreePBX installs itself on first boot)
+  Control     fwconsole start|stop|restart|reload
+              Asterisk is managed by FreePBX, not by systemctl — asterisk.service
+              is masked on purpose.
+  Update OS   bootc upgrade && systemctl reboot
+  Update PBX  fwconsole ma upgradeall && fwconsole reload
+

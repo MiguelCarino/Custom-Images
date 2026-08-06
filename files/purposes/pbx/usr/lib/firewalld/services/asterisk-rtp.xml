@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RTP media range for Asterisk. firewalld ships `sip` (5060) and `sips`
+  (5061) but nothing for media, and SIP signalling that connects while the
+  audio goes nowhere is the single most common "the PBX is broken" report.
+
+  10000-20000/udp is what FreePBX writes into rtp.conf by default. It is the
+  one firewall rule on this image that has to be kept in step with a setting
+  in the web UI: widen the range there (Settings → Asterisk SIP Settings) and
+  the extra ports stay closed until this file says so too.
+-->
+<service>
+  <short>Asterisk RTP</short>
+  <description>RTP media ports used by Asterisk, matching the FreePBX default range.</description>
+  <port protocol="udp" port="10000-20000"/>
+</service>

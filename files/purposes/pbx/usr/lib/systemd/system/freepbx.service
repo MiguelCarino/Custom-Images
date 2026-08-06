@@ -1,0 +1,20 @@
+[Unit]
+Description=FreePBX (starts and stops Asterisk through fwconsole)
+Documentation=https://sangomakb.atlassian.net/wiki/spaces/FP/
+Wants=network-online.target
+After=network-online.target mariadb.service httpd.service
+# fwconsole is written by the first-boot installer into /usr/local/sbin
+# (/usr is read-only on bootc; /usr/local is a symlink to /var/usrlocal).
+# Until that has happened this unit has nothing to run, which is why
+# freepbx-setup enables it rather than the image doing so at build time.
+ConditionPathIsExecutable=/usr/local/sbin/fwconsole
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/fwconsole start -q
+ExecStop=/usr/local/sbin/fwconsole stop -q
+TimeoutStartSec=10min
+
+[Install]
+WantedBy=multi-user.target

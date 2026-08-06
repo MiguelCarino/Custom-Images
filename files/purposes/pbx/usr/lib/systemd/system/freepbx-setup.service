@@ -1,0 +1,19 @@
+[Unit]
+Description=First-boot FreePBX installation (carino-pbx)
+Documentation=file:///usr/libexec/freepbx-setup
+Wants=network-online.target
+After=network-online.target mariadb.service
+# Run once per installed system; the script writes the stamp on success, so an
+# interrupted or failed install is retried on the next boot.
+ConditionPathExists=!/var/lib/fedora-images/.freepbx-done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/freepbx-setup
+# Downloading FreePBX and installing every bundled module is slow on first
+# boot, and slower still on a small appliance.
+TimeoutStartSec=60min
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

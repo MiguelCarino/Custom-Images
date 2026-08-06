@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+# freepbx-setup — first-boot FreePBX 17 installer for carino-pbx.
+#
+# WHY THIS IS NOT DONE AT BUILD TIME
+# ----------------------------------
+# Everything FreePBX installs lands in /var (/var/www/html, /var/lib/asterisk,
+# /var/lib/mysql) or /etc. On a bootc system the image's /var is copied into
+# the machine ONCE, at install, and never again on `bootc upgrade` — so a
+# FreePBX baked into the image would be frozen at the version of whichever
+# build the machine was first installed from, while looking like it upgrades.
+# The install also needs a running MariaDB and a running Asterisk, neither of
+# which exists inside a container build.
+#
+# So it works like the Flatpak mechanism in ARCHITECTURE.md §8: the image
+# ships the runtime (Asterisk, MariaDB, Apache, PHP 8.2) as RPMs that DO
+# upgrade transactionally, and this oneshot puts FreePBX itself on the machine
+# on first boot. FreePBX then updates itself the way it does everywhere else,
+# through `fwconsole ma upgradeall`.
+#
+# Idempotent: it stamps only on success, so a failed or interrupted run is
+# retried on the next boot, and a machine that already has /etc/freepbx.conf
+# is never reinstalled over.
+#
+# Invoked by freepbx-setup.service (oneshot, After=network-online.target).
+
+set -euo pipefail
+
+FREEPBX_TARBALL="https://mirror.freepbx.org/modules/packages/freepbx/freepbx-17.0-latest.tgz"
+PHP_BIN_DIR="/opt/remi/php82/root/usr/bin"   # Remi SCL PHP 8.2 — see config/purposes/pbx.conf
+SRC_DIR="/var/lib/freepbx/src"
+WEBROOT="/var/www/html"
+# /usr is read-only on a bootc system, so fwconsole and amportal cannot go to
+# /usr/sbin where FreePBX puts them by default. /usr/local is a symlink to
+# /var/usrlocal on ostree-based systems — writable, already on root's PATH,
+# and the sanctioned place for exactly this.
+SBIN_DIR="/usr/local/sbin"
+FWCONSOLE="${SBIN_DIR}/fwconsole"
+DB_USER="freepbxuser"
+STAMP_DIR=/var/lib/fedora-images
+STAMP="${STAMP_DIR}/.freepbx-done"
+
+log() { printf 'freepbx-setup: %s\n' "$*"; }
+
+if [[ -e "$STAMP" ]]; then
+  log "stamp $STAMP exists, nothing to do"
+  exit 0
+fi
+
+# --- Database -------------------------------------------------------------
+# First start initializes /var/lib/mysql. Root authenticates over the unix
+# socket, so no root password is set or needed.
+log "starting MariaDB"
+systemctl start mariadb.service
+for _ in $(seq 1 60); do
+  mysqladmin --protocol=socket ping >/dev/null 2>&1 && break
+  sleep 2
+done
+mysqladmin --protocol=socket ping >/dev/null 2>&1 \
+  || { log "ERROR: MariaDB did not come up"; exit 1; }
+
+if [[ -f /etc/freepbx.conf ]]; then
+  # Reinstall over an existing deployment would drop the dialplan. Recover the
+  # existing credentials instead and let the steps below re-run harmlessly.
+  log "/etc/freepbx.conf exists — reusing the configured database credentials"
+  DB_PASS="$(sed -n "s/.*\['AMPDBPASS'\][[:space:]]*=[[:space:]]*'\([^']*\)'.*/\1/p" /etc/freepbx.conf)"
+  [[ -n "$DB_PASS" ]] || { log "ERROR: could not read AMPDBPASS from /etc/freepbx.conf"; exit 1; }
+else
+  DB_PASS="$(head -c 24 /dev/urandom | base64 | tr -d '/+=' | head -c 24)"
+  log "creating databases and the ${DB_USER} account"
+  mysql --protocol=socket <<-SQL
+	CREATE DATABASE IF NOT EXISTS asterisk CHARACTER SET utf8mb4;
+	CREATE DATABASE IF NOT EXISTS asteriskcdrdb CHARACTER SET utf8mb4;
+	CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+	ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+	GRANT ALL PRIVILEGES ON asterisk.* TO '${DB_USER}'@'localhost';
+	GRANT ALL PRIVILEGES ON asteriskcdrdb.* TO '${DB_USER}'@'localhost';
+	FLUSH PRIVILEGES;
+	SQL
+fi
+
+# --- ODBC (FreePBX writes CDRs through the MySQL ODBC driver) -------------
+if ! grep -q '^\[MySQL\]' /etc/odbcinst.ini 2>/dev/null; then
+  log "registering the MySQL ODBC driver"
+  cat >> /etc/odbcinst.ini <<-'INI'
+
+	[MySQL]
+	Description = ODBC for MySQL
+	Driver      = /usr/lib64/libmyodbc8w.so
+	Setup       = /usr/lib64/libodbcmyS.so
+	FileUsage   = 1
+	INI
+fi
+if ! grep -q '^\[MySQL-asteriskcdrdb\]' /etc/odbc.ini 2>/dev/null; then
+  log "adding the MySQL-asteriskcdrdb DSN"
+  cat >> /etc/odbc.ini <<-'INI'
+
+	[MySQL-asteriskcdrdb]
+	Description = MySQL connection to the asteriskcdrdb database
+	Driver      = MySQL
+	Server      = localhost
+	Database    = asteriskcdrdb
+	Port        = 3306
+	Socket      = /var/lib/mysql/mysql.sock
+	Option      = 3
+	INI
+fi
+
+# --- Asterisk -------------------------------------------------------------
+# Fedora's asterisk package ships the full upstream sample configuration in
+# /etc/asterisk. FreePBX generates its own dialplan and expects to own that
+# directory; leaving the samples in place means both are parsed and the
+# packaged sip.conf/extensions.conf silently contradict the web UI. Move them
+# aside once, keeping them readable for reference.
+if [[ ! -d /etc/asterisk.fedora-defaults ]]; then
+  log "moving Fedora's sample Asterisk config to /etc/asterisk.fedora-defaults"
+  mv /etc/asterisk /etc/asterisk.fedora-defaults
+  mkdir -p /etc/asterisk
+  chown asterisk:asterisk /etc/asterisk
+  cat > /etc/asterisk/asterisk.conf <<-'CONF'
+	; Minimal bootstrap config. FreePBX rewrites everything else in this
+	; directory; the packaged samples are in /etc/asterisk.fedora-defaults.
+	[directories](!)
+	astetcdir => /etc/asterisk
+	astmoddir => /usr/lib64/asterisk/modules
+	astvarlibdir => /var/lib/asterisk
+	astdbdir => /var/lib/asterisk
+	astkeydir => /var/lib/asterisk
+	astdatadir => /var/lib/asterisk
+	astagidir => /var/lib/asterisk/agi-bin
+	astspooldir => /var/spool/asterisk
+	astrundir => /var/run/asterisk
+	astlogdir => /var/log/asterisk
+	astsbindir => /usr/sbin
+
+	[options]
+	runuser = asterisk
+	rungroup = asterisk
+	CONF
+  chown asterisk:asterisk /etc/asterisk/asterisk.conf
+fi
+
+install -d -o asterisk -g asterisk /var/run/asterisk /var/log/asterisk "$WEBROOT" "$SRC_DIR"
+
+# The FreePBX installer talks to a *running* Asterisk. asterisk.service is
+# masked by design (config/purposes/pbx.conf) because fwconsole owns the
+# process, so start it directly for the install.
+if ! pgrep -x asterisk >/dev/null 2>&1; then
+  log "starting Asterisk for the installation"
+  /usr/sbin/asterisk -U asterisk -G asterisk
+  sleep 5
+fi
+
+# --- FreePBX --------------------------------------------------------------
+export PATH="${PHP_BIN_DIR}:${PATH}"
+
+if [[ ! -x "$FWCONSOLE" ]]; then
+  log "downloading FreePBX"
+  curl -fsSL --retry 3 -o "${SRC_DIR}/freepbx.tgz" "$FREEPBX_TARBALL"
+  tar -xzf "${SRC_DIR}/freepbx.tgz" -C "$SRC_DIR"
+  rm -f "${SRC_DIR}/freepbx.tgz"
+
+  log "installing FreePBX (this takes several minutes)"
+  ( cd "${SRC_DIR}/freepbx" && ./install -n \
+      --dbuser="$DB_USER" --dbpass="$DB_PASS" \
+      --webroot="$WEBROOT" --ampsbin="$SBIN_DIR" )
+fi
+
+log "installing bundled modules and reloading"
+"$FWCONSOLE" ma installall
+"$FWCONSOLE" reload
+"$FWCONSOLE" chown
+
+# --- SELinux --------------------------------------------------------------
+# Apache serves and WRITES the FreePBX tree (module installs, backups), and
+# reaches MariaDB and the Asterisk manager port. Both need saying explicitly
+# under the targeted policy.
+if [[ -d /sys/fs/selinux ]] && command -v semanage >/dev/null 2>&1; then
+  log "applying SELinux file context and booleans"
+  semanage fcontext -a -t httpd_sys_rw_content_t "${WEBROOT}(/.*)?" 2>/dev/null || true
+  restorecon -R "$WEBROOT" || true
+  setsebool -P httpd_can_network_connect on || true
+  setsebool -P httpd_can_network_connect_db on || true
+  log "note: SELinux stays ENFORCING. If the web UI misbehaves, check"
+  log "      'ausearch -m avc -ts recent' before changing anything else."
+fi
+
+# --- Firewall -------------------------------------------------------------
+# The web UI and SIP signalling/media. The RTP range is a custom service
+# shipped with the image (/usr/lib/firewalld/services/asterisk-rtp.xml).
+if systemctl is-active --quiet firewalld; then
+  log "opening http, https, sip and the RTP range in the default zone"
+  for svc in http https sip asterisk-rtp; do
+    firewall-cmd --permanent --add-service="$svc" >/dev/null || true
+  done
+  firewall-cmd --reload >/dev/null || true
+  log "note: TFTP for phone provisioning is NOT opened. If you use it:"
+  log "      firewall-cmd --permanent --add-service=tftp && firewall-cmd --reload"
+fi
+
+# --- Hand the process over to FreePBX -------------------------------------
+log "enabling freepbx.service"
+systemctl enable freepbx.service
+systemctl restart php82-php-fpm.service httpd.service
+"$FWCONSOLE" restart
+
+# --- Stamp ----------------------------------------------------------------
+mkdir -p "$STAMP_DIR"
+touch "$STAMP"
+log "done — web UI on http://<this-host>/ (first visit creates the admin account)"

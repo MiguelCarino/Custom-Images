@@ -1,6 +1,6 @@
 # Project Scope
 
-Status: **decision record** — rev 4, 2026-07-27
+Status: **decision record** — rev 5, 2026-08-06
 Backed by repo-verified research in `research/` (10 manifests, 1075 package names checked
 against live Fedora 44 repositories, 2 adversarial audits).
 
@@ -9,6 +9,13 @@ binding spec. Superseded decisions are kept, struck through or marked **SUPERSED
 the reasoning survives the change. Rev 4 reconciles the document with two decisions taken
 after rev 3: **GNOME was dropped** (§5, §6) and **published images were renamed**
 `carino-<purpose>` (§6).
+
+**Rev 5 adds a seventh purpose, `pbx`, and with it a second branch of the layer tree**
+(§3, §4.2, §5, §6.1). It is the first *appliance* rather than a workstation: it pins
+`DE="headless"`, a session layer whose parent is `base`, so it inherits no desktop at
+all. Two things that read as settled were revisited to allow it — the assumption that
+every purpose sits on `desktop-common`, and the decision in §4 that server purposes leave
+for Carino Setup. Both are addressed rather than quietly dropped, in §4.2.
 
 ---
 
@@ -43,8 +50,8 @@ Two **separate** projects.
 |---|---|---|
 | **Job** | Produce Fedora ISOs and OS images | Configure an already-installed system |
 | **Distros** | Fedora 44 | Fedora, RHEL family, Debian, Ubuntu, Arch, openSUSE |
-| **Purposes** | 6 (those needing system integration) | ~19 (any package set) |
-| **DEs** | 1 layer (COSMIC + Hyprland) | 13 |
+| **Purposes** | 7 (those needing system integration) | ~19 (any package set) |
+| **DEs** | 1 desktop layer (COSMIC + Hyprland) + a headless layer | 13 |
 | **Delivery** | Registry + ISO downloads | `bash <(curl -s https://setup.carino.systems/setup.sh)` |
 
 Catalogs are deliberately **not** in parity. Anything that is "just a package list"
@@ -63,13 +70,24 @@ manifest so far; it reports four missing viewers (§4).
 
 ```
 base
-  └─ desktop-common          DE-agnostic infrastructure
-       └─ de/cosmic-hyprland  the only DE layer since rev 4 (§5)
-            └─ purpose/<name>
+  ├─ desktop-common          DE-agnostic infrastructure
+  │    └─ de/cosmic-hyprland  the only DESKTOP layer since rev 4 (§5)
+  │         └─ purpose/<name>
+  └─ de/headless             no desktop at all — console + SSH (rev 5)
+       └─ purpose/<name>
 ```
 
-`DE` remains a required field on every purpose even though there is only one value, so
-adding a second desktop stays a one-line change per purpose rather than a refactor.
+`DE` remains a required field on every purpose, and rev 5 showed it was the right shape:
+adding an appliance branch needed no code change at all. A purpose's parent has always
+been derived from its pin, and a layer's parent has always come from its own conf, so
+`de/headless` declaring `PARENT="base"` is enough to keep PipeWire, portals, Flatpak,
+fonts, Mesa and a browser off the appliance images. The field's meaning is unchanged —
+"which session does this purpose run in" — and for an appliance the answer is the console.
+
+One thing did move: **`initial-setup` was relocated from `desktop-common` to `base`**. It
+is a console text UI for creating the first account, with nothing desktop about it, and
+the headless branch does not inherit `desktop-common` — left where it was, an ISO install
+of `carino-pbx` would have come up with no account and no greeter to make one.
 
 Supporting fragments, added on the layering audit's recommendation (`research/audit-layering.md` §2)
 because dumping shared content into `desktop-common` puts compilers and packet sniffers
@@ -90,7 +108,7 @@ everywhere (§7) — enforcing it is the core refactor.
 
 ## 4. Purposes
 
-**Six.** `General` is retained by decision — the everyday image with the recommended
+**Seven since rev 5** (six workstations and one appliance, §4.2). `General` is retained by decision — the everyday image with the recommended
 all-purpose apps (mpv, LibreOffice, …). The §7.1 findings still apply as *cleanup work*,
 though the resolution changed: rev 3 planned to fix General's three-way DE contamination by
 pinning it to GNOME and moving GNOME-native apps into `de/gnome`. With GNOME gone (§5) that
@@ -111,10 +129,12 @@ ships no equivalent archiver, calculator or scanning front end. Recorded in
 | **Music** | Realtime limits, rtkit, `threadirqs`, low-latency PipeWire quantum, USB-audio udev | manifest ready |
 | **Security & Forensics** | `setcap` dumpcap, forensic write-block udev, automount disable | manifest ready |
 | **LLMs** | Ollama service + model storage, GPU device groups, ROCm/CUDA, VRAM tuning | manifest ready |
+| **PBX** *(rev 5)* | Which PHP serves the UI, who owns the web root, who supervises Asterisk, where `fwconsole` may live on a read-only `/usr` | ✅ built and verified; **first-boot install untested** (§4.2) |
 
 Dropped along the way, all to Carino Setup: Coding, Corporate, Astronomy, Comp-Neuro,
 Design, Scientific, Robotics (ROS 2 targets Ubuntu — better as a Distrobox guest),
-Offline, PACS server.
+Offline, ~~PACS server~~ (see §4.2 — the *reason* it went still stands, but "it is a
+server" was never the reason).
 
 ### 4.1 Imagenology ships a toolchain but nothing to look at a study with
 
@@ -136,16 +156,58 @@ it.
 **PACS server: resolved by archiving.** The full pre-restructure system — pacs-server
 included — lives in the baseline git commit and under `legacy/`.
 
+### 4.2 PBX — the first appliance (rev 5)
+
+`carino-pbx` is Asterisk with the FreePBX 17 web UI, MariaDB, Apache and PHP 8.2. Adding
+it crossed two lines this document had drawn, so both are argued here rather than left
+for a reader to notice.
+
+**"Anything that is just a package list belongs in Carino Setup" (§2) — it holds.** A PBX
+is the opposite of a package list. Four decisions have to be made before first boot and
+cannot be made afterwards without taking the phone system down:
+
+| Decision | Why an image and not a script |
+|---|---|
+| Which PHP serves the UI | FreePBX 17 requires **8.2** and upstream says 8.3+ must not be installed. Fedora 44 ships **8.5**. The runtime comes from Remi's SCL packages under `/opt/remi/php82`, parallel to Fedora's, and Fedora's PHP is deliberately not installed at all |
+| Who owns the web root | Apache runs as `asterisk:asterisk`, matching `fwconsole chown`. As `apache:apache` FreePBX cannot install its own modules |
+| Who supervises Asterisk | `fwconsole`. `asterisk.service` is **masked**, because two supervisors racing for `asterisk.ctl` is the classic failure of FreePBX on a distro Asterisk package |
+| Where `fwconsole` lives | FreePBX installs it to `/usr/sbin`, which is read-only on bootc. `--ampsbin=/usr/local/sbin` puts it on the `/var/usrlocal` symlink instead |
+
+**"PACS server was dropped" (§4) is not a precedent against it.** That decision archived a
+half-built subsystem of the pre-restructure tree; it was about *that code*, not about a
+rule that servers are out of scope. Nothing in §1 or §2 says the project only makes
+workstations, and the boundary that does exist — system integration vs package lists —
+puts a PBX firmly on this side. What the PACS episode does contribute is the shape of the
+risk: server purposes are where half-finished work hides longest, because nobody notices a
+feature that was never wired up until the day it is needed.
+
+**What is verified and what is not.** Verified 2026-08-06 per §7.2: every package name
+against live Fedora 44, `remi-release-44` and `php82-php-*` 8.2.33 against Remi's F44
+repo, the FreePBX tarball URL, and a full `./build.sh build pbx` including
+`bootc container lint`, `httpd -t` and `php-fpm -t` inside the built image.
+**Not verified: the first-boot installation itself** — `/usr/libexec/freepbx-setup` needs
+a booted machine, and it has not had one. It is left as a known-unverified step rather
+than described as working; `research/manifest-pbx.json` names the three places it is most
+likely to break first.
+
+**FreePBX escapes the transactional-update promise, and that is stated rather than
+hidden.** The OS and the runtime under it upgrade with `bootc upgrade` and roll back with
+`bootc rollback`. FreePBX itself lives in `/var`, updates through `fwconsole ma
+upgradeall`, and migrates a database schema that no image rollback will undo. Backups come
+from FreePBX's own backup module, not from the image.
+
 ---
 
 ## 5. Desktop environments
 
-**One layer**, Wayland-only — the project has no X11 session, which is acceptable only
-because imagenology resolved to hardware-LUT calibration (§8.1).
+**One desktop layer**, Wayland-only — the project has no X11 session, which is acceptable
+only because imagenology resolved to hardware-LUT calibration (§8.1). Rev 5 adds a second
+layer under `config/layers/de/` that is not a desktop at all.
 
 | Layer | Notes |
 |---|---|
 | `de/cosmic-hyprland` | COSMIC + Hyprland co-installed; `cosmic-greeter` enumerates both sessions — **verified working**, the one end-to-end-confirmed claim in the manifest set |
+| `de/headless` *(rev 5)* | No desktop: `openssh-server`, `firewalld`, `chrony`, `cronie`, `logrotate`, `tuned`, `policycoreutils-python-utils`, `bash-completion`, `tmux`. `PARENT="base"`, so it skips `desktop-common` entirely — and with it the first-boot Flatpak mechanism, which purposes on this branch must do without. Built for `pbx`, but it is the branch any future appliance builds on |
 | ~~`de/gnome`~~ | **SUPERSEDED (rev 4) — removed.** Mature, and the only DE whose dconf automount lock works. Its layer conf was deleted; no purpose pins to it. |
 
 **Why GNOME went.** Every desktop shipped is a desktop that has to be verified against
@@ -187,7 +249,9 @@ The layering audit's conclusion: *"expect 4–6 real image tags, not 18."* Purpo
 hard DE requirements, so the cross product is fiction.
 
 **SUPERSEDED (rev 4).** The matrix collapsed to a single column when GNOME was removed
-(§5). Six purposes, one DE, six images. The rev 3 analysis below is retained because three
+(§5). Six purposes, one DE, six images — and since rev 5 a seventh purpose in a second
+column that is not a desktop (§4.2), which is still one pin each and still no cross
+product. The rev 3 analysis below is retained because three
 of its rows recorded *why* a purpose needed GNOME specifically, and those costs did not
 disappear when the column did — they are now carried, unmitigated, by the images that
 inherited them. §5 records what each one cost.
@@ -202,10 +266,11 @@ inherited them. §5 records what each one cost.
 | **Gaming** | cosmic-hyprland | tearing control + bakeable per-output VRR |
 | **Music** | cosmic-hyprland | no file indexer; lowest overhead |
 | **LLMs** | cosmic-hyprland | leanest session; least VRAM held by the desktop |
+| **PBX** *(rev 5)* | headless | an appliance administered over the network: the interfaces are the web UI and SSH, so a desktop would only add attack surface, RAM and packages to patch |
 
 Published image names follow **`carino-<purpose>`**: `carino-general`,
-`carino-imagenology`, `carino-security`, `carino-gaming`, `carino-music`, `carino-llms`.
-Intermediate layers are `carino-layer-<slug>`.
+`carino-imagenology`, `carino-security`, `carino-gaming`, `carino-music`, `carino-llms`,
+`carino-pbx`. Intermediate layers are `carino-layer-<slug>`.
 
 **Why the mark leads and Fedora does not.** `fedora-<purpose>-<de>` was the rev 3 scheme.
 The DE suffix stopped carrying information the moment every purpose shared one session, and
@@ -215,7 +280,7 @@ third-party derivative in the ecosystem uses. Upstream credit moved to where mac
 read it: `org.opencontainers.image.base.name` on every generated image, plus the visible
 "Based on Fedora 44" attribution on the site.
 
-Six images, one backend. With the osbuild backend (§9) it would be **12 image tags total**,
+Seven images, one backend. With the osbuild backend (§9) it would be **14 image tags total**,
 though that backend produces no artifacts today (§9b).
 
 <details>
@@ -399,6 +464,13 @@ surface minimal. Revisit in the package phase if session scoping consistency mat
    ref shape and the site's `RELEASES` map; nothing is published yet.
 5. **Image signing.** If people `bootc switch` to the registry, unsigned images are a
    supply-chain question. Unaddressed.
+6. **Boot `carino-pbx` and run the first-boot install** (rev 5, §4.2). The image builds
+   and everything in it is verified, but `/usr/libexec/freepbx-setup` has never executed
+   on a real machine. Until it has, the FreePBX half of that image is a claim, not a
+   result — and it is the half a user meets first.
+7. **Pin the Remi repository** (rev 5). `REPO_RPMS` fixes no version, so a rebuild takes
+   whatever `php82-php-*` is current that day. Same class of problem as the Hyprland COPR
+   pin (§8.1a), same place to solve it: the package phase.
 
 ---
 

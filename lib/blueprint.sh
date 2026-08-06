@@ -8,7 +8,9 @@
 # single blueprint TOML for the traditional-Workstation osbuild backend.
 # COPRs cannot be enabled from a blueprint, so packages coming from layers
 # that declare COPRS are flagged in a header comment as unresolved — the COPR
-# repo must be configured host-side for the depsolve to succeed. Flatpaks are
+# repo must be configured host-side for the depsolve to succeed. REPO_RPMS
+# (Remi, RPM Fusion …) are flagged the same way and for the same reason.
+# Flatpaks are
 # a first-boot mechanism (§8) and are not representable in a blueprint; they
 # are noted in the header for transparency.
 #
@@ -78,6 +80,14 @@ emit_blueprint() {
       copr_notes+=("  affected packages: ${PACKAGES:-<none>}")
     fi
 
+    # Repo-definition RPMs (Remi, RPM Fusion …) are the same problem as a COPR:
+    # a blueprint cannot install one, so the repo must exist host-side before
+    # the depsolve. Reported through the same channel.
+    if [[ -n "$REPO_RPMS" ]]; then
+      copr_notes+=("layer ${layer} installs repo-definition RPM(s): ${REPO_RPMS}")
+      copr_notes+=("  affected packages: ${PACKAGES:-<none>}")
+    fi
+
     # Static files and POST_SCRIPT: Containerfile-only mechanisms (§7). Record
     # what is being left behind, and remember any systemd units the tree ships
     # so the SERVICES_ENABLE pass below can tell "enable a stock unit" from
@@ -143,8 +153,9 @@ emit_blueprint() {
     printf '# Chain: %s\n' "$chain"
     if [[ ${#copr_notes[@]} -gt 0 ]]; then
       printf '#\n'
-      printf '# UNRESOLVED — COPR-sourced packages. Blueprints cannot enable COPRs;\n'
-      printf '# configure the repo host-side or these packages will fail to depsolve:\n'
+      printf '# UNRESOLVED — packages from repositories a blueprint cannot add for\n'
+      printf '# itself (COPRs, repo-definition RPMs). Configure the repo host-side or\n'
+      printf '# these packages will fail to depsolve:\n'
       local note
       for note in "${copr_notes[@]}"; do
         printf '#   %s\n' "$note"
@@ -210,7 +221,7 @@ emit_blueprint() {
   # incomplete copy of the image rather than an equivalent one.
   if [[ ${#copr_notes[@]} -gt 0 || ${#flatpaks[@]} -gt 0 || ${#file_notes[@]} -gt 0 || ${#dropped_enabled[@]} -gt 0 ]]; then
     warn "${img}: blueprint is a LOSSY export of the image — see the header of ${bp#"${REPO_ROOT}"/}"
-    [[ ${#copr_notes[@]}      -gt 0 ]] && warn "  COPR-sourced packages need the repo configured host-side or the depsolve fails"
+    [[ ${#copr_notes[@]}      -gt 0 ]] && warn "  COPR / third-party-repo packages need the repo configured host-side or the depsolve fails"
     [[ ${#flatpaks[@]}        -gt 0 ]] && warn "  ${#flatpaks[@]} flatpak(s) dropped (first-boot mechanism, §8)"
     [[ ${#file_notes[@]}      -gt 0 ]] && warn "  static files / POST_SCRIPT dropped — the classic image will not contain them"
     [[ ${#dropped_enabled[@]} -gt 0 ]] && warn "  ${#dropped_enabled[@]} service enable(s) omitted so the build does not fail on a missing unit"

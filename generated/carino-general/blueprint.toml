@@ -3,10 +3,14 @@
 # Image: carino-general
 # Chain: base desktop-common de/cosmic-hyprland purpose:general
 #
-# UNRESOLVED — COPR-sourced packages. Blueprints cannot enable COPRs;
-# configure the repo host-side or these packages will fail to depsolve:
+# UNRESOLVED — packages from repositories a blueprint cannot add for
+# itself (COPRs, repo-definition RPMs). Configure the repo host-side or
+# these packages will fail to depsolve:
 #   layer de/cosmic-hyprland enables COPR(s): lionheartp/Hyprland
-#     affected packages: cosmic-session cosmic-comp cosmic-greeter greetd cosmic-settings cosmic-panel cosmic-applets cosmic-launcher cosmic-files cosmic-term cosmic-icon-theme xdg-desktop-portal-cosmic hyprland xdg-desktop-portal-hyprland swaylock swayidle swaybg waybar fuzzel mako grim slurp foot mate-polkit gnome-keyring xorg-x11-server-Xwayland qt6-qtwayland
+#     affected packages: cosmic-session cosmic-comp cosmic-greeter greetd cosmic-settings cosmic-panel cosmic-applets cosmic-launcher cosmic-files cosmic-term cosmic-icon-theme xdg-desktop-portal-cosmic hyprland xdg-desktop-portal-hyprland swaylock swayidle swaybg waybar fuzzel mako grim slurp foot mate-polkit gnome-keyring xorg-x11-server-Xwayland qt6-qtwayland cosmic-initial-setup
+#
+# NOTE: flatpaks are installed on first boot (§8), not representable here:
+#   org.mozilla.firefox org.signal.Signal io.missioncenter.MissionCenter com.calibre_ebook.calibre com.github.tchx84.Flatseal
 #
 # DROPPED — static files and post-install scripts. The Containerfile path
 # mirrors these into the image; a blueprint has no equivalent, so the
@@ -48,6 +52,9 @@ name = "smartmontools"
 
 [[packages]]
 name = "lsof"
+
+[[packages]]
+name = "initial-setup"
 
 [[packages]]
 name = "pipewire"
@@ -176,7 +183,7 @@ name = "xorg-x11-server-Xwayland"
 name = "qt6-qtwayland"
 
 [[packages]]
-name = "firefox"
+name = "cosmic-initial-setup"
 
 [[packages]]
 name = "thunderbird"
@@ -203,4 +210,4 @@ name = "transmission-gtk"
 name = "yt-dlp"
 
 [customizations.services]
-enabled = ["cosmic-greeter.service"]
+enabled = ["initial-setup.service", "cosmic-greeter.service"]

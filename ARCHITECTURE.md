@@ -11,16 +11,21 @@ Every image is a **chain of bootc layers**, each layer an OCI image built `FROM`
 parent:
 
 ```
-quay.io/fedora/fedora-bootc:44          (upstream)
-  └─ base                               hardening, common CLI tools
-       └─ desktop-common                DE-agnostic desktop infrastructure
-            └─ de/cosmic-hyprland       COSMIC + Hyprland sessions
-                 └─ <purpose>           the published image
+quay.io/fedora/fedora-bootc:44               (upstream)
+  └─ base                                    hardening, common CLI tools, first-boot account
+       ├─ desktop-common                     DE-agnostic desktop infrastructure
+       │    └─ de/cosmic-hyprland            COSMIC + Hyprland sessions
+       │         └─ <purpose>                the published image
+       └─ de/headless                        console + SSH, no desktop at all
+            └─ <purpose>                     the published image
 ```
 
 Each **purpose is pinned to exactly one DE** (a hard requirement — the pin encodes why
-the combination works; unpinned combinations are unsupported). The published image name
-is:
+the combination works; unpinned combinations are unsupported). `headless` is a value of
+that field like any other: the pin still answers "which session does this purpose run
+in", and for an appliance the answer is "none — the console". A headless layer parents
+directly to `base`, so nothing on that branch inherits PipeWire, portals, Flatpak, fonts
+or Mesa. The published image name is:
 
 ```
 carino-<purpose>              e.g.  carino-gaming
@@ -39,10 +44,18 @@ infrastructure, not published artifacts.
 | `carino-gaming` | gaming | cosmic-hyprland | tearing control + bakeable per-output VRR |
 | `carino-music` | music | cosmic-hyprland | no file indexer; lowest overhead |
 | `carino-llms` | llms | cosmic-hyprland | leanest session; least VRAM held by the desktop |
+| `carino-pbx` | pbx | headless | an appliance administered over the network: the interfaces are the web UI and SSH, so a desktop would only add attack surface, RAM and packages to patch |
 
-Only COSMIC + Hyprland is shipped: both sessions come from one layer and one greeter, so
-the integration work is verified once and inherited by all six images. `DE` remains a
-required field so adding a second desktop later stays a one-line change per purpose.
+Only COSMIC + Hyprland is shipped as a desktop: both sessions come from one layer and one
+greeter, so the integration work is verified once and inherited by all six desktop
+images. `DE` remains a required field so adding a second desktop later stays a one-line
+change per purpose.
+
+`carino-pbx` is the exception that the field was already able to express. It is an
+appliance, not a workstation, and it pins `DE="headless"` — a layer under
+`config/layers/de/` whose `PARENT` is `base` rather than `desktop-common`. Nothing in the
+build system needed changing for it: a purpose's parent has always been derived from its
+pin, and a layer's parent has always come from its own conf.
 
 The catalog is **derived** by scanning `config/purposes/*.conf` — there is no separate
 catalog file to fall out of sync.
@@ -63,18 +76,20 @@ catalog file to fall out of sync.
 │   │   ├── base.conf
 │   │   ├── desktop-common.conf
 │   │   └── de/
-│   │       └── cosmic-hyprland.conf
+│   │       ├── cosmic-hyprland.conf
+│   │       └── headless.conf   # the "no desktop" session; its PARENT is base
 │   └── purposes/
 │       ├── general.conf        # each declares DE="<pin>"
 │       ├── imagenology.conf
 │       ├── security.conf
 │       ├── gaming.conf
 │       ├── music.conf
-│       └── llms.conf
+│       ├── llms.conf
+│       └── pbx.conf            # DE="headless"
 ├── files/                      # static files COPYed into layers, mirrored by layer id
 │   ├── base/                   #   layer dirs are created on demand; only desktop-common
-│   │                           #   exists today. A dir maps to / — base/etc/… → /etc/…
-│   ├── desktop-common/
+│   │                           #   and purposes/pbx exist today. A dir maps to / —
+│   ├── desktop-common/         #   base/etc/… → /etc/…
 │   ├── de/cosmic-hyprland/
 │   └── purposes/<purpose>/
 ├── generated/                  # emitted Containerfiles + blueprints (gitignored)
@@ -101,6 +116,9 @@ PARENT="base"                   # required; layer id, or "" for the root layer
                                 # (root layer builds FROM ${BASE_IMAGE})
 PACKAGES="pkg1 pkg2 @group"     # dnf install set; @groups allowed
 COPRS="owner/project ..."       # COPRs enabled before install (left enabled)
+REPO_RPMS="https://…rpm ..."    # repo-definition RPMs (Remi, RPM Fusion) installed
+                                #   before COPRs and PACKAGES, for third-party repos
+                                #   that are not COPRs; may use ${FEDORA_VERSION}
 SERVICES_ENABLE="a.service ..." # systemctl enable
 SERVICES_MASK="b.service ..."   # systemctl mask (how purposes silence inherited daemons)
 KARGS="karg1 karg2"             # kernel args (see §7)
@@ -115,6 +133,7 @@ Same fields, plus:
 ```bash
 PURPOSE="gaming"                # required; must match filename
 DE="cosmic-hyprland"            # required; must match a config/layers/de/<DE>.conf
+                                #   ("headless" is such a layer — see §2)
 PIN_REASON="one line"           # required; why this DE
 ```
 
@@ -140,7 +159,7 @@ Behavior requirements:
 - `set -euo pipefail` everywhere; helpful errors (unknown image lists valid ones).
 - `build all` builds each layer **once** in topological order (base → desktop-common →
   each needed DE → purposes); shared layers are never rebuilt per-purpose within a run.
-- `--push` pushes only the six published images, not `carino-layer-*` intermediates.
+- `--push` pushes only the published images, not `carino-layer-*` intermediates.
 - `iso` runs bootc-image-builder via `sudo podman run --privileged --rm
   -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage
   quay.io/centos-bootc/bootc-image-builder:latest --type iso --rootfs <ROOTFS>
@@ -199,6 +218,14 @@ network guarantees). Instead:
   `flatpak-setup.service` + script: on first boot with network, add Flathub and install
   every id under `flatpaks.d/`, then stamp `/var/lib/fedora-images/.flatpaks-done`.
 
+The installer lives in `desktop-common`, so **the headless branch has no Flatpak
+mechanism at all** — a purpose pinned to `headless` must deliver everything as RPMs or
+install it itself. `carino-pbx` does the latter for FreePBX, with a first-boot oneshot of
+the same shape (`freepbx-setup.service`) and for the same underlying reason: on bootc the
+image's `/var` is copied into the machine once at install and never refreshed by
+`bootc upgrade`, so anything that lives in `/var` cannot be baked at build time and still
+be updatable.
+
 ## 9. Generated Containerfile shape
 
 One per layer, `generated/<layer-or-image-name>/Containerfile`:
@@ -207,6 +234,7 @@ One per layer, `generated/<layer-or-image-name>/Containerfile`:
 # header comment: generated-by, layer, chain position, regen command
 FROM <parent ref>
 LABEL org.opencontainers.image.title=... description=...
+# Repo RPMs (if any):    RUN dnf -y install https://…/x-release.rpm
 # COPRs (if any):        RUN dnf -y copr enable ...
 # Packages (if any):     RUN dnf -y install ... && dnf clean all
 # Files (if files dir):  COPY files-root/ /      (build context trick, see below)
@@ -237,6 +265,7 @@ thinner blueprint is never mistaken for a clean generate:
 | Mechanism | Blueprint behaviour |
 |---|---|
 | `COPRS` | listed as unresolved; the repo must be configured host-side or the depsolve fails |
+| `REPO_RPMS` | same as `COPRS` — a blueprint cannot install a repo-definition RPM either |
 | `FLATPAKS` | dropped (first-boot mechanism, §8) |
 | `FILES_DIR` static files | dropped — the classic image will not contain them |
 | `POST_SCRIPT` | dropped |
@@ -258,6 +287,13 @@ examples are wired now to prove the mechanisms end to end:
 
 - `gaming`: `KARGS="split_lock_detect=off"`
 - `music`: `KARGS="threadirqs"` and `SERVICES_MASK="power-profiles-daemon.service"`
+
+**`pbx` is exempt, deliberately.** It ships ~40 packages, a `REPO_RPMS` line and six
+static files. The starter-set rule exists because a workstation's package list is a
+starting point its user builds on, so shipping a guess costs nothing to correct. An
+appliance has no such user: its package list *is* the product, and a PBX missing its
+database or its PHP runtime is not a smaller PBX, it is a broken one. Its set is fully
+researched and verified rather than provisional — `research/manifest-pbx.json`.
 
 ## 11b. Purpose drift check (against Carino Setup)
 
@@ -287,6 +323,10 @@ Setup lives outside this repo; point `CARINO_SETUP` at it, or leave it beside th
 as `../SimpleSetup`. If it is not found the check **skips loudly and exits 2** — a comparison
 that could not run must never read as a pass. Default output is a report (exit 0); `--strict`
 exits non-zero, which is how it should be wired once the package phase in §11 lands.
+
+`pbx` will never have one: the check compares this project against Carino Setup, and
+Setup has no PBX profile — a purpose that exists on one side only has nothing to drift
+from. That is a fact about the boundary in SCOPE.md §2, not a gap to close.
 
 Only `imagenology` has a manifest today. Weasis ships as a first-boot flatpak (§8), so its
 row is clean; the check still reports three missing viewers (Aliza MS, InVesalius,

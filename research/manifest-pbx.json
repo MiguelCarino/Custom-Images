@@ -1,0 +1,129 @@
+{
+  "key": "pbx",
+  "verified": "2026-08-06, against live Fedora 44 (fedora:44 container, dnf repoquery) and Remi's Fedora 44 repository. Every package name, the Remi release RPM URL and the FreePBX tarball URL were checked, per the SCOPE.md §7.2 process rule that external identifiers get verified rather than assumed.",
+  "summary": "A telephony appliance: Asterisk as the call engine with FreePBX 17 as its web administration UI, plus the LAMP-shaped stack FreePBX is built on (MariaDB, Apache, PHP 8.2) and the media helpers it shells out to (sox, mpg123, lame). It is the first purpose in the catalog that is a server rather than a workstation, and the first pinned to the headless session layer, so it inherits no desktop, no PipeWire, no portals, no Flatpak. The parts that justify an image rather than a package list are the ones that have to be decided before first boot: which PHP runtime serves the UI (8.2 and only 8.2, from a parallel install that cannot collide with Fedora's 8.5), who owns the web root (the Asterisk user, or FreePBX cannot write its own modules), who supervises Asterisk (fwconsole, with systemd's unit masked so the two can never both try), and where fwconsole may live at all on a system whose /usr is read-only.",
+  "packages": [
+    { "name": "asterisk", "why": "The call engine. Fedora 44 carries 18.26.4 — verified. FreePBX 17 framework lists Asterisk 18 (floor 18.24.1) as supported, so the distro package is a supported pairing, not a compromise. Using it rather than a source build is what keeps `bootc upgrade` a real security path for the PBX." },
+    { "name": "asterisk-pjsip", "why": "res_pjsip / chan_pjsip — the channel driver FreePBX 17 defaults to. chan_sip is EOL upstream and deliberately not installed." },
+    { "name": "asterisk-odbc", "why": "res_odbc + cdr_adaptive_odbc. FreePBX writes call detail records to the asteriskcdrdb database over ODBC; without this the CDR and CEL reports in the UI are permanently empty." },
+    { "name": "asterisk-voicemail", "why": "app_voicemail. Voicemail is a default-on FreePBX feature; its absence surfaces as dialplan errors rather than a missing menu." },
+    { "name": "asterisk-curl", "why": "func_curl / res_curl — used by several stock FreePBX modules for HTTP lookups." },
+    { "name": "asterisk-fax", "why": "res_fax / app_fax, behind FreePBX's fax handling." },
+    { "name": "asterisk-sounds-core-en-ulaw", "why": "The prompt set. ulaw is the format Asterisk plays without transcoding on a G.711 call, which is the common case." },
+    { "name": "asterisk-sounds-core-en-g722", "why": "Wideband prompts, so HD-capable phones do not drop to narrowband just to hear a system message." },
+    { "name": "mariadb-server", "why": "FreePBX keeps its entire configuration in MySQL — the asterisk and asteriskcdrdb databases. Not optional and not replaceable with SQLite." },
+    { "name": "mariadb", "why": "The client. freepbx-setup uses mysql/mysqladmin over the unix socket to create the databases and the freepbxuser account on first boot." },
+    { "name": "unixODBC", "why": "The ODBC driver manager Asterisk's res_odbc binds to." },
+    { "name": "mysql-connector-odbc", "why": "The actual MySQL ODBC driver behind the MySQL-asteriskcdrdb DSN." },
+    { "name": "httpd", "why": "Serves the FreePBX UI. Chosen over nginx because FreePBX ships .htaccess files and its documentation, module expectations and community answers all assume Apache; nginx would mean re-deriving those rules for no benefit." },
+    { "name": "mod_ssl", "why": "So TLS is a configuration change on the appliance rather than a package install on an immutable OS. Note it is not configured at build: httpd-init.service generates the self-signed localhost certificate on first boot." },
+    { "name": "php82-php-cli", "why": "PHP 8.2 CLI from Remi's SCL packages (/opt/remi/php82). fwconsole and the FreePBX installer run on it." },
+    { "name": "php82-php-fpm", "why": "The FastCGI process manager Apache proxies .php to, over the dedicated [freepbx] pool." },
+    { "name": "php82-php-mysqlnd", "why": "MySQL driver — FreePBX's entire configuration lives in the database." },
+    { "name": "php82-php-mbstring", "why": "Required by the FreePBX framework." },
+    { "name": "php82-php-xml", "why": "Module XML manifests and the module repository feed are parsed with it." },
+    { "name": "php82-php-gd", "why": "Image handling in the UI (QR codes, graphs)." },
+    { "name": "php82-php-intl", "why": "Locale handling in the framework." },
+    { "name": "php82-php-bcmath", "why": "Arbitrary-precision arithmetic used by framework and module code." },
+    { "name": "php82-php-process", "why": "posix/pcntl — fwconsole forks and signals processes." },
+    { "name": "php82-php-sodium", "why": "Signature verification of downloaded modules; a module install fails without it." },
+    { "name": "php82-php-pecl-zip", "why": "Module tarball/zip handling. In Fedora the zip extension is a separate package (php-pecl-zip), not part of php-common — the same is true of the Remi SCL build." },
+    { "name": "php82-php-opcache", "why": "The FreePBX UI is slow enough to feel broken without a bytecode cache." },
+    { "name": "php82-php-pear", "why": "Pulls the PEAR runtime some legacy FreePBX modules still expect." },
+    { "name": "php82-php-ldap", "why": "For the directory-backed user manager, which is a first-class FreePBX feature rather than an add-on." },
+    { "name": "nodejs22", "why": "FreePBX 17 runs Node for the UCP and its node-based services. Fedora 44 has no unversioned `nodejs` package — verified: /usr/bin/node is provided only by nodejs20-bin, nodejs22-bin and nodejs24-bin. 22 is the current LTS; 20 (what upstream tests on) is already past its own EOL, and 24 is further from what FreePBX exercises." },
+    { "name": "nodejs22-npm", "why": "FreePBX module installs run npm. Note it is a separate package from nodejs22 here — `npm` alone does not exist in Fedora 44." },
+    { "name": "sox", "why": "Asterisk shells out to sox for recording conversion; system-recording uploads in the UI depend on it." },
+    { "name": "mpg123", "why": "MP3 playback for music on hold." },
+    { "name": "lame", "why": "MP3 encoding for recordings and voicemail-to-email attachments." },
+    { "name": "fail2ban", "why": "FreePBX's own intrusion-detection feature is a fail2ban front end. A PBX reachable from the internet is scanned for weak SIP registrations within hours, and a success is billed to the owner as call minutes." },
+    { "name": "fail2ban-firewalld", "why": "Makes fail2ban act through firewalld rather than writing iptables rules underneath it." },
+    { "name": "sngrep", "why": "The one tool that turns 'calls fail sometimes' into an answer — a terminal SIP flow viewer. On a headless appliance there is nothing else to look at." },
+    { "name": "tcpdump", "why": "Capture for the cases sngrep cannot explain (RTP one-way audio, NAT rewriting)." },
+    { "name": "tftp-server", "why": "IP phone provisioning: handsets fetch their configuration over TFTP. Installed but its firewall port is deliberately left closed — see integration." },
+    { "name": "tar", "why": "freepbx-setup unpacks the FreePBX tarball with it; not guaranteed present in a minimal bootc base." }
+  ],
+  "unavailable": [
+    {
+      "name": "freepbx",
+      "alternative": "Not packaged in Fedora, RPM Fusion or any COPR — verified. Upstream ships a tarball plus a PHP installer, and officially supports Debian 12 only. It is installed on first boot by /usr/libexec/freepbx-setup from https://mirror.freepbx.org/modules/packages/freepbx/freepbx-17.0-latest.tgz (URL verified reachable). This is not a shortcut around the image model: everything FreePBX writes lands in /var and /etc, and on bootc the image's /var is copied into the machine once at install and never refreshed by `bootc upgrade` — so a build-time install would be frozen at the version of whichever build first installed the machine while appearing to update. FreePBX updates itself with `fwconsole ma upgradeall`; the RPM runtime under it updates with bootc."
+    },
+    {
+      "name": "php 8.2 (Fedora)",
+      "alternative": "Fedora 44 ships PHP 8.5.9 — verified. FreePBX 17 requires 8.2 and upstream states 8.3+ must not be installed because modules are not compatible with it, so Fedora's PHP cannot serve this UI at all. Resolved with Remi's SCL packages (php82-php-* 8.2.33-1.fc44.remi, verified after installing remi-release-44), which live entirely under /opt/remi/php82 and /etc/opt/remi/php82. They are a parallel runtime, not a replacement: nothing on the image is shadowed, and only the [freepbx] pool and fwconsole ever run 8.2. Fedora's own php packages are deliberately NOT installed, so there is no ambiguity about which interpreter serves a request."
+    },
+    {
+      "name": "dahdi-linux (kernel modules)",
+      "alternative": "No dahdi-linux, kmod-dahdi or akmod-dahdi-linux exists for Fedora 44 — verified; only the userspace dahdi-tools is packaged. Analog and PRI/T1/E1 cards therefore do not work on this image, and dahdi-tools/asterisk-dahdi are deliberately left out rather than shipped as a promise the kernel cannot keep. This is a SIP/VoIP appliance. Hardware trunks need either a SIP gateway appliance in front of it or a distribution that builds the DAHDI modules."
+    },
+    {
+      "name": "chan_sip",
+      "alternative": "EOL upstream and not the FreePBX 17 default; asterisk-pjsip is installed instead. Fedora's asterisk-sip package exists but is not shipped here, so the image cannot be configured into a dead-end driver by accident."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "first-boot",
+      "detail": "/usr/libexec/freepbx-setup + freepbx-setup.service (oneshot, After=network-online.target mariadb.service, ConditionPathExists=!/var/lib/fedora-images/.freepbx-done). It starts MariaDB, creates the asterisk and asteriskcdrdb databases with a random freepbxuser password, registers the MySQL ODBC driver and the MySQL-asteriskcdrdb DSN, moves Fedora's sample Asterisk configuration aside, starts Asterisk, installs FreePBX, installs the bundled modules, applies SELinux context and booleans, opens the firewall, enables freepbx.service and only then stamps. Same shape as the first-boot Flatpak installer in ARCHITECTURE.md §8, and for the same reason: it needs a booted machine with a network and running services, none of which a container build has."
+    },
+    {
+      "kind": "filesystem",
+      "detail": "FreePBX installs fwconsole and amportal into /usr/sbin by default, which does not exist as a writable path on a bootc system. The installer is called with --ampsbin=/usr/local/sbin; /usr/local is a symlink to /var/usrlocal on ostree-based systems, so it is writable, machine-local and already on root's PATH. freepbx.service carries ConditionPathIsExecutable=/usr/local/sbin/fwconsole so it is inert rather than failing on a machine where the first-boot install has not finished."
+    },
+    {
+      "kind": "process supervision",
+      "detail": "asterisk.service is MASKED (not merely disabled). FreePBX starts and stops Asterisk itself through fwconsole; with the packaged unit enabled as well, systemd starts Asterisk with the Fedora sample config while fwconsole starts another with the FreePBX config, and whichever grabs /var/run/asterisk/asterisk.ctl first wins. Masking is the only setting that makes that race impossible, including after someone runs `systemctl enable asterisk` out of habit."
+    },
+    {
+      "kind": "web stack",
+      "detail": "Apache runs as asterisk:asterisk (/etc/httpd/conf.d/freepbx.conf), matching what `fwconsole chown` sets across the FreePBX tree — a web server running as apache:apache cannot write its own module installs or backups. PHP requests go to the dedicated [freepbx] php-fpm pool over /run/php-fpm/freepbx.sock rather than the SCL default under /var/opt/remi: that path carries the httpd_var_run_t context in the base targeted policy, which is what lets Apache reach the socket with SELinux enforcing. /usr/lib/tmpfiles.d/carino-pbx.conf creates the directory, because the Fedora php-fpm package that normally would is not installed."
+    },
+    {
+      "kind": "firewall",
+      "detail": "firewalld ships sip and sips but nothing for media, so the image adds /usr/lib/firewalld/services/asterisk-rtp.xml (10000-20000/udp, the FreePBX default range). freepbx-setup opens http, https, sip and asterisk-rtp in the default zone. TFTP is installed but its port is NOT opened — phone provisioning over TFTP is unauthenticated and hands out credentials to anything that asks, so it is one deliberate command away rather than on by default. The RTP range is the one firewall rule that has to be kept in step with a web-UI setting."
+    },
+    {
+      "kind": "fail2ban",
+      "detail": "/etc/fail2ban/jail.d/asterisk.local enables the stock asterisk filter against /var/log/asterisk/full, the log FreePBX configures Asterisk to write. fail2ban-firewalld makes the bans go through firewalld instead of raw iptables."
+    },
+    {
+      "kind": "first-boot account",
+      "detail": "initial-setup moved from desktop-common to base when this purpose landed. It is a console text UI with nothing desktop about it, and the headless branch does not inherit desktop-common — without the move, an ISO install of carino-pbx would come up with no user account and no greeter to make one."
+    }
+  ],
+  "services": [
+    "freepbx-setup.service — enabled; oneshot first-boot installer, stamps on success so a failure retries next boot.",
+    "mariadb.service — enabled; FreePBX's configuration store.",
+    "httpd.service — enabled; serves the UI. Pulls httpd-init.service, which generates the self-signed localhost certificate mod_ssl needs before Apache will start.",
+    "php82-php-fpm.service — enabled; runs the [freepbx] pool.",
+    "fail2ban.service — enabled.",
+    "freepbx.service — shipped but NOT enabled at build time: it runs fwconsole, which does not exist until the first-boot install has finished. freepbx-setup enables it as its last step.",
+    "asterisk.service — MASKED, deliberately. See integration.",
+    "sshd/firewalld/chronyd — enabled by the de/headless layer, not here."
+  ],
+  "risks": [
+    "The first-boot install path is unverified end to end. The image builds, every package resolves, the Apache and php-fpm configurations parse and the units are in place — all confirmed 2026-08-06 — but /usr/libexec/freepbx-setup has not been run on a booted machine, because that needs an installed system rather than a container. Treat the FreePBX installation itself as untested until someone boots an ISO and reads `journalctl -u freepbx-setup`. The most likely failure points, in order: the installer's --ampsbin flag, SELinux denials against the web root, and the bundled-module install step.",
+    "A PBX is the one image in this catalog where a misconfiguration costs money. An exposed SIP port with a weak extension password is monetised by attackers as international call minutes within hours. fail2ban is on and the RTP/SIP ports are opened only in the default zone, but nothing here makes it safe to put this box on a public address — remote extensions belong behind a VPN or an SBC.",
+    "Asterisk 18 is the version Fedora 44 packages, and it is on the old end of what FreePBX 17 supports. If Fedora retires it before FreePBX drops support, or FreePBX raises its floor above 18, this image needs a decision rather than an update: a newer Asterisk would have to come from somewhere other than Fedora, which is exactly the dependency the purpose is built to avoid.",
+    "Remi's repository is a third party. It is well-run and long-standing, but the image now depends on it for the runtime the UI cannot start without, and REPO_RPMS pins no version — a build a year from now takes whatever php82-php-* is current then. Version pinning belongs in the package phase alongside the Hyprland COPR pin.",
+    "FreePBX modules update on their own cadence through fwconsole, which means part of this appliance's software is NOT covered by the image's transactional-update promise. `bootc rollback` restores the OS and the runtime; it does not roll back a FreePBX module upgrade, and the database schema those modules migrate lives in /var. Back up from the FreePBX backup module, not from the image."
+  ],
+  "external": [
+    {
+      "name": "FreePBX 17",
+      "method": "Tarball from mirror.freepbx.org, installed on first boot by /usr/libexec/freepbx-setup into /var/www/html with fwconsole in /usr/local/sbin. Updated in place with `fwconsole ma upgradeall`."
+    },
+    {
+      "name": "Commercial FreePBX modules",
+      "method": "Sangoma's paid modules install through the same module admin; they are licensed per deployment and nothing about them is baked into the image."
+    }
+  ],
+  "copr": [],
+  "flatpaks": [],
+  "notes": [
+    "There is no drift manifest under tools/purpose-apps/ for this purpose (ARCHITECTURE.md §11b) because Carino Setup has no PBX profile to compare against — the check is between the two projects, and a one-sided purpose has nothing to drift from. If Setup ever grows one, this is the first place to look.",
+    "The de/headless layer was created for this purpose but is not specific to it: it is the branch any future appliance (a PACS server, a monitoring box) would build on. It carries openssh-server, firewalld, chrony, cronie, logrotate, tuned, policycoreutils-python-utils, bash-completion and tmux, all verified present in Fedora 44.",
+    "Fedora's asterisk package ships the complete upstream sample configuration in /etc/asterisk. FreePBX generates its own and expects to own the directory, so freepbx-setup moves the samples to /etc/asterisk.fedora-defaults once, rather than deleting them — they are the reference for anything the UI does not expose."
+  ],
+  "size_note": "Roughly 1.2–1.6 GB installed on top of the headless layer. Dominated by MariaDB, the Asterisk core plus sound packages, the parallel PHP 8.2 stack (~120 MB, paid twice in the sense that it duplicates nothing Fedora's PHP would have given us because Fedora's PHP is not installed) and Node 22. FreePBX itself adds a few hundred MB into /var at first boot, plus whatever modules are installed later — none of which is in the image and none of which is counted here."
+}

@@ -10,7 +10,10 @@ LABEL org.opencontainers.image.title="carino-layer-base" \
       org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
 
 # Packages
-RUN dnf -y install nano vim-enhanced jq zstd unzip gnupg2 smartmontools lsof && dnf clean all
+RUN dnf -y install nano vim-enhanced jq zstd unzip gnupg2 smartmontools lsof initial-setup && dnf clean all
+
+# Services (enable)
+RUN systemctl enable initial-setup.service
 
 # Lint the resulting bootc image
 RUN bootc container lint
