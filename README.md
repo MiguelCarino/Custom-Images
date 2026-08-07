@@ -57,6 +57,32 @@ sudo bootc switch <ref>      # registry refs coming soon; ISO is only for bare-m
 - **[SCOPE.md](SCOPE.md)** — project scope, research findings, open decisions
 - **[SimpleSetup](https://github.com/MiguelCarino/SimpleSetup)** — companion project: post-install setup for other distros and DEs
 
-## License
+## Licensing
 
-Not yet chosen.
+**Mine — GNU Affero General Public License v3.0 or later.** The build tooling
+(`build.sh`, `lib/`), the layer and purpose configuration (`config/`), the files
+baked into the images (`files/`), the generated Containerfiles, `tools/` and the
+website under `docs/`. Copyright © 2026 Miguel Carino. Full terms in
+[LICENSE](LICENSE).
+
+**Not mine.** This project's licence does not cover, and could not cover, the
+following. Each keeps its own terms.
+
+| Path / artefact | What it is | Licence | Notice |
+| --- | --- | --- | --- |
+| [`docs/fonts/`](docs/fonts/) | IBM Plex Sans, IBM Plex Mono, Red Hat Display | SIL OFL 1.1 | [`docs/fonts/OFL.txt`](docs/fonts/OFL.txt) |
+| **The images this tooling builds** | Fedora bootc base + the packages each purpose installs | Per package — Fedora's licences, incl. GPL-family | [LICENSING.md](LICENSING.md) |
+
+An image *built* by this tooling is not a derived work of it: it is an
+aggregation of Fedora packages with a few configuration files. Building one for
+yourself triggers no obligation at all.
+
+**Publishing an ISO or pushing an image to a registry is distribution**, and the
+GPL-family components inside the images — Asterisk and FreePBX in `carino-pbx`,
+ArgyllCMS in `carino-imagenology`, plus MariaDB, httpd and PHP — carry source
+obligations that become yours at that moment. This is satisfiable the ordinary
+way, and [LICENSING.md](LICENSING.md) sets out how, along with the one trap to
+avoid: install Fedora's stock packages and Fedora remains the distributor of
+their source; rebuild or patch a package and you do not.
+
+**Read [LICENSING.md](LICENSING.md) before your first public release.**
