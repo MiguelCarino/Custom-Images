@@ -53,11 +53,35 @@ http://mirror.EXAMPLE.INTERNAL {
 # static with no CDN and vendored libraries, so this is a file server and
 # nothing more — which is why the offline edition is packaging work rather
 # than a rewrite.
+#
+# /whoami is the one route that is not a file. The fleet's shared "Sys.
+# Status" panel (carino-diag.js) asks four public services what a visitor's
+# address is; on a LAN with no route out, all four fail, and the panel on a
+# network tool reports nothing about the network it is on. This answers the
+# same question from the connection itself — no lookup, no third party, and
+# it works with the WAN cable pulled, which is the whole premise of the site
+# being served here. Point the panel at it:
+#
+#   <script src="carino-diag.js" data-whoami="/whoami" defer></script>
+#
+# It is tried before every public provider, and it hands back whichever
+# family the browser reached this server over — the panel sorts v4 from v6
+# itself and falls through for the one it did not get.
+# Two `handle` blocks rather than a bare file_server plus one: `handle` is
+# mutually exclusive and terminal, so this says in the config what the
+# routing actually is instead of leaning on Caddy's directive order.
 hub.EXAMPLE.INTERNAL {
-	root * /var/lib/carino-offline/www
-	file_server
 	encode zstd gzip
 	tls internal
+
+	handle /whoami {
+		respond "{http.request.remote.host}"
+	}
+
+	handle {
+		root * /var/lib/carino-offline/www
+		file_server
+	}
 }
 
 # --- Kiwix ---------------------------------------------------------------
