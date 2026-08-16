@@ -98,6 +98,14 @@ emit_layer_containerfile() {
   local services_enable="$SERVICES_ENABLE" services_mask="$SERVICES_MASK"
   local post_script="$POST_SCRIPT"
 
+  # Validate before anything is written: a die() from inside the `{ … } > "$cf"`
+  # group below would leave a truncated but syntactically valid Containerfile
+  # (and generated/ is committed), so every check must happen up here.
+  if [[ -n "$post_script" ]]; then
+    [[ -f "${files_dir}/${post_script}" ]] \
+      || die "$id: POST_SCRIPT '$post_script' not found in ${files_dir}"
+  fi
+
   # ---- Parent image ref (root layer builds FROM the upstream base) -------
   local from_ref
   if [[ -z "$parent" ]]; then
@@ -139,7 +147,8 @@ emit_layer_containerfile() {
     # First, because COPRs and PACKAGES may both resolve against them.
     if [[ -n "$repo_rpms" ]]; then
       printf '\n# Third-party repository definitions\n'
-      # shellcheck disable=SC2086 — word-splitting the list is intended
+      # word-splitting the list is intended
+      # shellcheck disable=SC2086
       printf 'RUN dnf -y install %s\n' "$(echo $repo_rpms)"
     fi
 
@@ -157,7 +166,8 @@ emit_layer_containerfile() {
     # Packages
     if [[ -n "$packages" ]]; then
       printf '\n# Packages\n'
-      # shellcheck disable=SC2086 — word-splitting the list is intended
+      # word-splitting the list is intended
+      # shellcheck disable=SC2086
       printf 'RUN dnf -y install %s && dnf clean all\n' "$(echo $packages)"
     fi
 
@@ -194,16 +204,14 @@ emit_layer_containerfile() {
     # Flatpaks — §8: baked as a first-boot list, never installed at build time.
     if [[ -n "$flatpaks" ]]; then
       printf '\n# Flatpak list (installed on first boot by flatpak-setup.service)\n'
-      # shellcheck disable=SC2086
       printf "RUN mkdir -p /usr/share/fedora-images/flatpaks.d && \\\\\n"
+      # shellcheck disable=SC2086
       printf "    printf '%%s\\\\n' %s > /usr/share/fedora-images/flatpaks.d/%s-%s.list\n" \
         "$(echo $flatpaks)" "$slot" "$slug"
     fi
 
     # Post script — copied from the context, run, removed.
     if [[ -n "$post_script" ]]; then
-      [[ -f "${files_dir}/${post_script}" ]] \
-        || die "$id: POST_SCRIPT '$post_script' not found in ${files_dir}"
       printf '\n# Post script\n'
       printf 'COPY %s /tmp/post.sh\n' "$post_script"
       printf 'RUN chmod +x /tmp/post.sh && /tmp/post.sh && rm -f /tmp/post.sh\n'

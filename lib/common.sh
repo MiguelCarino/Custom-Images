@@ -30,6 +30,18 @@ CONF_VARS=(
   PURPOSE DE PIN_REASON
 )
 
+# Every variable the build system owns. Confs are sourced into this scope, so a
+# conf that assigns one of these would corrupt state for every layer processed
+# after it in the same run — including layers belonging to other purposes, in
+# glob order. Refuse the conf rather than silently restoring the value: the
+# mistake being guarded against is a maintainer typo, and hiding it helps
+# nobody. These are set per-run (build.conf, environment overrides), never
+# per-layer.
+BUILD_VARS=(
+  REPO_ROOT CONFIG_DIR LAYERS_DIR PURPOSES_DIR FILES_ROOT GENERATED_DIR
+  FEDORA_VERSION REGISTRY TAG BASE_IMAGE ROOTFS FIRSTBOOT
+)
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
@@ -130,8 +142,23 @@ load_layer_conf() {
   [[ -f "$conf" ]] || die "no such layer config: $conf (layer id: $id)"
 
   _reset_conf_vars
+
+  # Snapshot the build system's own globals so the conf cannot quietly redefine
+  # one of them (see BUILD_VARS).
+  local _v _i=0
+  local -a _snapshot=()
+  for _v in "${BUILD_VARS[@]}"; do
+    _snapshot+=("${!_v-}")
+  done
+
   # shellcheck disable=SC1090
   source "$conf"
+
+  for _v in "${BUILD_VARS[@]}"; do
+    [[ "${!_v-}" == "${_snapshot[$_i]}" ]] \
+      || die "$conf: must not assign '$_v' — that name belongs to the build system. A layer/purpose conf may set only: ${CONF_VARS[*]}"
+    _i=$(( _i + 1 ))
+  done
 
   if [[ "$id" == purpose:* ]]; then
     local want="${id#purpose:}"

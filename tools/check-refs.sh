@@ -32,7 +32,7 @@ note() { warn "$1"; problems=$((problems + 1)); }
 # Files worth scanning. -print0 would be safer, but no path in this repo has spaces
 # and the readable loop is worth more here than the theoretical robustness.
 mapfile -t FILES < <(find . \
-  \( -path ./legacy -o -path ./generated -o -path ./output -o -path ./.git -o -path ./docs/fonts \) -prune -o \
+  \( -path ./legacy -o -path ./generated -o -path ./output -o -path ./.git -o -path ./.claude -o -path ./docs/fonts \) -prune -o \
   \( -name '*.sh' -o -name '*.md' -o -name '*.conf' -o -name '*.html' -o -name '*.apps' -o -name 'Makefile' \) -print \
   | sed 's|^\./||' | sort)
 

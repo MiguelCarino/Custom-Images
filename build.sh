@@ -118,10 +118,15 @@ resolve_targets() {
 # topological order (root-first) with each shared layer listed exactly once.
 # Chains are root-first, so first-seen order across chains is already valid.
 build_order() {
-  local p layer seen=" "
+  local p layer chain seen=" "
   for p in "$@"; do
-    # shellcheck disable=SC2046 # layer ids never contain whitespace
-    for layer in $(layer_chain "$p"); do
+    # `|| return 1`, not a bare assignment: build_order is itself called from
+    # inside a command substitution, and bash ignores -e in there, so a
+    # layer_chain die() would otherwise be swallowed twice over — once by the
+    # `for layer in $(...)` this replaced, and once by the disabled -e.
+    chain="$(layer_chain "$p")" || return 1
+    # shellcheck disable=SC2086 # layer ids never contain whitespace
+    for layer in $chain; do
       if [[ "$seen" != *" ${layer} "* ]]; then
         seen+="${layer} "
         echo "$layer"
@@ -135,10 +140,13 @@ build_order() {
 # ---------------------------------------------------------------------------
 
 cmd_list() {
-  local p name
+  local p name purposes
   printf '%-30s %-16s %s\n' "IMAGE" "DE" "DESCRIPTION"
   printf '%-30s %-16s %s\n' "-----" "--" "-----------"
-  for p in $(list_purposes); do
+  # Plain assignment so list_purposes' die() propagates under set -e
+  # (a `for p in $(...)` substitution would swallow the failure).
+  purposes="$(list_purposes)"
+  for p in $purposes; do
     name="$(image_name "$p")"           # subshell — does not clobber conf vars
     load_layer_conf "purpose:$p"
     printf '%-30s %-16s %s\n' "$name" "$DE" "$DESCRIPTION"
@@ -158,7 +166,7 @@ cmd_generate() {
 
 cmd_build() {
   local -a purposes=()
-  local p layer ref out ctx targets
+  local p layer ref out ctx targets layers
   # Plain assignment so resolve_targets' die() propagates under set -e
   # (`mapfile < <(...)` would discard the process substitution's status).
   targets="$(resolve_targets "$TARGET")"
@@ -166,7 +174,10 @@ cmd_build() {
   [[ -n "$targets" && ${#purposes[@]} -gt 0 ]] || die "no targets resolved"
 
   # ---- Build every needed layer once, in dependency order ----------------
-  for layer in $(build_order "${purposes[@]}"); do
+  # Plain assignment so build_order's die() propagates under set -e
+  # (a `for layer in $(...)` substitution would swallow the failure).
+  layers="$(build_order "${purposes[@]}")"
+  for layer in $layers; do
     emit_layer_containerfile "$layer"
     ref="$(layer_image_ref "$layer")"
     out="$(layer_output_name "$layer")"

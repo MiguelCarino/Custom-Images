@@ -27,6 +27,14 @@
 # `systemctl enable` during the build and a missing unit fails it.
 # Re-add each once its unit is provisioned host-side:
 #   freepbx-setup.service (unit ships only in a FILES_DIR, layer purpose:pbx)
+#
+# MASKS KEPT, COMPENSATING FILES DROPPED — these masks DO carry into the
+# blueprint, but the static files that made each one survivable do not
+# (see DROPPED above). Masking a unit without whatever re-owned the path
+# it held, or whatever took over the job it was doing, leaves the classic
+# image with that function simply missing rather than replaced. Provision
+# the equivalent host-side, or drop the mask too:
+#   asterisk.service (layer purpose:pbx, whose static files / POST_SCRIPT are dropped)
 
 name = "carino-pbx"
 description = "Telephony appliance: Asterisk 18 with the FreePBX 17 web UI, MariaDB, Apache, PHP 8.2"
