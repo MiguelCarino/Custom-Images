@@ -1,0 +1,87 @@
+# carino-offline — example Caddy sites. NOT ACTIVE.
+#
+# The packaged Fedora Caddyfile ends with `import Caddyfile.d/*.caddyfile`, so
+# this file is inert purely because of its .example extension. Rename it to
+# carino-offline.caddyfile to turn it on, then `systemctl reload caddy`.
+#
+# The extension is doing real work: caddy.service runs
+# `caddy validate --config /etc/caddy/Caddyfile` as ExecStartPre, so a config
+# naming hostnames this machine cannot answer for does not degrade the web
+# server — it stops it from starting, on the box that also serves the mirror
+# and the documentation you would use to fix it.
+#
+# Replace EXAMPLE.INTERNAL throughout.
+#
+# SELINUX — caddy is CONFINED here, which matters the moment a site needs to
+# write. Fedora's caddy package labels /usr/bin/caddy httpd_exec_t in its
+# %post (`semanage fcontext --add --type httpd_exec_t /usr/bin/caddy`), and
+# policycoreutils-python-utils is present in this chain, so the relabel really
+# does happen at build time and caddy transitions to httpd_t like Apache does
+# — it is not an unconfined domain.
+#
+# Everything /usr/lib/tmpfiles.d/carino-offline.conf creates under
+# /var/lib/carino-offline gets the policy default var_lib_t, and httpd_t is
+# allowed to READ var_lib_t and not to write it. Read-only serving — the
+# mirror, www and the kiwix proxy below — therefore works as written.
+# Anything that needs caddy to WRITE (uploads, an access log kept under
+# /var/lib/carino-offline) will fail with an AVC and nothing else, so relabel
+# that path first:
+#
+#   semanage fcontext -a -t httpd_sys_rw_content_t '/var/lib/carino-offline/<path>(/.*)?'
+#   restorecon -R /var/lib/carino-offline/<path>
+#   # and check with: ausearch -m avc -ts recent
+#
+# The reverse proxy needs no such step: the caddy package also sets
+# `setsebool -P httpd_can_network_connect on`.
+#
+# Not yet verified on installed hardware — no ISO from this image has been
+# booted, so the above is read from the shipped policy and the package's own
+# scriptlet, not from a running enforcing system.
+
+# --- The package mirror -------------------------------------------------
+# Plain HTTP on purpose. dnf verifies RPM signatures against Fedora's own keys
+# on the client, the machines that most need this repo are fresh installs that
+# do not have the internal root yet, and a mirror unreachable until TLS works
+# is a bootstrap deadlock on a network with no internet to break it.
+http://mirror.EXAMPLE.INTERNAL {
+	root * /var/lib/carino-offline/mirror
+	file_server browse
+}
+
+# --- The fleet, served locally ------------------------------------------
+# The Fleet Offline Edition unpacked into www. Every tool is client-side
+# static with no CDN and vendored libraries, so this is a file server and
+# nothing more — which is why the offline edition is packaging work rather
+# than a rewrite.
+hub.EXAMPLE.INTERNAL {
+	root * /var/lib/carino-offline/www
+	file_server
+	encode zstd gzip
+	tls internal
+}
+
+# --- Kiwix ---------------------------------------------------------------
+# kiwix-serve listens on 127.0.0.1:8080 (see kiwix-serve.service — its own
+# default is port 80, which would collide with this server). Proxying it means
+# one TLS terminator, one access log and one port open on the firewall.
+wiki.EXAMPLE.INTERNAL {
+	reverse_proxy 127.0.0.1:8080
+	tls internal
+}
+
+# --- ACME for the rest of the LAN ---------------------------------------
+# Caddy embeds smallstep's CA; acme_server exposes it so other machines can
+# point an ACME client here and renew forever with no internet. This is the
+# nearest thing available from a Fedora RPM to step-ca, which is NOT packaged
+# — see the risks list in research/manifest-offline.json for what it does not
+# cover (anything that is not an HTTP site, e.g. a printer or a switch, still
+# needs easy-rsa by hand).
+#
+# Caddy's local root is generated on first start, on THIS machine, under
+# /var/lib/caddy. It is deliberately not in the image: a CA key baked into an
+# image is the same key on every install. Publish its fingerprint on the
+# printed IP card and add the root to client trust stores.
+acme.EXAMPLE.INTERNAL {
+	acme_server
+	tls internal
+}

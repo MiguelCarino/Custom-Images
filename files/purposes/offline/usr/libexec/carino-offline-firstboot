@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# carino-offline-firstboot — first-boot integration for carino-offline.
+#
+# WHY THIS IS NOT DONE AT BUILD TIME
+# ----------------------------------
+# Both actions need a booted machine. firewalld's permanent configuration is
+# written by talking to (or at least alongside) a running firewalld, and
+# `update-ca-trust extract` rewrites the bundles under /etc/pki/ca-trust/extracted,
+# which is not where a container build can leave anything useful. Same shape
+# and same reason as freepbx-setup.service on carino-pbx, and as the first-boot
+# Flatpak installer in ARCHITECTURE.md §8.
+#
+# Idempotent, and it stamps only on success, so a failure retries on the next
+# boot rather than being lost.
+#
+# Invoked by carino-offline-firstboot.service (oneshot).
+set -euo pipefail
+
+STAMP_DIR=/var/lib/fedora-images
+STAMP="${STAMP_DIR}/.carino-offline-done"
+
+if [[ -e "${STAMP}" ]]; then
+  exit 0
+fi
+
+# The ports this appliance exists to answer on, and nothing else.
+#
+# Not opened, deliberately: kiwix-serve is bound to 127.0.0.1 behind caddy so
+# it needs no port of its own; dns-over-tls and dns-over-quic need a tls
+# listener configured in named.conf first, and an open port in front of a
+# listener that does not exist is a firewall rule nobody will ever revisit;
+# samba is not installed on this image at all. Opening a port later is one
+# firewall-cmd. Taking one back after it has been open on a clinic LAN for a
+# year is a change-control conversation.
+#
+# firewalld has to be up for any of this: --permanent still goes over D-Bus,
+# and every firewall-cmd against a firewalld that is not running spends a ~10 s
+# D-Bus timeout before giving up (five calls = ~51 s of a Type=oneshot unit that
+# multi-user.target is waiting behind). Check once and bail instead. Bailing
+# leaves the machine unstamped, so the whole script runs again on the next boot,
+# which is the intent. Same guard as freepbx-setup on carino-pbx.
+#
+# Nothing below is wrapped in `|| true`: firewall-cmd already exits 0 when the
+# service is already open (ALREADY_ENABLED is mapped to 0), so the only thing
+# `|| true` could ever swallow is a real failure — and a swallowed failure here
+# means a port this appliance exists to answer on stays shut for good, because
+# the reload still succeeds and the stamp below still gets written.
+if ! systemctl is-active --quiet firewalld; then
+  echo "firewalld is not running — not stamping, so this retries on the next boot" >&2
+  exit 1
+fi
+for svc in dns http https ntp; do
+  firewall-cmd --permanent --add-service="${svc}"
+done
+firewall-cmd --reload
+
+# Make any trust anchor that is already in place actually trusted.
+#
+# A root dropped into /etc/pki/ca-trust/source/anchors by kickstart %post, by
+# cloud-init, or by hand from a USB stick before the first boot does nothing
+# whatsoever until update-ca-trust runs. Forgetting it presents as "the
+# certificate is valid on the server and untrusted on the server", which reads
+# as a certificate problem and is not one, and which costs an afternoon the
+# first time somebody meets it.
+#
+# This does not put a CA on the machine and cannot: an image-baked private key
+# is the same private key on every install. It only activates one that arrived
+# by some other route.
+update-ca-trust extract
+
+install -d -m 0755 "${STAMP_DIR}"
+touch "${STAMP}"

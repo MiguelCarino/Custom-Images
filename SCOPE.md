@@ -1,8 +1,9 @@
 # Project Scope
 
-Status: **decision record** — rev 5, 2026-08-06
-Backed by repo-verified research in `research/` (10 manifests, 1075 package names checked
-against live Fedora 44 repositories, 2 adversarial audits).
+Status: **decision record** — rev 6, 2026-08-15
+Backed by repo-verified research in `research/` (12 manifests, 2 adversarial audits;
+1075 package names checked against live Fedora 44 repositories in the rev 3 audit, and
+every manifest added since verified the same way).
 
 This is a record of decisions and their reasoning, not a spec — `ARCHITECTURE.md` is the
 binding spec. Superseded decisions are kept, struck through or marked **SUPERSEDED**, so
@@ -16,6 +17,14 @@ after rev 3: **GNOME was dropped** (§5, §6) and **published images were rename
 all. Two things that read as settled were revisited to allow it — the assumption that
 every purpose sits on `desktop-common`, and the decision in §4 that server purposes leave
 for Carino Setup. Both are addressed rather than quietly dropped, in §4.2.
+
+**Rev 6 adds an eighth purpose, `offline`, the second appliance on that branch**
+(§2, §4, §4.3, §5, §6.1). It needed no new mechanism and no new layer: `de/headless` was
+written for `pbx` but was never specific to it, and taking a second consumer with no change
+to the build system is the evidence for that claim rather than a restatement of it. What
+rev 6 does revisit is §4's list of purposes dropped to Carino Setup, which named *Offline* —
+that entry is marked superseded below, and §4.3 sets out the system integration that puts
+this version of it back on this side of the §2 boundary.
 
 ---
 
@@ -50,12 +59,19 @@ Two **separate** projects.
 |---|---|---|
 | **Job** | Produce Fedora ISOs and OS images | Configure an already-installed system |
 | **Distros** | Fedora 44 | Fedora, RHEL family, Debian, Ubuntu, Arch, openSUSE |
-| **Purposes** | 7 (those needing system integration) | ~19 (any package set) |
+| **Purposes** | 8 (those needing system integration) | ~19 (any package set) |
 | **DEs** | 1 desktop layer (COSMIC + Hyprland) + a headless layer | 13 |
 | **Delivery** | Registry + ISO downloads | `bash <(curl -s https://setup.carino.systems/setup.sh)` |
 
 Catalogs are deliberately **not** in parity. Anything that is "just a package list"
 belongs in Carino Setup.
+
+That rule is the one every new purpose has to survive, and both appliances are argued
+against it in full rather than waved past it: `pbx` in §4.2, `offline` in §4.3. The test is
+not "is this a server" — §1 and §2 never said the project only makes workstations — it is
+whether the decisions have to be made before first boot. A package list can be installed
+later; a resolver that has to own port 53 on a machine whose only way to fetch the script
+is to resolve a name cannot be.
 
 ✅ **The drift lint exists** — `tools/check-drift.sh`, `ARCHITECTURE.md` §11b. It compares
 at the *application* level rather than the package-name level, because the two projects
@@ -108,7 +124,7 @@ everywhere (§7) — enforcing it is the core refactor.
 
 ## 4. Purposes
 
-**Seven since rev 5** (six workstations and one appliance, §4.2). `General` is retained by decision — the everyday image with the recommended
+**Eight since rev 6** (six workstations and two appliances, §4.2, §4.3). `General` is retained by decision — the everyday image with the recommended
 all-purpose apps (mpv, LibreOffice, …). The §7.1 findings still apply as *cleanup work*,
 though the resolution changed: rev 3 planned to fix General's three-way DE contamination by
 pinning it to GNOME and moving GNOME-native apps into `de/gnome`. With GNOME gone (§5) that
@@ -130,10 +146,15 @@ ships no equivalent archiver, calculator or scanning front end. Recorded in
 | **Security & Forensics** | `setcap` dumpcap, forensic write-block udev, automount disable | manifest ready |
 | **LLMs** | Ollama service + model storage, GPU device groups, ROCm/CUDA, VRAM tuning | manifest ready |
 | **PBX** *(rev 5)* | Which PHP serves the UI, who owns the web root, who supervises Asterisk, where `fwconsole` may live on a read-only `/usr` | ✅ built and verified; **first-boot install untested** (§4.2) |
+| **Offline** *(rev 6)* | Who owns port 53 and `/etc/resolv.conf` once `systemd-resolved` is masked, where a site CA root lands in the trust store, how `dnf` points at a LAN mirror without deadlocking the box, how chrony keeps serving time with nothing upstream | manifest verified against F44 and against the built headless layer; **nothing booted** (§4.3) |
 
 Dropped along the way, all to Carino Setup: Coding, Corporate, Astronomy, Comp-Neuro,
 Design, Scientific, Robotics (ROS 2 targets Ubuntu — better as a Distrobox guest),
-Offline, ~~PACS server~~ (see §4.2 — the *reason* it went still stands, but "it is a
+~~Offline~~ (**SUPERSEDED (rev 6)** — see §4.3. The dropped entry is read as an offline
+*workstation* package set, the kind of thing Setup installs on a machine that will lose its
+connection; the purpose added in rev 6 is the server such machines ask. The original list
+recorded no detail, so that distinction is drawn now rather than recovered),
+~~PACS server~~ (see §4.2 — the *reason* it went still stands, but "it is a
 server" was never the reason).
 
 ### 4.1 Imagenology ships a toolchain but nothing to look at a study with
@@ -196,6 +217,56 @@ hidden.** The OS and the runtime under it upgrade with `bootc upgrade` and roll 
 upgradeall`, and migrates a database schema that no image rollback will undo. Backups come
 from FreePBX's own backup module, not from the image.
 
+### 4.3 Offline — the intranet keystone, and the second appliance (rev 6)
+
+`carino-offline` is, in its own conf's words, an *"intranet keystone appliance:
+authoritative and recursive DNS, LAN time, internal-CA trust store, an RPM mirror and
+offline content over HTTP, and the sneakernet media pipeline"* — 18 packages around bind,
+chrony, Caddy and kiwix-serve. It is the box a LAN with no working WAN still gets names,
+time, trust, packages and content from. It pins `DE="headless"` for the reason its
+`PIN_REASON` records: *"an appliance that has to answer on the LAN's own ports before
+anything else on the network is up: DNS, NTP and HTTP are its interfaces and SSH is its
+console, so a desktop would only add attack surface, RAM and packages to patch to the one
+box the network cannot lose."* The chain is `base → de/headless → offline`, with the same
+three consequences `pbx` documents: no desktop, no session, and no first-boot Flatpak
+mechanism, because the installer lives in `desktop-common` and this branch never touches it.
+
+**"Anything that is just a package list belongs in Carino Setup" (§2) — it holds, and this
+is the purpose that had to prove it,** because a name server and a web server are exactly
+the shape of thing a script could install. Five decisions cannot be made after the fact:
+
+| Decision | Why an image and not a script |
+|---|---|
+| Who owns port 53 | `systemd-resolved` is installed **and preset-enabled** on the bootc base — verified in the built `carino-layer-de-headless`: 259.7, `is-enabled` returns enabled, and `enable systemd-resolved.service` appears in both `90-default.preset` and `90-systemd.preset`. `systemctl disable` does not survive a preset re-run; masking does. The usual workstation answer, `DNSStubListener=no`, leaves resolved as the host's resolution path, so the appliance keeps a second cache that can answer an internal name differently from the answer it is giving the building |
+| Who owns `/etc/resolv.conf` | On that same base it is a symlink into `/run/systemd/resolve/`. Mask resolved without re-owning the path and the box has no resolver at all — which is not something a post-install script can repair, because it runs after the machine has lost the ability to resolve the name of the script's own source |
+| Where a site CA root lands | An internal CA needs an anchor directory that exists and an `update-ca-trust extract` run where it takes effect. No root is baked and none can be: a private key inside an image is the same private key on every machine that installs it |
+| Where packages come from | `dnf` has to be pointable at a LAN mirror without deadlocking the box's own package tooling on a hostname that may not resolve — which is why the repo file ships in `/usr/share` and is deliberately *not* installed into `/etc/yum.repos.d` |
+| Whether the clock may serve | chrony is inherited from `de/headless`, but serving time with nothing upstream reachable takes one directive nothing installs for you, and the failure is silent for weeks: without it every NTP answer carries leap indicator 3 and every client correctly rejects it |
+
+**Not a router, deliberately.** DHCP, routing and VLANs stay on the MikroTik. Putting them
+here would make the keystone the router too, which is the single point of failure the
+layered design exists to avoid — a service layer that survives one box dying cannot be one
+box. The consequence is recorded rather than hidden: a fresh `carino-offline` on a network
+with no other infrastructure serves nobody, because nothing tells clients to ask it.
+
+**What is verified and what is not.** Verified 2026-08-15 per §7.2, two ways: package names
+and versions against live Fedora 44 with `dnf repoquery`, and the system facts this purpose
+depends on — the preset state, the `resolv.conf` symlink, the contents of `/etc/chrony.conf`,
+the absence of a chrony drop-in directory, the `gpsd.socket` preset line — inside the
+already-built `localhost/carino-layer-de-headless`, which is this purpose's actual parent.
+**Nothing has been booted**, and no image has been built: no ISO, no started unit. The piece
+most likely to bite first is the port-53 arbitration (§8.3). Two substitutions are recorded
+as real losses rather than smoothed over: step-ca is not packaged for Fedora 44, so a
+LAN-wide internal ACME server is not delivered, and Technitium — the plan's actual choice of
+DNS server — is a .NET tarball, so anyone expecting its GUI gets `named.conf` and a text
+editor. `research/manifest-offline.json` carries both, along with ten recorded risks.
+
+**The image is not the plan.** The reasoning for a whole offline site — what it is for, what
+else is in it, what the bill of materials looks like — lives at
+<https://offline.carino.systems> (section *00 - Start*), and that page points back at this
+repository. Neither document is the other's summary: the site is the plan, this is one box
+in it.
+
 ---
 
 ## 5. Desktop environments
@@ -207,13 +278,13 @@ layer under `config/layers/de/` that is not a desktop at all.
 | Layer | Notes |
 |---|---|
 | `de/cosmic-hyprland` | COSMIC + Hyprland co-installed; `cosmic-greeter` enumerates both sessions — **verified working**, the one end-to-end-confirmed claim in the manifest set |
-| `de/headless` *(rev 5)* | No desktop: `openssh-server`, `firewalld`, `chrony`, `cronie`, `logrotate`, `tuned`, `policycoreutils-python-utils`, `bash-completion`, `tmux`. `PARENT="base"`, so it skips `desktop-common` entirely — and with it the first-boot Flatpak mechanism, which purposes on this branch must do without. Built for `pbx`, but it is the branch any future appliance builds on |
+| `de/headless` *(rev 5)* | No desktop: `openssh-server`, `firewalld`, `chrony`, `cronie`, `logrotate`, `tuned`, `policycoreutils-python-utils`, `bash-completion`, `tmux`. `PARENT="base"`, so it skips `desktop-common` entirely — and with it the first-boot Flatpak mechanism, which purposes on this branch must do without. Built for `pbx`; since rev 6 `offline` sits on it too, and taking a second purpose with no change to the layer or to the build system is the evidence that it was never `pbx`-specific |
 | ~~`de/gnome`~~ | **SUPERSEDED (rev 4) — removed.** Mature, and the only DE whose dconf automount lock works. Its layer conf was deleted; no purpose pins to it. |
 
 **Why GNOME went.** Every desktop shipped is a desktop that has to be verified against
 every purpose, and unverified combinations are how integration work rots. One session,
 built once, means tearing control, per-output VRR, no file indexer and no automounter are
-each decided once and inherited by all six images.
+each decided once and inherited by all six desktop images.
 
 **What it cost, recorded so the reasoning survives:**
 
@@ -249,9 +320,10 @@ The layering audit's conclusion: *"expect 4–6 real image tags, not 18."* Purpo
 hard DE requirements, so the cross product is fiction.
 
 **SUPERSEDED (rev 4).** The matrix collapsed to a single column when GNOME was removed
-(§5). Six purposes, one DE, six images — and since rev 5 a seventh purpose in a second
-column that is not a desktop (§4.2), which is still one pin each and still no cross
-product. The rev 3 analysis below is retained because three
+(§5). Six purposes, one DE, six images — and since rev 5 a second column that is not a
+desktop at all, carrying `pbx` (§4.2) and, since rev 6, `offline` (§4.3). Eight purposes,
+two columns, still one pin each and still no cross product: the second column grew a row
+without the first one changing. The rev 3 analysis below is retained because three
 of its rows recorded *why* a purpose needed GNOME specifically, and those costs did not
 disappear when the column did — they are now carried, unmitigated, by the images that
 inherited them. §5 records what each one cost.
@@ -267,10 +339,11 @@ inherited them. §5 records what each one cost.
 | **Music** | cosmic-hyprland | no file indexer; lowest overhead |
 | **LLMs** | cosmic-hyprland | leanest session; least VRAM held by the desktop |
 | **PBX** *(rev 5)* | headless | an appliance administered over the network: the interfaces are the web UI and SSH, so a desktop would only add attack surface, RAM and packages to patch |
+| **Offline** *(rev 6)* | headless | an appliance that has to answer on the LAN's own ports before anything else on the network is up: DNS, NTP and HTTP are its interfaces and SSH is its console, so a desktop would only add attack surface, RAM and packages to patch to the one box the network cannot lose |
 
 Published image names follow **`carino-<purpose>`**: `carino-general`,
 `carino-imagenology`, `carino-security`, `carino-gaming`, `carino-music`, `carino-llms`,
-`carino-pbx`. Intermediate layers are `carino-layer-<slug>`.
+`carino-pbx`, `carino-offline`. Intermediate layers are `carino-layer-<slug>`.
 
 **Why the mark leads and Fedora does not.** `fedora-<purpose>-<de>` was the rev 3 scheme.
 The DE suffix stopped carrying information the moment every purpose shared one session, and
@@ -280,7 +353,7 @@ third-party derivative in the ecosystem uses. Upstream credit moved to where mac
 read it: `org.opencontainers.image.base.name` on every generated image, plus the visible
 "Based on Fedora 44" attribution on the site.
 
-Seven images, one backend. With the osbuild backend (§9) it would be **14 image tags total**,
+Eight images, one backend. With the osbuild backend (§9) it would be **16 image tags total**,
 though that backend produces no artifacts today (§9b).
 
 <details>
@@ -471,6 +544,13 @@ surface minimal. Revisit in the package phase if session scoping consistency mat
 7. **Pin the Remi repository** (rev 5). `REPO_RPMS` fixes no version, so a rebuild takes
    whatever `php82-php-*` is current that day. Same class of problem as the Hyprland COPR
    pin (§8.1a), same place to solve it: the package phase.
+8. **Build and boot `carino-offline`, and read the resolver state first** (rev 6, §4.3).
+   Nothing in that purpose has been built or started. The specific thing to check before
+   believing any of it is whether NetworkManager's `dns=none` / `rc-manager=unmanaged`
+   drop-in actually takes: if it does not, the first carrier event writes a DHCP-supplied
+   resolver over the tmpfiles symlink and the appliance starts answering from an upstream
+   cache — on the machine whose entire job is to be the authority. `resolvectl status`,
+   `nmcli dev show | grep DNS` and `ls -l /etc/resolv.conf`, in that order.
 
 ---
 
@@ -566,11 +646,12 @@ Status re-checked against `setup.sh` on 2026-07-27.
 |---|---|
 | **Imagenology needs calibration-capable monitors** | Hardware-LUT-only (§8.1) means consumer panels cannot be calibrated on this image. Since rev 4 removed GNOME's `colord` applier there is no software fallback at all, so this moved from an expectation-setting issue to a hard requirement. |
 | **Unverified external identifiers** | COPR/Flathub/URL hallucination at ~15× the RPM rate (§7.2). Mitigated only by an explicit verification step. |
-| **Single-maintainer COPR in the trusted base** | Hyprland comes from `lionheartp/Hyprland` (rev 4; previously `solopasha/hyprland`, from which lionheartp is forked). **Escalated in rev 4:** with one DE layer this COPR sits under **six of six** purposes — it is the only non-Fedora package source in the entire project, and every published image depends on it. Pin it (versionlock or dated snapshot) in the package phase. |
+| **Single-maintainer COPR in the trusted base** | Hyprland comes from `lionheartp/Hyprland` (rev 4; previously `solopasha/hyprland`, from which lionheartp is forked). **Escalated in rev 4:** with one DE layer this COPR sits under **six of the eight** purposes — every desktop image depends on it, and it is the only COPR in the project. *(Rev 6: the two appliances on the headless branch do not touch it, which narrows the blast radius from "everything published" to "everything with a desktop" — a real reduction, and not one anybody designed for.)* Pin it (versionlock or dated snapshot) in the package phase. |
 | **One Wayland-only DE, no X11 escape hatch** | Narrowed further in rev 4 (§5): a future purpose needing X11, or needing GNOME specifically, has nowhere to go. The `DE` field survives precisely so re-adding a layer stays cheap. |
 | **COSMIC maturity** | Young on an immutable base; expect breakage across Fedora releases. |
 | **NVIDIA on atomic** | Kernel modules and image-based OS mix poorly; container-based GPU access (CDI) is the realistic path for LLMs. |
 | **Baking Flatpaks at build time** | `RUN flatpak install --system` is unreliable in a container build (no session bus). Needs a first-boot systemd unit. |
 | **osbuild + COPR** | The traditional-Workstation backend must pull Hyprland from a COPR through a blueprint — prove this early (§9b). |
 | **ISO size** | Existing medical ISO is 5.4 GB; `llms` alone is an 8–9 GB layer before a desktop. |
+| **`carino-offline` is unbuilt and unbooted** | Every claim in §4.3 comes from repository queries and from inspecting the built `carino-layer-de-headless`, not from a running machine. The port-53 arbitration is the part that fails silently if it fails (§8.3). Separately, the appliance's *content* is not in the image and never will be — roughly 180 GB of Kiwix and up to 600 GB of package mirror arrive by rsync or by courier — so a correctly built box does nothing useful until they land, and that gap is measured in terabytes and weeks rather than in packages. |
 | **Nothing is published or signed** | No registry, no ISO, no image signatures, and the `composer-cli` path in §9b has never been run end to end. Every download control on the site is a deliberate placeholder (`RELEASES` map) rather than a dead link. |

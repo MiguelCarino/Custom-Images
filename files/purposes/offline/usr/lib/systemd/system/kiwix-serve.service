@@ -1,0 +1,34 @@
+[Unit]
+# kiwix-tools ships no unit of its own (verified against the package file
+# list), so this image provides one. It is gated rather than unconditional:
+# the ZIM corpus is ~180 GB of data that arrives by rsync or by courier, long
+# after the machine is installed, and a unit that fails on every boot of a
+# correctly-built appliance teaches people to ignore failed units.
+Description=Kiwix ZIM library server (offline knowledge corpus)
+Documentation=man:kiwix-serve(1)
+After=network.target
+ConditionPathExists=/var/lib/kiwix/library.xml
+
+[Service]
+Type=simple
+# DynamicUser rather than a packaged system account: nothing here needs a
+# stable uid, the library is read-only to the service, and it means the image
+# creates no user of its own.
+DynamicUser=yes
+# --port is not optional. kiwix-serve defaults to port 80 (kiwix-serve(1)),
+# which is caddy's. --address 127.0.0.1 keeps it off the LAN entirely: it is
+# reached through the caddy reverse proxy, so there is one TLS terminator, one
+# access log, and one port to open in firewalld.
+# --monitorLibrary reloads the library when library.xml changes, so adding a
+# ZIM is kiwix-manage plus nothing.
+ExecStart=/usr/bin/kiwix-serve --library --port 8080 --address 127.0.0.1 --monitorLibrary /var/lib/kiwix/library.xml
+Restart=on-failure
+RestartSec=5s
+ReadOnlyPaths=/var/lib/kiwix
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

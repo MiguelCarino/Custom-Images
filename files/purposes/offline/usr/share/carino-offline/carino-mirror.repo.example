@@ -1,0 +1,40 @@
+# carino-offline — RPM mirror repo definition for LAN CLIENTS.
+#
+# Install as /etc/yum.repos.d/carino-mirror.repo on the machines that consume
+# the mirror. It is NOT installed on the appliance itself, on purpose: a repo
+# file whose baseurl does not resolve makes every dnf command on this box
+# fail, including the ones somebody runs while trying to fix DNS. And the
+# appliance does not need it — on bootc it updates through `bootc upgrade`
+# from a container registry, not through dnf.
+#
+# Replace mirror.EXAMPLE.INTERNAL, and check the paths match what reposync
+# actually wrote under /var/lib/carino-offline/mirror. Build the mirror with:
+#
+#   dnf reposync --repoid=fedora --repoid=updates --download-metadata \
+#       --destdir=/var/lib/carino-offline/mirror
+#   dnf repoclosure --repofrompath=m,file:///var/lib/carino-offline/mirror/... \
+#       --repo=m
+#
+# Run repoclosure every time. An unsatisfiable dependency in a mirror fails on
+# the client, at install time, on a machine with no internet to fall back to.
+
+[carino-fedora]
+name=Fedora $releasever - $basearch (LAN mirror)
+baseurl=http://mirror.EXAMPLE.INTERNAL/fedora/$releasever/Everything/$basearch/os/
+enabled=1
+# Plain HTTP to the mirror is not the weak link and turning this off would be.
+# Signatures are checked against Fedora's own keys, which every client already
+# has from fedora-gpg-keys — so the transport can be unauthenticated without
+# the packages being unauthenticated. That property is what makes an offline
+# mirror safe to run at all.
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+skip_if_unavailable=False
+
+[carino-fedora-updates]
+name=Fedora $releasever - $basearch - Updates (LAN mirror)
+baseurl=http://mirror.EXAMPLE.INTERNAL/fedora/updates/$releasever/Everything/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+skip_if_unavailable=False

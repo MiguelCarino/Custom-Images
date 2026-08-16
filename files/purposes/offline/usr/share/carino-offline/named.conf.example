@@ -1,0 +1,101 @@
+// carino-offline — example split-horizon named.conf. NOT ACTIVE.
+//
+// This image deliberately leaves Fedora's /etc/named.conf in place. That
+// default listens on 127.0.0.1 and ::1 only and answers localhost, which is
+// exactly what /etc/resolv.conf points at on this image — so the appliance
+// resolves for itself from first boot, and serving the LAN stays a decision
+// somebody makes on purpose. Copy this over /etc/named.conf, replace the
+// placeholders, then: named-checkconf && systemctl reload named
+//
+// PLACEHOLDERS: EXAMPLE.INTERNAL, the listen address, the match-clients
+// networks. The subnets below are the VLAN plan published at
+// https://offline.carino.systems/ — they are an illustration, not your
+// network.
+
+acl internal-nets {
+	10.10.0.0/24;   // management
+	10.20.0.0/24;   // core services
+	10.30.0.0/24;   // trusted clients
+	10.50.0.0/24;   // guests / kiosk
+	127.0.0.1;
+	::1;
+};
+
+options {
+	// /var/named is machine-local on bootc: the image's /var is copied in
+	// once at install and never refreshed by `bootc upgrade`. So zone files
+	// written here survive every upgrade and every rollback — and they are
+	// outside the image entirely, so a reinstall loses them. They belong in
+	// the crown-jewel backup set, not here.
+	//
+	// The root hints are not affected by any of that. bind puts only empty
+	// directories and symlinks in /var/named (verified in the RPM payload:
+	// /var/named/named.ca is a symlink to ../../etc/named.ca), and
+	// /usr/lib/tmpfiles.d/named.conf recreates that whole tree at every boot.
+	// The hints file itself is /etc/named.ca, which the hint zone below
+	// already names, and /etc is merged three ways on `bootc upgrade`, so an
+	// unmodified named.ca refreshes with the bind package.
+	directory       "/var/named";
+
+	listen-on port 53 { 127.0.0.1; /* add this host's LAN address */ };
+	listen-on-v6 port 53 { ::1; };
+
+	allow-query     { internal-nets; };
+	recursion       yes;
+	allow-recursion { internal-nets; };
+
+	// DNSSEC validation needs reachable root servers. With the WAN down,
+	// every name outside the zones below SERVFAILs rather than degrading —
+	// which is correct, and is also exactly what an outage looks like from a
+	// client, so expect the first support call of any WAN cut to be about
+	// DNS being broken when DNS is the only thing still working. Set this to
+	// `no` only if you have decided that an answer you cannot validate beats
+	// no answer at all.
+	dnssec-validation auto;
+
+	// Forwarders, for when there IS a WAN. NetworkManager still records what
+	// DHCP offered even though it no longer writes resolv.conf on this image:
+	//   nmcli dev show | grep DNS
+	// forwarders { 1.1.1.1; 9.9.9.9; };
+};
+
+// The internal view: what the building sees.
+view "internal" {
+	match-clients { internal-nets; };
+
+	zone "EXAMPLE.INTERNAL" IN {
+		type primary;
+		file "EXAMPLE.INTERNAL.zone";        // -> /var/named/
+		allow-update { none; };
+	};
+
+	// Split horizon. The public name, answered with LAN addresses inside the
+	// building: the same URL on both sides of the WAN, which is the point of
+	// the whole exercise — bookmarks, printed QR codes and NFC tags never
+	// need a second set of addresses. The cost is that this zone has to be
+	// maintained alongside the real public zone; when they drift, nothing
+	// breaks inside the building and everything breaks outside it, so the
+	// person who notices is never the person who changed it.
+	zone "carino.systems" IN {
+		type primary;
+		file "carino.systems.internal.zone";
+		allow-update { none; };
+	};
+
+	zone "20.10.in-addr.arpa" IN {
+		type primary;
+		file "20.10.in-addr.arpa.zone";
+	};
+
+	include "/etc/named.rfc1912.zones";
+	include "/etc/named.root.key";
+};
+
+// Everything else. No recursion, no internal zones, no answers. A resolver
+// reachable from a network you do not control is an open resolver, and this
+// box is not going to be someone's amplifier.
+view "external" {
+	match-clients { any; };
+	recursion no;
+	allow-query { none; };
+};

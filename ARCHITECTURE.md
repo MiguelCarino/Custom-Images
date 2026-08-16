@@ -45,17 +45,20 @@ infrastructure, not published artifacts.
 | `carino-music` | music | cosmic-hyprland | no file indexer; lowest overhead |
 | `carino-llms` | llms | cosmic-hyprland | leanest session; least VRAM held by the desktop |
 | `carino-pbx` | pbx | headless | an appliance administered over the network: the interfaces are the web UI and SSH, so a desktop would only add attack surface, RAM and packages to patch |
+| `carino-offline` | offline | headless | an appliance that has to answer on the LAN's own ports before anything else on the network is up: DNS, NTP and HTTP are its interfaces and SSH is its console, so a desktop would only add attack surface, RAM and packages to patch to the one box the network cannot lose |
 
 Only COSMIC + Hyprland is shipped as a desktop: both sessions come from one layer and one
 greeter, so the integration work is verified once and inherited by all six desktop
 images. `DE` remains a required field so adding a second desktop later stays a one-line
 change per purpose.
 
-`carino-pbx` is the exception that the field was already able to express. It is an
-appliance, not a workstation, and it pins `DE="headless"` — a layer under
+`carino-pbx` and `carino-offline` are the appliances, and they are what the field was
+already able to express. Neither is a workstation; both pin `DE="headless"` — a layer under
 `config/layers/de/` whose `PARENT` is `base` rather than `desktop-common`. Nothing in the
-build system needed changing for it: a purpose's parent has always been derived from its
-pin, and a layer's parent has always come from its own conf.
+build system needed changing for either: a purpose's parent has always been derived from
+its pin, and a layer's parent has always come from its own conf. `headless` was written for
+`pbx` but was never specific to it, which is what adding a second consumer demonstrated —
+the branch took a new purpose with no code change and no layer change.
 
 The catalog is **derived** by scanning `config/purposes/*.conf` — there is no separate
 catalog file to fall out of sync.
@@ -85,11 +88,12 @@ catalog file to fall out of sync.
 │       ├── gaming.conf
 │       ├── music.conf
 │       ├── llms.conf
-│       └── pbx.conf            # DE="headless"
+│       ├── pbx.conf            # DE="headless"
+│       └── offline.conf        # DE="headless"
 ├── files/                      # static files COPYed into layers, mirrored by layer id
-│   ├── base/                   #   layer dirs are created on demand; only desktop-common
-│   │                           #   and purposes/pbx exist today. A dir maps to / —
-│   ├── desktop-common/         #   base/etc/… → /etc/…
+│   ├── base/                   #   layer dirs are created on demand; only desktop-common,
+│   │                           #   purposes/pbx and purposes/offline exist today. A dir
+│   ├── desktop-common/         #   maps to / — base/etc/… → /etc/…
 │   ├── de/cosmic-hyprland/
 │   └── purposes/<purpose>/
 ├── generated/                  # emitted Containerfiles + blueprints (gitignored)
@@ -220,11 +224,21 @@ network guarantees). Instead:
 
 The installer lives in `desktop-common`, so **the headless branch has no Flatpak
 mechanism at all** — a purpose pinned to `headless` must deliver everything as RPMs or
-install it itself. `carino-pbx` does the latter for FreePBX, with a first-boot oneshot of
-the same shape (`freepbx-setup.service`) and for the same underlying reason: on bootc the
-image's `/var` is copied into the machine once at install and never refreshed by
-`bootc upgrade`, so anything that lives in `/var` cannot be baked at build time and still
-be updatable.
+install it itself. Both purposes on that branch live with this, in opposite directions.
+`carino-pbx` installs FreePBX itself, with a first-boot oneshot (`freepbx-setup.service`)
+and for the underlying reason that governs the whole branch: on bootc the image's `/var` is
+copied into the machine once at install and never refreshed by `bootc upgrade`, so anything
+that lives in `/var` cannot be baked at build time and still be updatable. `carino-offline`
+takes the other route — everything it ships is an RPM or a unit in its own files tree, and
+it sets no `FLATPAKS` line at all, deliberately rather than by oversight: a Flatpak listed
+there would be written to a list nothing on the machine ever reads. It still owns the
+`/var` rule, from the other side: nothing it adds is baked into its `/var`, and
+`/usr/lib/tmpfiles.d/carino-offline.conf` creates the mirror, content and ZIM directories
+empty at boot instead, so the data outlives every upgrade and rollback and a reinstall
+loses it. What `bind` and `caddy`'s own RPMs put there is empty directories and symlinks —
+`bind` recreates its `/var/named` tree at every boot from `/usr/lib/tmpfiles.d/named.conf`,
+and `caddy` ships no such file, so the purpose's own tmpfiles entry recreates
+`/var/lib/caddy` for it.
 
 ## 9. Generated Containerfile shape
 
@@ -288,12 +302,15 @@ examples are wired now to prove the mechanisms end to end:
 - `gaming`: `KARGS="split_lock_detect=off"`
 - `music`: `KARGS="threadirqs"` and `SERVICES_MASK="power-profiles-daemon.service"`
 
-**`pbx` is exempt, deliberately.** It ships ~40 packages, a `REPO_RPMS` line and six
-static files. The starter-set rule exists because a workstation's package list is a
-starting point its user builds on, so shipping a guess costs nothing to correct. An
-appliance has no such user: its package list *is* the product, and a PBX missing its
-database or its PHP runtime is not a smaller PBX, it is a broken one. Its set is fully
-researched and verified rather than provisional — `research/manifest-pbx.json`.
+**Both appliances are exempt, deliberately.** `pbx` ships ~40 packages, a `REPO_RPMS` line
+and nine static files; `offline` ships 18 packages and twelve static files, one of which
+is its `POST_SCRIPT`.
+The starter-set rule exists because a workstation's package list is a starting point its
+user builds on, so shipping a guess costs nothing to correct. An appliance has no such
+user: its package list *is* the product. A PBX missing its database or its PHP runtime is
+not a smaller PBX, it is a broken one, and a keystone that cannot sign a zone or verify a
+disc is not a smaller keystone. Both sets are fully researched and verified rather than
+provisional — `research/manifest-pbx.json` and `research/manifest-offline.json`.
 
 ## 11b. Purpose drift check (against Carino Setup)
 
@@ -324,9 +341,15 @@ as `../SimpleSetup`. If it is not found the check **skips loudly and exits 2** �
 that could not run must never read as a pass. Default output is a report (exit 0); `--strict`
 exits non-zero, which is how it should be wired once the package phase in §11 lands.
 
-`pbx` will never have one: the check compares this project against Carino Setup, and
-Setup has no PBX profile — a purpose that exists on one side only has nothing to drift
-from. That is a fact about the boundary in SCOPE.md §2, not a gap to close.
+Neither appliance will ever have one: the check compares this project against Carino Setup,
+and Setup has no PBX profile and no intranet-server profile — a purpose that exists on one
+side only has nothing to drift from. That is a fact about the boundary in SCOPE.md §2, not
+a gap to close. `offline` needs one caveat the others do not: Carino Setup's purpose menu
+also lists an item called *Offline* (SCOPE.md §11). What that item installs was not
+inspected here, so the two are treated as a name collision rather than a shared purpose; if
+a manifest is ever written for `offline`, establish first that the names mean the same
+thing, because a drift report between an appliance and a workstation profile would be noise
+in both directions.
 
 Only `imagenology` has a manifest today. Weasis ships as a first-boot flatpak (§8), so its
 row is clean; the check still reports three missing viewers (Aliza MS, InVesalius,

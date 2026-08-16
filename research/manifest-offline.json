@@ -1,0 +1,286 @@
+{
+  "key": "offline",
+  "verified": "2026-08-15, two ways. Package names and versions (the evr field on every entry below) were resolved against live Fedora 44 repositories with dnf repoquery, and the file lists quoted here come from unpacking the RPMs. System facts about the branch this purpose builds on — systemd-resolved's version and preset state, the /etc/resolv.conf symlink, the contents of /etc/chrony.conf, the absence of a chrony drop-in directory, the gpsd.socket preset line, which of the common utilities are already installed — were checked inside the already-built localhost/carino-layer-de-headless image, which is the actual parent of this purpose. Per SCOPE.md §7.2, external identifiers were verified rather than assumed. Nothing here has been booted: see risks.",
+  "summary": "carino-offline is the intranet keystone: the one box a LAN with no working WAN still gets names, time, trust, packages and content from. It is an appliance rather than a workstation, so it pins DE=\"headless\" exactly as carino-pbx does — the chain is base → de/headless → offline, there is no desktop and no first-boot Flatpak mechanism (ARCHITECTURE.md §8), and everything is delivered as an RPM or by a unit the image ships. It has to be an image and not a Carino Setup package list (SCOPE.md §2) because five of its decisions are system integration that a post-install script cannot own. systemd-resolved has to stop being the box's resolution path — nsswitch is `hosts: files myhostname resolve [!UNAVAIL=return] dns`, so while it runs it answers for this machine and keeps a second, DHCP-populated cache alongside the one the box hands the building. Verified inside localhost/carino-layer-de-headless, systemd-resolved 259.7 is installed and enabled, and `enable systemd-resolved.service` appears in BOTH /usr/lib/systemd/system-preset/90-default.preset and 90-systemd.preset, so `systemctl disable` is not durable and masking is the only setting a preset re-run cannot undo. /etc/resolv.conf in that same layer is a symlink to ../run/systemd/resolve/stub-resolv.conf, so masking resolved without re-owning that path leaves the appliance with no resolver at all — the file has to be arbitrated in the image, not in a script that runs after the machine is already broken. The trust store has to be a place a site root actually lands with update-ca-trust run where it takes effect, and the CA private key must NOT be baked, because an image-baked key is the same key on every install. dnf has to be pointed at a LAN mirror in a way that does not deadlock the box's own package tooling. And chrony — inherited from de/headless — has to keep serving time with nothing upstream reachable, which takes a `local stratum 10` that nothing installs for you and whose absence is silent for weeks before it surfaces as expired certs and failing TOTP. The manifest is 18 packages, an appliance-sized list like carino-pbx's rather than a catalogue; every capability whose only justification was \"it is a package\" (samba, cups, NFC, NUT, DHCP, backup, git) was rejected with the reason recorded.",
+  "packages": [
+    {
+      "name": "bind",
+      "evr": "32:9.18.50-1.fc44",
+      "why": "named is the only daemon on this image that binds port 53, and it is chosen because it is the only stable-branch package in Fedora 44 that is authoritative and recursive in one process. Split-horizon — retina.carino.systems resolving to a LAN address inside the building and a public one outside — is `view` clauses matched on client address, which is bind's native mechanism. unbound cannot replace it: its auth-zone is a mirror, not an authority (no outbound zone transfers, no dynamic update). knot + knot-resolver would be two daemons contending for one port. Fedora's stock /etc/named.conf is deliberately left in place rather than replaced by the image: it comes up as a validating recursive resolver listening on 127.0.0.1 and ::1 only, which is exactly what this image's /etc/resolv.conf points at, so the appliance resolves for itself from first boot and serving the LAN stays an explicit edit against /usr/share/carino-offline/named.conf.example. bind 9.18 also speaks DoT and DoH natively, so the encrypted-resolver line in the plan needs no extra package, only listener config. The version is a real trade and it is recorded rather than glossed: 9.18.50 is the LAST maintenance release of BIND 9.18, a branch ISC declared end of life on 2026-06-17 (announced 2026-06-10, fetched, and its advice is to migrate to 9.20). Fedora 44 has no 9.20 at all; the only alternative name is bind9-next, the development branch — see `rejected`. So this appliance runs an EOL stable release and gets whatever Fedora backports into it."
+    },
+    {
+      "name": "bind-utils",
+      "evr": "32:9.18.50-1.fc44",
+      "why": "dig, host, nslookup, delv. The failure this box actually has is 'a client says it cannot resolve', and the answer is always dig +trace and dig @127.0.0.1 against each view in turn. bind-utils is a separate package from bind, so a DNS appliance built without it ships named and no way to interrogate it — on a headless box with no second machine on the management VLAN by design, that is the difference between an outage of minutes and an outage of hours."
+    },
+    {
+      "name": "bind-dnssec-utils",
+      "evr": "32:9.18.50-1.fc44",
+      "why": "dnssec-keygen and dnssec-signzone. Signing the internal zone is the only DNSSEC that keeps working when the WAN is gone: a public chain of trust needs reachable parents, an internal one needs a key on this machine and the anchor distributed to clients (the same printed-card channel as the CA fingerprint). Separate package from bind — without it the internal zone can be served but never signed, and that gap is invisible until someone asks whether the intranet's own answers are authenticated."
+    },
+    {
+      "name": "caddy",
+      "evr": "2.10.2-9.fc44",
+      "why": "The single HTTP front for everything the LAN reads off this box: the RPM mirror tree, the Fleet Offline Edition static sites, and a reverse proxy to kiwix-serve. Picked over httpd/nginx for two reasons that are specific to being offline. First, its RPM ships /etc/caddy/Caddyfile.d and the stock Caddyfile ends with `import Caddyfile.d/*.caddyfile` (both verified by unpacking caddy-2.10.2-9.fc44.x86_64.rpm), so adding a service is a drop-in file and a reload rather than an edit to a config the image also wants to own. Second, Caddy embeds smallstep's CA — `tls internal` issues certs for the sites it serves and `acme_server` exposes an ACME endpoint other machines can point a client at — which is the closest thing available from a Fedora RPM to step-ca, since step-ca itself is not packaged. Two cautions recorded rather than hidden: caddy.service runs `caddy validate --config /etc/caddy/Caddyfile` as ExecStartPre, so a drop-in naming a hostname this box cannot answer for stops the web server rather than degrading it (which is why the shipped example carries a .example extension the import glob does not match); and the tls-internal/acme_server behaviour is documented Caddy function that was NOT exercised here."
+    },
+    {
+      "name": "kiwix-tools",
+      "evr": "3.8.1-2.fc44",
+      "why": "kiwix-serve, kiwix-manage, kiwix-search — the offline Wikipedia/Wikimed/Stack Exchange corpus, which is the single largest reason a person walks up to this box. Two integration facts the package does not solve for you and the image therefore must: it ships NO systemd unit (verified against its file list), so the image provides kiwix-serve.service; and kiwix-serve's default port is 80 (verified in kiwix-serve(1)), so left unconfigured it collides head-on with caddy. The shipped unit binds it to 127.0.0.1:8080 behind caddy, and carries ConditionPathExists=/var/lib/kiwix/library.xml so it is inert rather than failing on a machine whose ZIM files have not arrived yet — the same shape as freepbx.service on carino-pbx."
+    },
+    {
+      "name": "gpsd",
+      "evr": "1:3.27.5-5.fc44",
+      "why": "The GPS/PPS receiver path for a box that must hold correct time with no NTP reachable. Shipped but its service NOT enabled, because the receiver is site hardware and the plan's bill of materials puts it on a separate Pi — the common deployment takes that Pi as a network source and gpsd here sits idle. It is in the image anyway because the alternative, plugging a USB GPS puck into the keystone on a single-box install, must not require rebuilding the image on a machine with no internet. The non-obvious part is the socket. Fedora's 90-default.preset line 207 reads `enable gpsd.socket` (verified in carino-layer-de-headless), so installing gpsd silently arms socket activation — and chrony's SHM refclock is not a gpsd client, so the socket never fires, gpsd never runs, and the clock never disciplines while everything reports as configured. The tempting fix, masking gpsd.socket, is wrong and this image does NOT do it: Fedora's gpsd.service opens with `Requires=gpsd.socket` (verified by unpacking gpsd-1:3.27.5-5.fc44), and systemd will not queue a job whose Requires= is masked, so masking the socket makes `systemctl start gpsd.service` fail outright — on the single-box install this package is here for. The socket is left as the preset finds it and the answer is operational: enable gpsd.service and add GPSD_OPTIONS=\"-n\" to /etc/sysconfig/gpsd so gpsd polls the receiver without a client. Stock /etc/sysconfig/gpsd sets only OPTIONS and USBAUTO (verified in the RPM), so that variable has to be added by hand; the shipped /etc/chrony.conf.d/10-carino-offline.conf says so beside the refclock lines."
+    },
+    {
+      "name": "gpsd-clients",
+      "evr": "1:3.27.5-5.fc44",
+      "why": "cgps and gpspipe: the only way to confirm the receiver has a fix and is emitting sentences before blaming chrony for not disciplining. On a time source, 'is it the antenna, the daemon, or the refclock config' has three suspects and this eliminates the first two in one command."
+    },
+    {
+      "name": "pps-tools",
+      "evr": "1.0.3-12.fc44",
+      "why": "ppstest — proves the PPS line is producing pulses at all, at the kernel device, independent of gpsd and chrony. Without it the third suspect above is untestable, and PPS is precisely the part that fails silently: a receiver with a fix and no pulse discipline gives you a clock that is roughly right and never precise, which is exactly the failure that does not announce itself."
+    },
+    {
+      "name": "createrepo_c",
+      "evr": "1.2.1-5.fc44",
+      "why": "A directory of RPMs is not a repository until repodata exists. Every sneakernet drop of packages onto this box ends with a metadata rebuild, and so does every hand-curated subset built to fit a disc. This is also what lets a mirror be pruned to what the site actually runs instead of rsyncing 600 GB."
+    },
+    {
+      "name": "dnf5-plugins",
+      "evr": "5.4.2.1-1.fc44",
+      "why": "reposync and repoclosure. Fedora 44's dnf IS dnf5 (verified: /usr/sbin/dnf and /usr/sbin/dnf5 both present in carino-layer-de-headless), and these two commands ship as dnf5 plugin objects in this package — /usr/lib64/dnf5/plugins/reposync_cmd_plugin.so and repoclosure_cmd_plugin.so, verified in the file list. dnf-plugins-core is the dnf4 set and is the wrong package here, which is the kind of near-miss that resolves cleanly and then does nothing. repoclosure matters more offline than online: a mirror with one unsatisfiable dependency fails on the client, at install time, on a machine with no internet to fall back to."
+    },
+    {
+      "name": "rsync",
+      "evr": "3.4.4-1.fc44",
+      "why": "The mirror pull when a WAN or a courier's drive is available, and the sneakernet copy with --checksum when it is not. Verified NOT already present: `rpm -q rsync` in carino-layer-de-headless returns 'not installed', so this is a real addition and not noise. rsync-daemon is deliberately not added — pulls run over ssh, and an rsyncd with anonymous modules is another unauthenticated service on the box the LAN cannot lose."
+    },
+    {
+      "name": "easy-rsa",
+      "evr": "3.2.6-1.fc44",
+      "why": "A CA that can be driven from a script and a USB stick, for the certificates Caddy's embedded CA will not issue — a printer, a switch, the PACS box, anything that is not an HTTP site Caddy itself fronts. step-ca is not packaged for Fedora 44 (verified: dnf repoquery for step-ca and step-cli returns nothing at all), so this is the substitution and it is a real downgrade in convenience: easy-rsa issues, it does not run ACME. It is deliberately NOT initialised at build time. A CA whose private key ships inside an image is the same private key on every machine that ever installs that image, which is not a CA, it is a published key."
+    },
+    {
+      "name": "xorriso",
+      "evr": "1.5.8-2.fc44",
+      "why": "Authoring, burning and read-back verification in one tool: xorrisofs writes ISO9660 + Joliet + Rock Ridge, xorrecord burns BD-R and DVD-R, and osirrox extracts a burned disc back to files so the verify step compares content instead of trusting the drive's own read. It supersedes genisoimage and cdrecord, and in fact provides both names itself (/usr/bin/mkisofs and /usr/bin/cdrecord are in this package's file list), so shipping the older tools alongside it would put two implementations behind one command name."
+    },
+    {
+      "name": "udftools",
+      "evr": "2.3-13.fc44",
+      "why": "mkudffs, udfinfo, cdrwtool — the UDF side of the disc pipeline, plus the ability to identify what a disc handed to you by someone else actually is. Honest caveat, taken from mkudffs(8) in this exact build rather than assumed: --udfrev accepts 2.60, but the man page marks every revision above 2.01 experimental and defaults Blu-ray to 2.50. So 'UDF 2.60 for BD' is reachable but is a read-back test on the actual burner before it becomes the house standard, not a setting to copy in."
+    },
+    {
+      "name": "dvd+rw-tools",
+      "evr": "7.1-46.fc44",
+      "why": "dvd+rw-mediainfo is the first command run when a burn fails: it asks the drive what medium is loaded, how many layers, which write speeds it will accept, and how much is already written. On a line whose burners are cold spares bought years earlier against industry-wide discontinuation, 'is it the disc, the drive, or the image' is the question, and nothing else in the manifest answers it."
+    },
+    {
+      "name": "par2cmdline",
+      "evr": "1.1.1-1.fc44",
+      "why": "PAR2 at 10% redundancy, which is exactly what the standard disc build process specifies, on every disc, no exceptions. The reason it is not optional: optical rot and scratches take out sectors, not files. A SHA256SUMS file tells you the disc is bad; par2repair gives the data back. This is the difference between an archive and a collection of coasters at year ten."
+    },
+    {
+      "name": "isomd5sum",
+      "evr": "1:1.2.5-6.fc44",
+      "why": "implantisomd5 writes the checksum INSIDE the image, so checkisomd5 verifies a burned disc or a dd'd USB stick directly from the device. SHA256SUMS at the root of the disc verifies the files it lists; it cannot verify the medium, it does not survive dd to a stick, and it is the file most likely to be missing by the time the disc reaches someone else. This is Fedora's own installation-media check mechanism, which means every recipient already knows the ritual."
+    },
+    {
+      "name": "tcpdump",
+      "evr": "14:4.99.6-3.fc44",
+      "why": "On a box whose entire product is answering on port 53 and port 123, with no desktop and — by the VLAN plan — no second machine casually reachable on the management segment, 'the client cannot resolve' is answered by watching the wire. Same reasoning that put it on carino-pbx: the appliance has to be able to prove whether the query ever arrived."
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "step-ca / step-cli",
+      "alternative": "NOT PACKAGED. dnf repoquery for both names against Fedora 44 returns nothing — verified. The plan names step-ca as the internal CA with a 10-year root and a real ACME server, and this image cannot deliver it from an RPM. Upstream ships Go binaries and containers, which on a bootc host means /var or a container runtime, i.e. exactly the class of thing the image cannot keep updatable. Caddy's embedded CA covers the sites Caddy serves; easy-rsa covers manual issuance for everything else; the general LAN-wide ACME server is a gap, recorded as one in risks."
+    },
+    {
+      "name": "Technitium DNS Server",
+      "alternative": "NOT PACKAGED, and not packageable here. It is the plan's actual first choice (for the GUI, the split-horizon UI and DoH/DoT), but it is a .NET application distributed as a tarball or container image. Substituting bind is a deliberate trade: the appliance's DNS must arrive and update through the same `bootc upgrade` stream as the rest of the OS, and the price is that the person who wanted a web UI gets a text file. Technitium can still run as a container on the Proxmox node if someone wants the UI alongside — it just must not be the thing the LAN's name service depends on."
+    },
+    {
+      "name": "nfc-tools / python3-nfcpy",
+      "alternative": "NEITHER EXISTS in Fedora 44 — verified, dnf repoquery returns nothing for both names; only libnfc 1.8.0 (the library) is packaged. That settles it on availability, but the scope answer is the same anyway: NFC tag writing is a desk activity with a USB reader, and its one genuine system-integration wrinkle (the kernel's pn533_usb driver grabbing an ACR122U before pcscd or libnfc can, fixed with a modprobe.d blacklist) belongs on the machine the reader is plugged into. Encoding tags is not something a rack-mounted DNS/NTP/HTTP server does, and pretending otherwise would put a USB stack story on an appliance nobody touches."
+    },
+    {
+      "name": "cdrtools",
+      "alternative": "Does not resolve at all in Fedora 44 — verified. Nothing is missing: xorriso is the same upstream lineage and already provides /usr/bin/mkisofs and /usr/bin/cdrecord itself."
+    }
+  ],
+  "rejected": [
+    {
+      "name": "unbound",
+      "why": "Packaged, and declined. A second daemon that wants port 53, and it does not solve the problem bind is here for. unbound's auth-zone is a local mirror of a zone, not an authority — no outbound zone transfers, no dynamic update, no views. Running it as a recursor in front of bind would mean two caches, two places a name can be answered differently, and a port arbitration problem inside the image on top of the one already being solved against systemd-resolved."
+    },
+    {
+      "name": "bind9-next",
+      "why": "Packaged (32:9.21.22-2.fc44 — verified with dnf repoquery) and declined, but the trade is closer than the others here and belongs on the record rather than left out. It is the same software as bind and it is also authoritative and recursive in one process, so the uniqueness argument for bind is about branches, not capability. Fedora 44's honest set of options is bind 9.18.50 — the final maintenance release of a branch ISC declared end of life on 2026-06-17 — or bind9-next 9.21.x, which is ISC's development branch and explicitly not an extended-support version. There is no 9.20 in Fedora 44 at all, which is what ISC's own migration advice names. bind was kept because a development branch on the one box the network cannot lose trades a known, bounded staleness for an unbounded rate of change, and because Fedora carries 9.18 for the life of this release. The cost is real and is recorded in risks: an appliance whose updates arrive by rsync or by courier cannot pull an out-of-band fix quickly."
+    },
+    {
+      "name": "knot / knot-resolver",
+      "why": "Both exist in Fedora 44 (knot 3.5.6, knot-resolver 5.7.6 — verified) and they are good software, but they are the two-daemon split: knot is authoritative-only and knot-resolver is recursive-only. Getting both behaviours means two processes on one address and one port, which needs either a second IP or a forwarding hop. bind does it in one process with views, which is one config file, one cache, and one thing to be down."
+    },
+    {
+      "name": "dnsmasq",
+      "why": "Not authoritative in any real sense, no views, cannot sign a zone. It is the right answer for a small router doing DHCP+DNS, which in this architecture is the MikroTik's job, not this box's."
+    },
+    {
+      "name": "bind-chroot",
+      "why": "Duplicates confinement that already exists. named runs as named_t under the targeted policy, policycoreutils-python-utils is inherited from de/headless for adjusting it, and the chroot adds a second set of paths that every config example on the internet gets wrong. On a read-only /usr it also complicates where the runtime tree can live for no additional containment."
+    },
+    {
+      "name": "samba / samba-client / samba-common-tools",
+      "why": "Rejected despite the plan listing 'plain SMB share' for Windows ISOs and drivers. caddy's `file_server browse` already serves the same trees, read-only, to every operating system in the building with no accounts to manage. SMB's additional capability is writable shares and Explorer integration, and its additional cost is a user database, a password scheme and a share ACL model that duplicates the identity layer the plan puts in Authelia/LLDAP — on the one box the network cannot lose. If a site needs SMB it is a separate purpose or a container on the storage node, where the shares and the data are anyway."
+    },
+    {
+      "name": "cups / cups-filters",
+      "why": "Printing is in the plan and is deliberately NOT on this image. A central CUPS server adds a queue, not a capability: an IPP Everywhere printer is driverless and directly addressable from every client on the LAN, so the spooler is optional infrastructure. And the property that actually matters — the printer never reaches a vendor cloud — comes from the printer VLAN having no WAN route, which is enforced on the router, not here. Putting CUPS on the keystone would drag in avahi, ghostscript and a filter chain to widen the attack surface of the DNS server in exchange for a queue nobody asked for. Carino Setup can install CUPS on the workstation that wants it."
+    },
+    {
+      "name": "avahi / nss-mdns",
+      "why": "The plan says to run mDNS so http://hub.local/ works for guests, and this image still declines. mDNS is a second, unauthenticated name system that any device on the segment can answer for, sitting on the box whose entire purpose is to be the one authority for names — the two work against each other, and the failure mode (a guest laptop being answered by something that is not this box) is invisible. Guests get the internal resolver by DHCP or they get the printed IP card. Avahi belongs on a workstation, from Setup, not on the keystone."
+    },
+    {
+      "name": "nut",
+      "why": "UPS shutdown authority belongs to the machine the UPS data cable is plugged into, which in the plan's bill of materials is the rack, not necessarily this box, and its entire configuration (driver, model, port, shutdown order) is site-specific. Out of the six capabilities this image is scoped to."
+    },
+    {
+      "name": "dhcp-server / kea",
+      "why": "The MikroTik owns DHCP and routing. Putting them here would make the keystone the router as well, which is the single point of failure the layered architecture is built to avoid — the service layer is supposed to survive one box dying, and it cannot if one box is all of it."
+    },
+    {
+      "name": "dvdisaster",
+      "why": "Exists in Fedora 44 (0.79.5 — verified) and is genuinely good at optical error correction, but PAR2 at 10% is already the redundancy step in the standard disc build process. Two ECC schemes in one pipeline means two verify paths, and the one that is used less is the one that silently stops being run."
+    },
+    {
+      "name": "genisoimage / cdrskin / cdrdao",
+      "why": "genisoimage (1.1.11), cdrskin (1.5.8) and cdrdao (1.2.6) all exist in Fedora 44 — verified. All are declined: xorriso is the same upstream lineage and already provides /usr/bin/mkisofs and /usr/bin/cdrecord itself, so installing the legacy names alongside it puts two implementations behind one command. cdrdao is audio-CD disc-at-once, and the CD-R row in the media table is data discs for legacy clinic equipment, not audio."
+    },
+    {
+      "name": "dnf-plugins-core",
+      "why": "The dnf4 plugin set. Fedora 44's dnf is dnf5, and reposync/repoclosure ship as dnf5 plugin objects in dnf5-plugins. This name resolves cleanly (4.10.1 — verified), installs, and then does not provide the commands the mirror workflow needs, which is worse than a name that fails."
+    },
+    {
+      "name": "httpd / nginx / lighttpd / darkhttpd",
+      "why": "All present in Fedora 44. One HTTP server per box; caddy is it, for the Caddyfile.d drop-in mechanism and the embedded CA. A second web server on an appliance is two TLS configurations, two access logs and a port conflict waiting for someone to enable the wrong unit."
+    },
+    {
+      "name": "git-core",
+      "why": "The crown-jewel git bundles are produced on a workstation that has the repositories and handed to this box as files. Nothing the appliance does needs to clone anything."
+    },
+    {
+      "name": "restic / borgbackup",
+      "why": "Backup runs on the storage node against ZFS snapshots. This box is a source of backup data, not a backup target, and adding a second backup implementation next to the one that owns the pool is how restore procedures diverge."
+    },
+    {
+      "name": "openssl, ca-certificates, tar, curl, coreutils",
+      "why": "Already present — verified individually with rpm -q inside localhost/carino-layer-de-headless (openssl 3.5.7, ca-certificates 2025.2.80, tar 1.35, curl 8.18.0, coreutils 9.10). carino-pbx lists tar because it could not assume it; here it was checked, so listing any of these would be noise that implies the manifest was not verified."
+    }
+  ],
+  "integration": [
+    {
+      "kind": "resolver arbitration",
+      "detail": "systemd-resolved.service is MASKED, not disabled, and its two socket units are masked with it. Verified in localhost/carino-layer-de-headless: systemd-resolved 259.7 is installed, `systemctl is-enabled` returns enabled, and `enable systemd-resolved.service` appears in BOTH /usr/lib/systemd/system-preset/90-default.preset and 90-systemd.preset — so any `systemctl preset-all`, and any future package that touches presets, turns it back on. The reason it must not come back is nsswitch, not a port collision. nsswitch.conf on the parent layer is `hosts: files myhostname resolve [!UNAVAIL=return] dns` (verified), so while resolved runs it is this host's resolution path through nss-resolve, and the appliance keeps a second cache populated from DHCP that can answer an internal name differently from the answer this same machine hands the building — which is why DNSStubListener=no, the answer usually recommended, is right on a workstation and wrong here: it silences the stub and leaves the daemon as the resolution path. The port claim, stated honestly: resolved's stub holds 127.0.0.53:53 and 127.0.0.54:53 (resolved.conf(5), with DNSStubListenerExtra unset by default) while Fedora's stock named.conf binds `listen-on port 53 { 127.0.0.1; }` explicitly, so the two coexist and named does NOT fail at boot — a collision only appears if someone writes `listen-on { any; }`, which nothing this image ships suggests. systemd-resolved-varlink.socket and systemd-resolved-monitor.socket are masked too because both report is-enabled 'enabled' and systemd-resolved.service names both in Sockets= and Also= (verified); masking only the service would leave the varlink socket listening, so every nss-resolve lookup would try to activate a masked unit — resolution still succeeds via [!UNAVAIL=return] falling through to dns, but the DNS appliance would boot with an activation path that fails on use. Masking gives one daemon, one cache, one answer."
+    },
+    {
+      "kind": "resolv.conf ownership",
+      "detail": "/etc/resolv.conf on the parent layer is a symlink to ../run/systemd/resolve/stub-resolv.conf (verified). Masking resolved without re-owning that path leaves a dangling symlink and no resolver at all. /usr/lib/tmpfiles.d/carino-offline.conf replaces it with `L+ /etc/resolv.conf … /usr/share/carino-offline/resolv.conf`, a file in /usr containing `nameserver 127.0.0.1` — the appliance resolves through the named it runs, so it never disagrees with the answers it gives its clients. A site that needs a different file drops one with the same name in /etc/tmpfiles.d/, which takes precedence over /usr/lib/tmpfiles.d/."
+    },
+    {
+      "kind": "NetworkManager",
+      "detail": "/etc/NetworkManager/conf.d/90-carino-offline-dns.conf sets dns=none and rc-manager=unmanaged. This is the other half of the arbitration and the half that is easy to forget: with resolved masked, NM falls back to composing and writing /etc/resolv.conf itself and would replace the tmpfiles symlink with DHCP's nameservers at the first carrier event, long after anyone was watching. Verified that the parent layer ships no drop-ins in that directory, so this file conflicts with nothing. DHCP-supplied nameservers are still recorded on the connection and readable with `nmcli dev show | grep DNS`, so they remain available as forwarders to paste into named.conf."
+    },
+    {
+      "kind": "time",
+      "detail": "chronyd is enabled by de/headless; what is missing is a reference and permission to serve. /etc/chrony.conf.d/10-carino-offline.conf carries `local stratum 10`, the directive that lets chronyd mark itself synchronised with no reachable source — without it every NTP answer carries leap indicator 3 and every client correctly rejects it, so the building's clocks free-run silently from the moment the WAN is cut. It also carries RFC1918 `allow` lines and commented, unguessed refclock lines (SHM/PPS for a local receiver, or the GPS Pi as a network source). The file is only read because POST_SCRIPT appends `confdir /etc/chrony.conf.d` to /etc/chrony.conf — see the filesystem note."
+    },
+    {
+      "kind": "chrony has no drop-in directory",
+      "detail": "Verified inside carino-layer-de-headless: the only include directive in /etc/chrony.conf is `sourcedir /run/chrony-dhcp`, which takes source lines only — the rest of the shipped file is `pool 2.fedora.pool.ntp.org iburst`, driftfile, makestep, rtcsync, ntsdumpdir, leapseclist and logdir, so it also carries an upstream pool this appliance will never resolve — and neither /etc/chrony.conf.d nor /etc/chrony/sources.d exists. `confdir` is a documented chrony.conf(5) directive, so the purpose adds one line to Fedora's config at build time via POST_SCRIPT (/usr/libexec/carino-offline-chrony-confdir, idempotent, also left on the image so it can be re-run after an update). It will surface as a three-way merge on any future Fedora chrony update that changes the shipped chrony.conf."
+    },
+    {
+      "kind": "http",
+      "detail": "caddy.service is enabled on the packaged Caddyfile, which serves a welcome page on :80 — deliberately, because port 80 answering proves the HTTP path end to end before any content exists. Real sites arrive as drop-ins in /etc/caddy/Caddyfile.d/, which the stock Caddyfile imports with `import Caddyfile.d/*.caddyfile` (verified by unpacking the RPM). The image ships carino-offline.caddyfile.example there: inert purely by extension, because caddy.service runs `caddy validate` as ExecStartPre and a config naming hostnames this box cannot answer for would stop the web server rather than degrade it — on the machine that also serves the documentation you would use to fix it."
+    },
+    {
+      "kind": "kiwix",
+      "detail": "kiwix-tools ships no systemd unit at all (verified against its file list), so the image provides /usr/lib/systemd/system/kiwix-serve.service. It pins --port 8080 and --address 127.0.0.1 because kiwix-serve's default port is 80 (verified in kiwix-serve(1)) and would collide with caddy head-on; it is reached through the caddy reverse proxy so there is one TLS terminator, one access log and one open port. It is enabled but carries ConditionPathExists=/var/lib/kiwix/library.xml, the same shape as freepbx.service on carino-pbx and for the same reason: the ZIM corpus arrives weeks later by rsync or courier, and a unit that fails on every boot of a correctly-built machine teaches people to ignore failed units. DynamicUser=yes, so the image creates no account of its own."
+    },
+    {
+      "kind": "first-boot",
+      "detail": "carino-offline-firstboot.service (oneshot, After=firewalld.service network-online.target, ConditionPathExists=!/var/lib/fedora-images/.carino-offline-done) runs /usr/libexec/carino-offline-firstboot: it opens dns, http, https and ntp in the default firewalld zone, runs `update-ca-trust extract`, then stamps. Both actions need a booted machine with firewalld running, which a container build does not have — the same shape and the same reason as freepbx-setup.service. It stamps only on success so a failure retries next boot. Nothing speculative is opened: kiwix is on loopback behind caddy, DoT/DoQ need a listener configured in named.conf first, and samba is not installed at all."
+    },
+    {
+      "kind": "trust store",
+      "detail": "Both anchor directories exist on the base (/usr/share/pki/ca-trust-source/anchors and /etc/pki/ca-trust/source/anchors — verified), and the first-boot unit runs `update-ca-trust extract` so a root dropped in by kickstart %post, cloud-init or a USB stick before first boot actually becomes trusted. No root CA is baked and none can be: a private key inside an image is the same private key on every machine that installs it. Forgetting the extract step presents as 'the certificate is valid on the server and untrusted on the server', which reads as a certificate fault and is not one."
+    },
+    {
+      "kind": "package mirror",
+      "detail": "/usr/share/carino-offline/carino-mirror.repo.example is deliberately NOT installed into /etc/yum.repos.d on the appliance. A repo file whose baseurl does not resolve makes every dnf command on the box fail, including the ones a rescue admin runs while trying to fix DNS — and on bootc the appliance updates through `bootc upgrade` from a registry, not through dnf, so an active repo file buys it nothing. It is the file to hand to LAN clients and to copy into a Containerfile that builds against the mirror. gpgcheck stays on with Fedora's own keys, which is what makes a plain-HTTP mirror safe: the transport is unauthenticated, the packages are not."
+    },
+    {
+      "kind": "filesystem",
+      "detail": "Nothing this purpose adds is baked into the image's /var. On bootc that tree is copied into the machine once at install and never refreshed by `bootc upgrade`, so a directory baked there is frozen at the version of whichever build first installed the machine while appearing to update with the rest of the OS. What the RPMs themselves place there is empty directories and symlinks, verified in their payloads: bind creates /var/named (01770 root:named), data/dynamic/slaves (0770 named:named) and four symlinks into /etc and /usr/share, and recreates the whole tree at every boot from /usr/lib/tmpfiles.d/named.conf; caddy creates /var/lib/caddy (0750 caddy:caddy, the caddy user's home per /usr/lib/sysusers.d/caddy.conf) and ships no tmpfiles.d entry of its own, so this purpose adds `d /var/lib/caddy 0750 caddy caddy -` to its own tmpfiles file — that directory holds Caddy's internal CA root and is on the crown-jewel backup list, and it should be reproducible rather than install-only. /usr/lib/tmpfiles.d/carino-offline.conf creates /var/lib/carino-offline/{mirror,www} and /var/lib/kiwix empty at boot. The data that lands there — zone files in /var/named, Caddy's internal CA root in /var/lib/caddy, the mirror, the ZIM library, the site trees — survives every upgrade and rollback and is outside the image entirely, so a reinstall loses it. That is why DNS zone files are on the crown-jewel backup list."
+    }
+  ],
+  "risks": [
+    "Nothing in this manifest has been booted. The package set, the file paths, the systemd presets and the resolv.conf symlink were all verified against live Fedora 44 repositories and inside the existing localhost/carino-layer-de-headless image, but no ISO has been installed and no unit has started. The piece most likely to bite first is the port-53 arbitration: if NetworkManager's dns=none / rc-manager=unmanaged drop-in does not take, the first carrier event writes a DHCP-supplied resolver over the symlink and the appliance starts answering from the ISP's cache — on the machine whose job is to be the authority. Read `resolvectl status`, `nmcli dev show | grep DNS` and `ls -l /etc/resolv.conf` before believing any of it.",
+    "step-ca is not packaged for Fedora 44 (verified), so a LAN-wide internal ACME server is not delivered. Caddy's `acme_server` covers clients willing to point at it; easy-rsa covers manual issuance. What is missing is the thing that made the plan attractive — certificates renewing themselves forever with no internet, for devices that are not Caddy sites. Anything else on the LAN gets a manually issued certificate with a manually tracked expiry, which is a calendar entry someone will miss.",
+    "No root CA is baked into the trust store, and no root CA can be. Both directions fail for the same reason — a generic image cannot know a site's CA. Bake the root *with* its key so the image can issue, and every machine that installs it holds the same private key, which is no CA at all. Bake the root certificate alone, and it anchors an authority this particular site does not run. So the image ships the mechanism (both anchor directories exist — /usr/share/pki/ca-trust-source/anchors and /etc/pki/ca-trust/source/anchors, verified) and the first-boot unit runs `update-ca-trust extract`, but the site's root has to arrive from somewhere else. That is the single step most likely to be skipped, and skipping it presents as 'the certificate is valid on the server and untrusted on the server', which reads as a certificate fault and is not one.",
+    "Technitium is the DNS server the plan actually chose, and this image substitutes bind. Anyone expecting the GUI, the built-in block lists and the click-through split-horizon editor is getting named.conf and a text editor instead. That is a real reduction in who can operate the box.",
+    "Zone files are outside the image and outside the update stream. On bootc the image's /var is copied into the machine once at install and never refreshed by `bootc upgrade`, so a zone file written to /var/named survives every upgrade and every rollback — and a reinstall loses it. That is why DNS zone files are on the crown-jewel backup list, and it is the whole risk: it is not a root-hints problem. bind's own /var footprint is three empty directories (data, dynamic, slaves) and four symlinks, all recreated at boot by /usr/lib/tmpfiles.d/named.conf, and /var/log/named.log is %ghost so it is not in the image at all (all verified in the RPM payload with rpm -qlvp and FILEFLAGS). The root hints are the real file /etc/named.ca, which is what the stock named.conf's hint zone points at, and /etc is merged three ways on `bootc upgrade`, so an unmodified named.ca updates with the bind package like any other config file.",
+    "The keystone daemon is on an end-of-life branch. Fedora 44 pins bind at 32:9.18.50-1.fc44, and ISC announced on 2026-06-10 (fetched) that this exact release is the last maintenance version of BIND 9.18 and that the branch reached end of life on 2026-06-17, urging migration to 9.20. Fedora 44 carries no 9.20; the alternative is bind9-next 9.21.22, the development branch, which is why it is in `rejected` rather than ignored. Fixes now depend on Fedora backporting into 9.18, and on this box they land whenever a mirror sync or a courier's drive does — which is the wrong latency for the one daemon the LAN cannot lose. Worth re-reading at the next Fedora release, when a supported branch should be available.",
+    "The offline recursion trap is not solved, only documented. With `dnssec-validation auto` and no route to the root servers, every name outside the internal zones SERVFAILs rather than degrading gracefully. That is correct behaviour and it is also exactly what an outage looks like from a client's perspective, so the first support call during a WAN cut will be about DNS being broken when DNS is the only thing still working. The example named.conf says so; nothing in the image prevents it, and the alternative (trusting an unvalidated forwarder) is worse.",
+    "This image has no DHCP, no routing and no VLAN configuration, by design — the MikroTik owns those. That means a fresh carino-offline box on a network with no other infrastructure serves nobody, because nothing tells clients to ask it. The first-boot unit opens the ports; handing out this box's address is somebody else's job.",
+    "The content is not in the image and never will be: roughly 180 GB of Kiwix and 600 GB of Fedora mirror against a manifest that installs in the low hundreds of megabytes. The image ships the servers and creates the empty directories; until rsync or a courier's drive fills them, kiwix-serve stays inert on its ConditionPathExists and the mirror is an empty file listing. An 'offline appliance' with nothing on it is a correctly-built box that does nothing, and that gap is measured in terabytes and weeks, not in packages.",
+    "The caddy RPM ships no SELinux policy module of its own (verified against its file list — no .pp, no caddy-selinux subpackage), so how it is confined when serving trees out of /var/lib/carino-offline is unknown and untested. If it turns out to need an fcontext rule, policycoreutils-python-utils is inherited from de/headless and semanage is available, but nobody has run it and this manifest does not claim otherwise.",
+    "The POST_SCRIPT edit to /etc/chrony.conf is a change to a distro-owned config file inside the image. It is idempotent and guarded by a grep, but any future Fedora chrony update that changes the shipped chrony.conf will surface it as a three-way merge on installed machines."
+  ],
+  "copr": [],
+  "flatpaks": [
+    "None, and none are possible: the first-boot Flatpak installer lives in desktop-common (ARCHITECTURE.md §8) and this purpose's chain is base → de/headless → offline, which never touches that layer. Everything here is an RPM or a unit the image ships."
+  ],
+  "external": [
+    {
+      "name": "Kiwix ZIM corpus",
+      "method": "Roughly 180 GB of .zim files from download.kiwix.org or a courier's drive, unpacked into /var/lib/kiwix and indexed with `kiwix-manage /var/lib/kiwix/library.xml add`. Not in the image; kiwix-serve.service stays inert until library.xml exists."
+    },
+    {
+      "name": "Fedora package mirror",
+      "method": "`dnf reposync --download-metadata` into /var/lib/carino-offline/mirror when a WAN or a drive is available, then `dnf repoclosure` before it is trusted, then `createrepo_c` after any hand-curated pruning. Roughly 600 GB unpruned. Not in the image."
+    },
+    {
+      "name": "Site root CA",
+      "method": "Generated off this machine (or by easy-rsa on it, after install), delivered to /etc/pki/ca-trust/source/anchors/ and activated with `update-ca-trust extract`. Deliberately never baked: an image-baked private key is the same key on every install."
+    },
+    {
+      "name": "Fleet Offline Edition",
+      "method": "The carino.systems tools, which are client-side static with vendored libraries and no CDN, unpacked into /var/lib/carino-offline/www and served by caddy. Packaging work done elsewhere; nothing about it is in this image."
+    }
+  ],
+  "services": [
+    "named.service — enabled; starts on Fedora's stock /etc/named.conf, a validating recursive resolver on 127.0.0.1 and ::1 only. That is what this image's /etc/resolv.conf points at, so the box resolves for itself from first boot while serving the LAN stays an explicit edit.",
+    "caddy.service — enabled; the packaged Caddyfile serves a welcome page on :80, which proves the HTTP path before any content exists.",
+    "kiwix-serve.service — enabled, and shipped by this image because kiwix-tools has no unit. ConditionPathExists=/var/lib/kiwix/library.xml keeps it inert rather than failing until ZIM files arrive.",
+    "carino-offline-firstboot.service — enabled; oneshot, opens dns/http/https/ntp and runs update-ca-trust extract, stamps on success so a failure retries next boot.",
+    "systemd-resolved.service — MASKED, deliberately. See integration.",
+    "systemd-resolved-varlink.socket and systemd-resolved-monitor.socket — MASKED with it. Both are preset-enabled and the service names them in Sockets= and Also=, so masking the service alone would leave nss-resolve trying to activate a masked unit on every lookup.",
+    "gpsd.socket — left as the preset finds it (enabled), NOT masked. Masking it would make gpsd unstartable, because gpsd.service carries Requires=gpsd.socket. See packages[gpsd].",
+    "gpsd.service — installed but NOT enabled: no receiver is present at build time, and the usual deployment takes time from a separate GPS/PPS Pi over the network. Enabling it on a single-box install also means adding GPSD_OPTIONS=\"-n\" to /etc/sysconfig/gpsd, because chrony's SHM refclock is not a gpsd client and nothing else will open the socket.",
+    "sshd/firewalld/chronyd — enabled by the de/headless layer, not here."
+  ],
+  "notes": [
+    "Two rejection lists, not one. `unavailable` is for names that cannot be installed on Fedora 44 at all (verified with dnf repoquery); `rejected` is for packages that exist and were declined on scope. Collapsing them would hide which constraint produced which decision, and the two get revisited for completely different reasons — an unavailable package becomes available when someone packages it, a rejected one only when the appliance's scope changes.",
+    "This is the second appliance in the catalog and the second purpose pinned to de/headless, which was built for carino-pbx but is not specific to it. It carries openssh-server, firewalld, chrony, cronie, logrotate, tuned, policycoreutils-python-utils, bash-completion and tmux; this purpose depends on chrony and policycoreutils-python-utils from that set.",
+    "It exceeds the ARCHITECTURE.md §11 starter-set size for the same reason carino-pbx does. For a workstation the package list is a starting point a user builds on; for an appliance the package list IS the product, and a keystone that cannot sign a zone or verify a disc is not a smaller keystone, it is a broken one. 18 packages is the appliance order of magnitude, not a catalogue.",
+    "There is no drift manifest under tools/purpose-apps/ for this purpose (ARCHITECTURE.md §11b), for the same reason carino-pbx has none: the check compares this project against Carino Setup, and Setup has no intranet-server profile to drift from.",
+    "Every site-specific file this image ships is inert by construction rather than by comment — named.conf.example and carino-mirror.repo.example live in /usr/share where nothing reads them, and carino-offline.caddyfile.example carries an extension the Caddyfile import glob does not match. No plausible-looking placeholder value can take effect by accident; EXAMPLE.INTERNAL and the illustrated subnets appear only inside files that are not loaded.",
+    "The 'why' behind this image is written up at https://offline.carino.systems/ (section 00 - Start), and that page points back at this repository. Neither document is the other's summary: the site is the plan for a whole offline site, this is one box in it."
+  ],
+  "size_note": "Not measured — no build has been run, so this is an estimate rather than a verified figure. The 18 packages are all small: bind and its two utility packages, a single static Go binary for caddy, kiwix-tools, the gpsd trio, the dnf/mirror tooling and the optical-media set. Expect the low hundreds of megabytes on top of the headless layer, an order of magnitude below carino-pbx. The number that matters is not in the image at all: roughly 180 GB of Kiwix content and up to 600 GB of package mirror, which arrive by rsync or by courier and live in /var."
+}

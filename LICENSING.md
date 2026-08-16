@@ -14,7 +14,8 @@ Containerfiles, the documentation, and the website under `docs/`.
 
 Copyright © 2026 Miguel Carino.
 
-**Why AGPL for a build system.** The network clause (§13) has no practical effect on
+**Why AGPL for a build system.** The network clause (AGPL-3.0 section 13, "Remote
+Network Interaction", in `LICENSE`) has no practical effect on
 build tooling — nobody interacts with `build.sh` over a network. It is used here for two
 reasons that do matter: every other Carino repository uses it, so the fleet has one
 answer rather than eight; and single-authorship under AGPL is what makes a **commercial
@@ -44,6 +45,7 @@ rather than incidental dependencies:
 | `carino-pbx` | FreePBX 17 | GPL-family (installed at first boot, not baked in) |
 | `carino-pbx` | MariaDB, Apache httpd, PHP (Remi SCL) | GPL / Apache-2.0 / PHP licence |
 | `carino-imagenology` | ArgyllCMS | GPL-family |
+| `carino-offline` | kiwix-tools, easy-rsa, xorriso | GPL-family |
 | all | Fedora kernel, systemd, COSMIC, Hyprland, … | as shipped by Fedora |
 
 Read each component's own licence rather than this table before relying on it — the table

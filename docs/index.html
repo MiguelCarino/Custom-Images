@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/webp" href="logo.webp">
 <title>Carino Custom Images — purpose-built Fedora</title>
-<meta name="description" content="Purpose-built Fedora: six COSMIC + Hyprland desktops and a headless Asterisk/FreePBX appliance, each shipping the integration one kind of work needs. Installer ISO or bootc container image.">
+<meta name="description" content="Purpose-built Fedora: six COSMIC + Hyprland desktops and two headless appliances — Asterisk/FreePBX telephony and an intranet keystone for a LAN with no working WAN — each shipping the integration one kind of work needs. Installer ISO or bootc container image.">
 <link rel="stylesheet" href="fonts/carino-fonts.css">
 <style>
     :root {
@@ -211,7 +211,7 @@
     .node.published .nm { color: var(--accent); }
     .connector { width: 1px; height: 0.85rem; background: var(--border); }
     .plist { display: grid; grid-template-columns: repeat(3, auto); gap: 5px; }
-    .plist.one { grid-template-columns: auto; } /* the appliance branch has a single leaf */
+    .plist.two { grid-template-columns: repeat(2, auto); } /* the appliance branch carries two leaves, not six */
     /* base forks two ways: the desktop branch and the headless one. The crossbar
        is drawn on the fork itself so the two branches read as siblings rather
        than as one column that happens to be wider. */
@@ -240,7 +240,7 @@
         .rowhead { margin: 10px 0 7px; }
         .folds { margin-top: 10px; }
         .row { padding: 8px 11px; }
-        .row .ds { -webkit-line-clamp: 1; } /* one line rather than two: seven rows x one line is what keeps the picker on screen */
+        .row .ds { -webkit-line-clamp: 1; } /* one line rather than two: eight rows x one line is what keeps the picker on screen */
         .bar { padding: 7px 11px; }
         .buildwrap { margin-top: 9px; }
         .panel { padding: 11px 13px; }
@@ -270,6 +270,7 @@
     <symbol id="i-gaming" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="6"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15.5" y1="13.5" x2="15.51" y2="13.5"/><line x1="18" y1="10.5" x2="18.01" y2="10.5"/></symbol>
     <symbol id="i-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
     <symbol id="i-pbx" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L15 14l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/><line x1="15" y1="3" x2="21" y2="3"/><line x1="18" y1="3" x2="18" y2="9"/></symbol>
+    <symbol id="i-offline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><line x1="3.5" y1="20.5" x2="20.5" y2="3.5"/></symbol> <!-- a struck-through cloud: the services a site would rent are in the building instead -->
     <symbol id="i-llms" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></symbol>
 </defs></svg>
 
@@ -280,7 +281,7 @@
             <span class="lead" data-i18n>The whole system, set up for your work,</span>
             <span class="punch" data-i18n>before you ever boot it.</span>
         </h1>
-        <p data-i18n>Seven Fedora images: six desktops and one telephony appliance. Pick the one that matches what you do — the tools, the drivers and the tuning are already in it, and an update that goes wrong is one command back.</p>
+        <p data-i18n>Eight Fedora images: six desktops and two headless appliances. Pick the one that matches what you do — the tools, the drivers and the tuning are already in it, and an update that goes wrong is one command back.</p>
         <div class="tabbar" role="tablist" aria-label="Section">
             <button type="button" class="tabbtn active" role="tab" id="tab-get" data-tab="get" aria-controls="pane-get" aria-selected="true"><b data-i18n>Get an image</b><span class="sub">ISO · Container</span></button>
             <button type="button" class="tabbtn" role="tab" id="tab-build" data-tab="build" aria-controls="pane-build" aria-selected="false"><b data-i18n>Build it yourself</b><span class="sub">bash · podman</span></button>
@@ -296,14 +297,14 @@
         <h2 data-i18n>Editions</h2>
         <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener" data-i18n>Based on Fedora 44</a>
         <span class="depill">COSMIC + Hyprland</span>
-        <span class="depill" data-i18n>plus one headless appliance</span>
+        <span class="depill" data-i18n>plus two headless appliances</span>
         <span class="hint" data-i18n>Image-based Fedora — transactional updates, identical on every machine, one-command rollback.</span>
     </div>
 
     <div class="split">
         <div class="picker" id="picker"></div>
         <div class="preview">
-            <video id="pv" muted loop playsinline preload="metadata" aria-label="Image preview"></video> <!-- metadata, not none: src is only assigned on hover, so this fetches just enough for a first frame without pulling six clips up front -->
+            <video id="pv" muted loop playsinline preload="metadata" aria-label="Image preview"></video> <!-- metadata, not none: src is only assigned on hover, so this fetches just enough for a first frame without pulling eight clips up front -->
             <div class="pv-empty" id="pv-empty"></div>
             <div class="pv-cap" id="pv-cap"></div>
         </div>
@@ -329,7 +330,7 @@
     <div class="buildwrap">
         <div class="panel">
             <h3 data-i18n>How an image is assembled</h3>
-            <div class="chain" role="img" aria-label="Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx appliance">
+            <div class="chain" role="img" aria-label="Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances">
                 <div class="chain-inner">
                     <div class="node upstream"><span class="nm">quay.io/fedora/fedora-bootc:44</span><span class="ds" data-i18n>upstream base</span></div>
                     <div class="connector"></div>
@@ -353,8 +354,9 @@
                         <div class="branch">
                             <div class="node"><span class="nm">de/headless</span><span class="ds" data-i18n>console and SSH, no desktop</span></div>
                             <div class="connector"></div>
-                            <div class="plist one">
+                            <div class="plist two">
                                 <div class="node published"><span class="nm">pbx</span></div>
+                                <div class="node published"><span class="nm">offline</span></div>
                             </div>
                         </div>
                     </div>
@@ -415,6 +417,14 @@ composer-cli compose start carino-general image-installer</pre>
         </details>
 
         <details class="fold">
+            <summary data-i18n>An offline appliance — why is that an image?</summary>
+            <div class="fb">
+                <p id="fold-offline-1"><code>carino-offline</code> is the intranet keystone: the one box a LAN with no working WAN still gets names, time, trust, packages and content from. It pins the same <code>headless</code> session <code>carino-pbx</code> does, because it is "an appliance that has to answer on the LAN's own ports before anything else on the network is up: DNS, NTP and HTTP are its interfaces and SSH is its console". The plan this box is one piece of is written up at <a href="https://offline.carino.systems/" target="_blank" rel="noopener">offline.carino.systems</a>, and that page points back here.</p>
+                <p id="fold-offline-2">It is an image rather than a Carino Setup package list because five of its decisions are system integration a script run after installation cannot own. Port 53 has to be taken from <code>systemd-resolved</code>, which is installed and preset-enabled on this base, so it is <b>masked</b> rather than disabled — and <code>/etc/resolv.conf</code>, a symlink into resolved's run directory, has to be re-owned in the same breath or the box has no resolver at all. An internal CA needs an anchor directory a site root actually lands in, with <code>update-ca-trust extract</code> run where it takes effect. <code>dnf</code> has to be pointable at a LAN mirror without deadlocking the box's own tooling on a hostname that may not resolve. And chrony has to keep serving time with nothing upstream reachable, which takes one directive whose absence is silent for weeks. <b>Nothing in this image has been booted yet</b> — the package set was resolved against Fedora 44 and those system facts were read inside the built headless layer, but no ISO has been installed.</p>
+            </div>
+        </details>
+
+        <details class="fold">
             <summary data-i18n>Why atomic, and what do updates look like?</summary>
             <div class="fb">
                 <p id="fold-atomic-1">The value of a purpose-built system is the <em>integration</em> — kernel args, service masking, session configuration — and on a mutable system that integration drifts. With bootc the whole OS is one versioned image: every install is identical, updates are transactional, and a bad one is a <code>bootc rollback</code> away.</p>
@@ -462,9 +472,9 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
        PREVIEWS take a .webm per image, played in the pane on hover/focus. */
     const RELEASES = {
         registry: '',                                                                      // e.g. 'ghcr.io/miguelcarino' — fills the bootc switch commands
-        iso:      { general: '', imagenology: '', security: '', gaming: '', music: '', llms: '', pbx: '' }
+        iso:      { general: '', imagenology: '', security: '', gaming: '', music: '', llms: '', pbx: '', offline: '' }
     };
-    const PREVIEWS = { general: '', imagenology: '', security: '', gaming: '', music: '', llms: '', pbx: '' }; // e.g. 'previews/general.webm'
+    const PREVIEWS = { general: '', imagenology: '', security: '', gaming: '', music: '', llms: '', pbx: '', offline: '' }; // e.g. 'previews/general.webm'
 
     const IMAGES = [
         { id: 'general',     name: 'General',         image: 'carino-general',
@@ -480,7 +490,9 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</pre>
         { id: 'llms',        name: 'Local LLMs',      image: 'carino-llms',
           desc: 'Ollama, llama.cpp, whisper.cpp and ramalama on the leanest session, so the desktop holds least VRAM.' },
         { id: 'pbx',         name: 'Telephony',       image: 'carino-pbx',
-          desc: 'Asterisk with the FreePBX web UI, MariaDB and PHP 8.2. Headless appliance — no desktop at all.' }
+          desc: 'Asterisk with the FreePBX web UI, MariaDB and PHP 8.2. Headless appliance — no desktop at all.' },
+        { id: 'offline',     name: 'Intranet',        image: 'carino-offline',
+          desc: 'bind, chrony, Caddy and Kiwix: names, time, trust, packages and content for a LAN with no working WAN.' }
     ];
 
     /* The dictionary script is deferred, so it runs after this inline script:

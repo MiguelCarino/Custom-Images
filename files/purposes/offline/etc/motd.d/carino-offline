@@ -1,0 +1,42 @@
+
+  carino-offline — intranet keystone appliance
+
+This box answers for the LAN when the WAN does not:
+  DNS   named    :53       (authoritative + recursive, split-horizon views)
+  Time  chronyd  :123      (serves even with no upstream reachable)
+  HTTP  caddy    :80/:443  (package mirror, Kiwix, the fleet's static sites)
+
+Nothing here is site-configured. Four things must be set before it serves
+anything but itself:
+
+  1. DNS zone     edit /etc/named.conf
+                  example: /usr/share/carino-offline/named.conf.example
+                  then: named-checkconf && systemctl reload named
+  2. Time source  edit /etc/chrony.conf.d/10-carino-offline.conf
+                  (a GPS refclock here, or the GPS/PPS Pi as a network source)
+  3. HTTP sites   drop a file in /etc/caddy/Caddyfile.d/*.caddyfile
+                  example: /etc/caddy/Caddyfile.d/carino-offline.caddyfile.example
+                  caddy validates on start — a bad file stops the web server
+  4. Trust anchor cp <site-root>.crt /etc/pki/ca-trust/source/anchors/
+                  update-ca-trust extract
+
+systemd-resolved is MASKED on this image and /etc/resolv.conf is owned by
+/usr/lib/tmpfiles.d/carino-offline.conf, pointing at 127.0.0.1 — this box
+resolves through the named it runs, so it never disagrees with the answers it
+gives the LAN. NetworkManager is configured not to write resolv.conf; DHCP's
+nameservers are still visible with `nmcli dev show | grep DNS` if you want
+them as forwarders.
+
+Data lives in /var. On bootc the image's /var is copied in once at install and
+is never refreshed by `bootc upgrade`, so nothing below is in the image and
+nothing below is restored by an image rollback:
+
+  /var/named                      DNS zone files      <- crown-jewel backup
+  /var/lib/caddy                  internal CA root    <- crown-jewel backup
+  /var/lib/carino-offline/mirror  RPM mirror tree
+  /var/lib/carino-offline/www     static sites (Fleet Offline Edition)
+  /var/lib/kiwix                  ZIM library (kiwix-serve is inert until
+                                  library.xml exists)
+
+  Update OS   bootc upgrade && systemctl reboot
+  Why this image exists: https://offline.carino.systems/#start

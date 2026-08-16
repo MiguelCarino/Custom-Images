@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# carino-offline-chrony-confdir — teach Fedora's chrony.conf to read
+# /etc/chrony.conf.d.
+#
+# Run once at BUILD time as this purpose's POST_SCRIPT
+# (config/purposes/offline.conf), and left on the image so it can be re-run by
+# hand if a chrony update ever restores the packaged chrony.conf.
+#
+# WHY IT EXISTS
+# -------------
+# chrony has no packaged drop-in directory on Fedora 44. Verified inside the
+# built carino-layer-de-headless image: the only include directive in
+# /etc/chrony.conf is `sourcedir /run/chrony-dhcp`, which takes *source* lines
+# and nothing else (the file also carries pool, driftfile, makestep, rtcsync,
+# ntsdumpdir, leapseclist and logdir), and neither /etc/chrony.conf.d nor
+# /etc/chrony/sources.d exists. The
+# directives this appliance needs — `local stratum 10` above all — are not
+# source lines, so sourcedir cannot carry them. `confdir` is a documented
+# chrony.conf(5) directive and is the only way in.
+#
+# Without this line, /etc/chrony.conf.d/10-carino-offline.conf is inert and
+# the box stops serving time the moment its last source goes away — silently,
+# which is the entire failure this purpose exists to prevent.
+#
+# Idempotent: the grep guard means a second run, or a re-run after an update
+# that did not revert the file, changes nothing.
+set -euo pipefail
+
+CHRONY_CONF=/etc/chrony.conf
+CONFDIR=/etc/chrony.conf.d
+
+if [[ ! -f "${CHRONY_CONF}" ]]; then
+  echo "carino-offline: ${CHRONY_CONF} not found — chrony comes from de/headless; refusing to invent one" >&2
+  exit 1
+fi
+
+if grep -qE '^[[:space:]]*confdir[[:space:]]+'"${CONFDIR}"'([[:space:]]|$)' "${CHRONY_CONF}"; then
+  echo "carino-offline: ${CHRONY_CONF} already reads ${CONFDIR}"
+  exit 0
+fi
+
+printf '\n# Added by carino-offline (config/purposes/offline.conf).\n# chrony ships no drop-in directory on Fedora; sourcedir takes source lines\n# only, so the appliance directives need confdir.\nconfdir %s\n' \
+  "${CONFDIR}" >> "${CHRONY_CONF}"
+
+echo "carino-offline: added 'confdir ${CONFDIR}' to ${CHRONY_CONF}"
