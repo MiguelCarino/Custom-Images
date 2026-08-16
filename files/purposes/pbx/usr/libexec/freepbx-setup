@@ -176,10 +176,17 @@ log "installing bundled modules and reloading"
 # under the targeted policy.
 if [[ -d /sys/fs/selinux ]] && command -v semanage >/dev/null 2>&1; then
   log "applying SELinux file context and booleans"
-  semanage fcontext -a -t httpd_sys_rw_content_t "${WEBROOT}(/.*)?" 2>/dev/null || true
-  restorecon -R "$WEBROOT" || true
-  setsebool -P httpd_can_network_connect on || true
-  setsebool -P httpd_can_network_connect_db on || true
+  # Tolerated, not ignored: `semanage fcontext -a` fails when the rule is
+  # already present (a re-run), which is fine — but a failure here otherwise
+  # means a web UI that cannot write its tree or reach MariaDB, so say so in
+  # the log rather than swallowing it into silence.
+  semanage fcontext -a -t httpd_sys_rw_content_t "${WEBROOT}(/.*)?" 2>/dev/null \
+    || log "WARNING: semanage fcontext on ${WEBROOT} failed (already set on a re-run is normal)"
+  restorecon -R "$WEBROOT" || log "WARNING: restorecon -R ${WEBROOT} failed"
+  setsebool -P httpd_can_network_connect on \
+    || log "WARNING: setsebool httpd_can_network_connect failed — the web UI may not reach the Asterisk manager port"
+  setsebool -P httpd_can_network_connect_db on \
+    || log "WARNING: setsebool httpd_can_network_connect_db failed — the web UI may not reach MariaDB"
   log "note: SELinux stays ENFORCING. If the web UI misbehaves, check"
   log "      'ausearch -m avc -ts recent' before changing anything else."
 fi
@@ -187,12 +194,20 @@ fi
 # --- Firewall -------------------------------------------------------------
 # The web UI and SIP signalling/media. The RTP range is a custom service
 # shipped with the image (/usr/lib/firewalld/services/asterisk-rtp.xml).
+# Reported, not swallowed, and deliberately not fatal. The old `|| true` hid a
+# PBX that answers on no ports; aborting instead is worse, because this script
+# runs `set -e` and everything that matters — enabling freepbx.service, starting
+# fwconsole, writing the stamp — comes after this block, so one firewalld hiccup
+# would leave the appliance with no telephony at all rather than with a closed
+# port. A logged warning is the failure an operator can act on.
 if systemctl is-active --quiet firewalld; then
   log "opening http, https, sip and the RTP range in the default zone"
   for svc in http https sip asterisk-rtp; do
-    firewall-cmd --permanent --add-service="$svc" >/dev/null || true
+    firewall-cmd --permanent --add-service="$svc" >/dev/null \
+      || log "WARNING: firewall-cmd --add-service=${svc} failed — that port stays closed"
   done
-  firewall-cmd --reload >/dev/null || true
+  firewall-cmd --reload >/dev/null \
+    || log "WARNING: firewall-cmd --reload failed — the rules above are not live yet"
   log "note: TFTP for phone provisioning is NOT opened. If you use it:"
   log "      firewall-cmd --permanent --add-service=tftp && firewall-cmd --reload"
 fi

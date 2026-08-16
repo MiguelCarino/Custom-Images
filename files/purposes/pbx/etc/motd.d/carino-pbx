@@ -9,3 +9,13 @@
   Update OS   bootc upgrade && systemctl reboot
   Update PBX  fwconsole ma upgradeall && fwconsole reload
 
+Data lives in /var and /etc. On bootc the image's /var is copied in once at
+install and is never refreshed by `bootc upgrade`, so nothing below is in the
+image and nothing below is restored by an image rollback:
+
+  /var/lib/mysql        FreePBX databases   <- crown-jewel backup
+  /etc/asterisk         generated dialplan  <- crown-jewel backup
+  /var/www/html         the FreePBX web tree
+  /var/lib/asterisk     sounds, AGI, firmware
+  /var/spool/asterisk   voicemail and recordings
+
