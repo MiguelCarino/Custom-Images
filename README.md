@@ -1,5 +1,7 @@
 # Fedora Custom Images
 
+**[See the images →](https://images.carino.systems/)** — what each one is for, and how to install it.
+
 Purpose-built **atomic Fedora** images on [bootc](https://containers.github.io/bootc/).
 Each image ships a complete OS — kernel, desktop, and the integration a specific kind of
 work needs — as a single OCI image, with transactional updates (`bootc upgrade`) and
