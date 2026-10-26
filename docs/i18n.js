@@ -120,6 +120,11 @@ const I18N = {
         'bind, chrony, Caddy and Kiwix: names, time, trust, packages and content for a LAN with no working WAN.': 'bind, chrony, Caddy y Kiwix: nombres, hora, confianza, paquetes y contenido para una LAN sin salida a internet.',
         // Accessibility labels
         'Section': 'Sección',
+        'More': 'Más',
+        'Copy the command': 'Copiar el comando',
+        'Copy the blueprint commands': 'Copiar los comandos del blueprint',
+        'Copy the bootc commands': 'Copiar los comandos de bootc',
+        'Copy the purpose file': 'Copiar el archivo de propósito',
         'Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Cadena de capas: quay.io/fedora/fedora-bootc:44, luego base, que se bifurca en desktop-common y de/cosmic-hyprland con los seis propósitos de escritorio, y en de/headless con los equipos pbx y offline',
     },
     'pt-BR': {
@@ -224,6 +229,11 @@ const I18N = {
         'bind, chrony, Caddy and Kiwix: names, time, trust, packages and content for a LAN with no working WAN.': 'bind, chrony, Caddy e Kiwix: nomes, hora, confiança, pacotes e conteúdo para uma LAN sem saída para a internet.',
         // Accessibility labels
         'Section': 'Seção',
+        'More': 'Mais',
+        'Copy the command': 'Copiar o comando',
+        'Copy the blueprint commands': 'Copiar os comandos do blueprint',
+        'Copy the bootc commands': 'Copiar os comandos do bootc',
+        'Copy the purpose file': 'Copiar o arquivo de propósito',
         'Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Cadeia de camadas: quay.io/fedora/fedora-bootc:44, depois base, que se bifurca em desktop-common e de/cosmic-hyprland com os seis propósitos de desktop, e em de/headless com os appliances pbx e offline',
     },
     ja: {
@@ -328,6 +338,11 @@ const I18N = {
         'bind, chrony, Caddy and Kiwix: names, time, trust, packages and content for a LAN with no working WAN.': 'bind、chrony、Caddy、Kiwix: 外部回線の無いLANに、名前・時刻・信頼・パッケージ・コンテンツを供給。',
         // Accessibility labels
         'Section': 'セクション',
+        'More': 'その他',
+        'Copy the command': 'コマンドをコピー',
+        'Copy the blueprint commands': 'ブループリントのコマンドをコピー',
+        'Copy the bootc commands': 'bootcのコマンドをコピー',
+        'Copy the purpose file': '用途ファイルをコピー',
         'Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'レイヤーチェーン: quay.io/fedora/fedora-bootc:44、次に base。そこから desktop-common と de/cosmic-hyprland（6つのデスクトップ用途）と、de/headless（pbx と offline のアプライアンス）に分岐します',
     },
     ru: {
@@ -432,6 +447,11 @@ const I18N = {
         'bind, chrony, Caddy and Kiwix: names, time, trust, packages and content for a LAN with no working WAN.': 'bind, chrony, Caddy и Kiwix: имена, время, доверие, пакеты и контент для сети без выхода в интернет.',
         // Accessibility labels
         'Section': 'Раздел',
+        'More': 'Ещё',
+        'Copy the command': 'Скопировать команду',
+        'Copy the blueprint commands': 'Скопировать команды blueprint',
+        'Copy the bootc commands': 'Скопировать команды bootc',
+        'Copy the purpose file': 'Скопировать файл назначения',
         'Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Цепочка слоёв: quay.io/fedora/fedora-bootc:44, затем base, который разветвляется на desktop-common с de/cosmic-hyprland (шесть назначений с рабочим столом) и на de/headless с образами pbx и offline',
     },
 };
@@ -532,6 +552,10 @@ function applyAttrI18n() {
     if (pv) pv.setAttribute('aria-label', t('Image preview'));
     const tabs = document.querySelector('.tabbar[role="tablist"]');
     if (tabs) tabs.setAttribute('aria-label', t('Section'));
+    document.querySelectorAll('.term-copy[aria-label]').forEach((b) => {
+        if (!b.dataset.i18nAria) b.dataset.i18nAria = b.getAttribute('aria-label');
+        b.setAttribute('aria-label', t(b.dataset.i18nAria));
+    });
     const chain = document.querySelector('.chain[role="img"]');
     if (chain) chain.setAttribute('aria-label', t('Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances'));
 }

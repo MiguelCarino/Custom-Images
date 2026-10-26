@@ -628,7 +628,7 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</span></code></div><button type="bu
         document.getElementById('pane-build').hidden = name !== 'build';
         /* The pane that is not the default carries the hash, so either can be linked to. */
         const def = PUBLISHED ? 'get' : 'build';
-        history.replaceState(null, '', name === def ? location.pathname : '#' + name); /* replaceState, not a hash assignment: these are panes, not anchors, and a real hash jump would scroll */
+        history.replaceState(null, '', name === def ? location.pathname + location.search : '#' + name); /* replaceState, not a hash assignment: these are panes, not anchors, and a real hash jump would scroll */
     }
 
     document.querySelectorAll('.tabbtn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
