@@ -27,6 +27,24 @@
 <script type="application/json" id="carino-head-i18n">{"es": {"title": "Carino Custom Images — Fedora hecho a la medida", "desc": "Fedora a la medida: seis escritorios COSMIC + Hyprland y dos appliances headless (telefonía Asterisk/FreePBX e intranet para LAN sin WAN). ISO o imagen bootc."}, "pt-BR": {"title": "Carino Custom Images — Fedora sob medida", "desc": "Fedora sob medida: seis desktops COSMIC + Hyprland e dois appliances headless (telefonia Asterisk/FreePBX e intranet para LAN sem WAN). ISO ou imagem bootc."}, "ja": {"title": "Carino Custom Images — 用途特化型Fedora", "desc": "用途特化型Fedora。COSMIC + Hyprlandのデスクトップ6種と、Asterisk/FreePBX電話・WANなしLAN用イントラネットの2種。ISOかbootc。"}, "ru": {"title": "Carino Custom Images — Fedora под конкретные задачи", "desc": "Fedora под задачи: шесть десктопов COSMIC + Hyprland и два серверных образа — телефония Asterisk/FreePBX и интранет для LAN без WAN. ISO или образ bootc."}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Carino Images", "url": "https://images.carino.systems/", "description": "Purpose-built Fedora: six COSMIC + Hyprland desktops and two headless appliances — Asterisk/FreePBX telephony and an intranet keystone for a LAN with no working WAN — each shipping the integration one kind of work needs. Installer ISO or bootc container image.", "operatingSystem": "Linux (Fedora)", "isAccessibleForFree": true, "author": {"@type": "Person", "name": "Miguel Cariño", "url": "https://carino.systems/"}}</script>
 <!-- /carino:head -->
+  <!-- Theme before first paint, so neither theme flashes the other:
+       ?theme=gold|color (review links; not stored) > carino-theme cookie
+       (shared across *.carino.systems) > localStorage > Gold & Black. -->
+  <meta name="theme-color" content="#050505" id="carinoThemeColor">
+  <script>
+  (function () {
+    var d = document.documentElement, t = null;
+    function pick(v) { return v === 'gold' ? 'gold' : (v === 'color' || v === 'colour') ? 'color' : null; }
+    try { t = pick(new URLSearchParams(location.search).get('theme')); } catch (e) {}
+    if (!t) { try { var m = document.cookie.match(/(?:^|;\s*)carino-theme=([^;]*)/); if (m) t = pick(decodeURIComponent(m[1])); } catch (e) {} }
+    if (!t) { try { t = pick(localStorage.getItem('carino-theme')); } catch (e) {} }
+    t = t || 'gold';
+    d.setAttribute('data-carino-theme', t);
+    var dark = d.getAttribute('data-theme') !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+    var meta = document.getElementById('carinoThemeColor');
+    if (meta) meta.content = t === 'gold' ? '#050505' : (dark ? '#0e1420' : '#eef3fc');
+  })();
+  </script>
 <link rel="stylesheet" href="fonts/carino-fonts.css">
 <!-- Tokens and the shared components (landing hero, tabs, terminal, copy
      button, privacy line, footer) come from carino-ui.css; this page's own
@@ -245,9 +263,27 @@
     }
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
+  <!-- Colourful theme + the switch; nothing applies until data-carino-theme="color". -->
+  <link rel="stylesheet" href="carino-theme.css">
+  <style>
+    /* the hero mark in both colourings; the theme picks one */
+    .mark.mk-color, :root[data-carino-theme="color"] .mark.mk-gold { display: none; }
+    :root[data-carino-theme="color"] .mark.mk-color { display: block; }
+    /* Colourful: carino-theme.css remaps the tokens, so everything that reads
+       one follows; these are the values written for black. */
+    :root[data-carino-theme="color"] body { background-image: var(--stage-grad); }
+    :root[data-carino-theme="color"] a.depill:hover, :root[data-carino-theme="color"] .dl:hover, :root[data-carino-theme="color"] .bar .go:hover,
+    :root[data-carino-theme="color"] .modal .mbtn.primary:hover, :root[data-carino-theme="color"] .steps > li::before { color: var(--ct-on-accent); }
+    :root[data-carino-theme="color"] .row:hover, :root[data-carino-theme="color"] .row.on { background: var(--ct-hover); }
+    :root[data-carino-theme="color"] .preview { background: var(--bg-elev); }
+    :root[data-carino-theme="color"] .pv-empty { background: var(--bg-elev); }
+    :root[data-carino-theme="color"] .modal { box-shadow: var(--ct-shadow-3); }
+    :root[data-carino-theme="color"] .modal::backdrop { background: var(--ct-scrim); }
+  </style>
 </head>
 <body>
 <script src="carino-navbar.js" data-app="Images" data-repo="Custom-Images" defer></script> <!-- self-injects at the top of <body> and loads carino-clock.js from this same site -->
+<script src="carino-theme.js" data-mark="logo.svg" data-mark-color="logo-color.svg" defer></script>
 <script src="carino-lang.js" defer></script>
 <script src="i18n.js" defer></script> <!-- after the fleet lang script, so CarinoLang is resolved before applyI18n runs on DOMContentLoaded -->
 
@@ -269,7 +305,8 @@
 <header class="landing-hero">
     <div class="lh-wrap">
         <div class="lh-mark" aria-hidden="true">
-            <img class="mark" src="logo.svg" alt="" width="100" height="100" decoding="async">
+            <img class="mark mk-gold" src="logo.svg" alt="" width="100" height="100" decoding="async">
+            <img class="mark mk-color" src="logo-color.svg" alt="" width="100" height="100" decoding="async">
         </div>
         <h1><span data-i18n>The whole system, set up for your work,</span><br><span class="gold" data-i18n>before you ever boot it.</span></h1>
         <p class="lh-lede"><strong>Carino Images</strong> <span data-i18n>are eight purpose-built Fedora systems: six desktops and two headless appliances.</span></p>
