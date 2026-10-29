@@ -274,10 +274,23 @@
     :root[data-carino-theme="color"] a.depill:hover, :root[data-carino-theme="color"] .dl:hover, :root[data-carino-theme="color"] .bar .go:hover,
     :root[data-carino-theme="color"] .modal .mbtn.primary:hover, :root[data-carino-theme="color"] .steps > li::before { color: var(--ct-on-accent); }
     :root[data-carino-theme="color"] .row:hover, :root[data-carino-theme="color"] .row.on { background: var(--ct-hover); }
+    /* Downloads stay yellow in both themes: the buttons carry .ct-cat-amber
+       (Colourful-only), so Download ISO fills amber under the pointer; the
+       red flash and green done keep their status meaning. */
+    :root[data-carino-theme="color"] .dl.ct-cat-amber { border-color: var(--c); color: var(--tt); background: var(--t); }
+    :root[data-carino-theme="color"] .dl.ct-cat-amber:hover { background: var(--c); border-color: var(--c); color: var(--on); box-shadow: none; }
+    :root[data-carino-theme="color"] .dl.ghost.ct-cat-amber { border-color: var(--border); background: transparent; color: var(--text-sec); }
+    :root[data-carino-theme="color"] .dl.ghost.ct-cat-amber:hover { border-color: var(--c); color: var(--tt); background: var(--t); }
+    :root[data-carino-theme="color"] .dl.ct-cat-amber:disabled, :root[data-carino-theme="color"] .dl.ct-cat-amber:disabled:hover { border-color: color-mix(in srgb, var(--c) 50%, transparent); color: var(--tt); background: var(--t); }
+    :root[data-carino-theme="color"] .dl.ct-cat-amber.flash { border-color: var(--err); color: var(--ct-err-fg); background: var(--ct-err-bg); }
+    :root[data-carino-theme="color"] .dl.ct-cat-amber.done { border-color: var(--ok); color: var(--ct-ok-fg); background: var(--ct-ok-bg); }
     :root[data-carino-theme="color"] .preview { background: var(--bg-elev); }
     :root[data-carino-theme="color"] .pv-empty { background: var(--bg-elev); }
     :root[data-carino-theme="color"] .modal { box-shadow: var(--ct-shadow-3); }
     :root[data-carino-theme="color"] .modal::backdrop { background: var(--ct-scrim); }
+    /* the copy calls the published leaves gold: give them an amber tint, label stays --text */
+    :root[data-carino-theme="color"] .node.published { background: color-mix(in srgb, var(--ct-amber) 12%, var(--bg-card)); border-color: color-mix(in srgb, var(--ct-amber) 55%, transparent); }
+    :root[data-carino-theme="color"] .node.published .nm { color: var(--text); }
   </style>
 </head>
 <body>
@@ -572,9 +585,9 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</span></code></div><button type="bu
             const iso = RELEASES.iso[im.id], ctr = RELEASES.registry;
             const nm = tr(im.name), ds = tr(im.desc); /* translations contain no double quotes, so the title attribute stays safe */
             const acts = (iso || ctr)
-                ? '<button type="button" class="dl' + (iso ? '' : ' pending') + '" data-kind="iso" data-id="' + im.id + '">' + tr('Download ISO') + '</button>'
-                + '<button type="button" class="dl ghost' + (ctr ? '' : ' pending') + '" data-kind="ctr" data-id="' + im.id + '">' + tr('Container') + '</button>'
-                : '<button type="button" class="dl" disabled>' + tr('Not published yet') + '</button>';
+                ? '<button type="button" class="dl ct-cat-amber' + (iso ? '' : ' pending') + '" data-kind="iso" data-id="' + im.id + '">' + tr('Download ISO') + '</button>'
+                + '<button type="button" class="dl ghost ct-cat-amber' + (ctr ? '' : ' pending') + '" data-kind="ctr" data-id="' + im.id + '">' + tr('Container') + '</button>'
+                : '<button type="button" class="dl ct-cat-amber" disabled>' + tr('Not published yet') + '</button>';
             return '<article class="row" data-id="' + im.id + '" tabindex="0">'
                  + icon(im.id)
                  + '<div class="meta"><div class="nm">' + nm + '</div><div class="ds" title="' + ds + '">' + ds + '</div></div>'
