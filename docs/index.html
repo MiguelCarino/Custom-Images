@@ -294,7 +294,15 @@
   </style>
 </head>
 <body>
-<script src="carino-navbar.js" data-app="Images" data-repo="Custom-Images" data-license="AGPL-3.0-or-later" defer></script> <!-- self-injects at the top of <body> and loads carino-clock.js from this same site -->
+<!-- Key words: the navbar shows them, translated, under its Language tab. -->
+<ul data-carino-words hidden>
+  <li>Editions</li>
+  <li>Editions and downloads</li>
+  <li>Build it yourself</li>
+  <li>Add your own purpose</li>
+</ul>
+
+<script src="carino-navbar.js" data-app="Images" data-repo="Custom-Images" data-license="AGPL-3.0-or-later" data-changelog="https://github.com/MiguelCarino/Custom-Images/commits/main" defer></script> <!-- self-injects at the top of <body> and loads carino-clock.js from this same site -->
 <script src="carino-theme.js" data-mark="logo.svg" data-mark-color="logo-color.svg" defer></script>
 <script src="carino-lang.js" defer></script>
 <script src="i18n.js" defer></script> <!-- after the fleet lang script, so CarinoLang is resolved before applyI18n runs on DOMContentLoaded -->
@@ -507,15 +515,17 @@ FLATPAKS="org.app.Id"  POST_SCRIPT="post.sh"</span></code></div><button type="bu
 
 <!-- Under the install block (Branding #privacy). The build is a script the
      visitor runs, so the line points at it rather than asking to be believed. -->
-<p class="privacy-line install-foot"><span data-i18n>This page runs in your browser and sends nothing anywhere.</span>&nbsp;<span class="pl-also"><span data-i18n>The build is one readable script:</span> <a href="https://github.com/MiguelCarino/Custom-Images/blob/main/build.sh" target="_blank" rel="noopener">build.sh</a></span></p>
 
 </main>
 
 <!-- The Product footer (Branding #footer), with the trademark line a page
      about Fedora-based images owes. -->
 <div data-carino-about hidden>
+  <p><span data-i18n>This page runs in your browser and sends nothing anywhere.</span>&nbsp;<span class="pl-also"><span data-i18n>The build is one readable script:</span> <a href="https://github.com/MiguelCarino/Custom-Images/blob/main/build.sh" target="_blank" rel="noopener">build.sh</a></span></p>
   <p data-i18n>Fedora is a trademark of Red Hat, Inc. This project is not affiliated with or endorsed by the Fedora Project or Red Hat.</p>
-  <p><a href="https://github.com/MiguelCarino/Custom-Images/commits/main" target="_blank" rel="noopener" data-i18n>Changelog</a> · <a href="https://github.com/MiguelCarino/Custom-Images#readme" target="_blank" rel="noopener" data-i18n>Docs</a> · <a href="https://github.com/MiguelCarino/Custom-Images/blob/main/LICENSING.md" target="_blank" rel="noopener" data-i18n>Third-party notices</a></p>
+</div>
+<div data-carino-licence hidden>
+  <p><a href="https://github.com/MiguelCarino/Custom-Images/blob/main/LICENSING.md" target="_blank" rel="noopener" data-i18n>Third-party notices</a></p>
 </div>
 
 <dialog class="modal" id="med-modal" aria-labelledby="med-title">
