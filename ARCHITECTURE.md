@@ -11,7 +11,7 @@ Every image is a **chain of bootc layers**, each layer an OCI image built `FROM`
 parent:
 
 ```
-quay.io/fedora/fedora-bootc:44               (upstream)
+quay.io/fedora/fedora-bootc:45               (upstream)
   └─ base                                    hardening, common CLI tools, first-boot account
        ├─ desktop-common                     DE-agnostic desktop infrastructure
        │    └─ de/cosmic-hyprland            COSMIC + Hyprland sessions

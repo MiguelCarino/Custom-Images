@@ -7,7 +7,7 @@ FROM localhost/carino-layer-de-headless:latest
 
 LABEL org.opencontainers.image.title="carino-offline" \
       org.opencontainers.image.description="Intranet keystone appliance: authoritative and recursive DNS, LAN time, internal-CA trust store, an RPM mirror and offline content over HTTP, and the sneakernet media pipeline" \
-      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
+      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:45"
 
 # Packages
 RUN dnf -y install bind bind-utils bind-dnssec-utils caddy kiwix-tools gpsd gpsd-clients pps-tools createrepo_c dnf5-plugins rsync easy-rsa xorriso udftools dvd+rw-tools par2cmdline isomd5sum tcpdump && dnf clean all

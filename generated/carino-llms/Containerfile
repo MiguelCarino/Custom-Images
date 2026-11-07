@@ -7,7 +7,7 @@ FROM localhost/carino-layer-de-cosmic-hyprland:latest
 
 LABEL org.opencontainers.image.title="carino-llms" \
       org.opencontainers.image.description="Local LLMs: ollama, llama.cpp, whisper.cpp, Python tooling" \
-      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
+      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:45"
 
 # Packages
 RUN dnf -y install ollama llama-cpp whisper-cpp ramalama python3-huggingface-hub uv pipx git-lfs numactl nvtop radeontop && dnf clean all

@@ -16,8 +16,8 @@
 # mirrors these into the image; a blueprint has no equivalent, so the
 # classic image will NOT contain them:
 #   layer desktop-common mirrors files/desktop-common into / — not representable:
-#     /usr/libexec/flatpak-setup
 #     /usr/lib/systemd/system/flatpak-setup.service
+#     /usr/libexec/flatpak-setup
 #
 # OMITTED from [customizations.services].enabled — osbuild runs
 # `systemctl enable` during the build and a missing unit fails it.
@@ -27,7 +27,7 @@
 name = "carino-general"
 description = "General-purpose desktop: browsing, mail, office, media"
 version = "0.0.1"
-distro = "fedora-44"
+distro = "fedora-45"
 
 [[packages]]
 name = "nano"

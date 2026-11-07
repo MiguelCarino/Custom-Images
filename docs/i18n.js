@@ -39,7 +39,7 @@ const I18N = {
         'Build it yourself': 'Constrúyela tú mismo',
         // Get pane
         'Editions': 'Ediciones',
-        'Based on Fedora 44': 'Basado en Fedora 44',
+        'Based on Fedora 45': 'Basado en Fedora 45',
         'plus two headless appliances': 'más dos equipos sin escritorio',
         'Image-based Fedora — transactional updates, identical on every machine, one-command rollback.': 'Fedora basado en imágenes: actualizaciones transaccionales, idéntico en cada máquina, rollback con un comando.',
         'This is Fedora, not a fork — every package and security update comes from': 'Esto es Fedora, no un fork: cada paquete y actualización de seguridad viene de',
@@ -122,7 +122,7 @@ const I18N = {
         'Copy the blueprint commands': 'Copiar los comandos del blueprint',
         'Copy the bootc commands': 'Copiar los comandos de bootc',
         'Copy the purpose file': 'Copiar el archivo de propósito',
-        'Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Cadena de capas: quay.io/fedora/fedora-bootc:44, luego base, que se bifurca en desktop-common y de/cosmic-hyprland con los seis propósitos de escritorio, y en de/headless con los equipos pbx y offline',
+        'Layer chain: quay.io/fedora/fedora-bootc:45, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Cadena de capas: quay.io/fedora/fedora-bootc:45, luego base, que se bifurca en desktop-common y de/cosmic-hyprland con los seis propósitos de escritorio, y en de/headless con los equipos pbx y offline',
     },
     'pt-BR': {
         // Product hero, install, privacy line and footer
@@ -150,7 +150,7 @@ const I18N = {
         'before you ever boot it.': 'antes mesmo do primeiro boot.',
         'Build it yourself': 'Construa você mesmo',
         'Editions': 'Edições',
-        'Based on Fedora 44': 'Baseado no Fedora 44',
+        'Based on Fedora 45': 'Baseado no Fedora 45',
         'plus two headless appliances': 'mais dois appliances sem desktop',
         'Image-based Fedora — transactional updates, identical on every machine, one-command rollback.': 'Fedora baseado em imagens: atualizações transacionais, idêntico em cada máquina, rollback com um comando.',
         'This is Fedora, not a fork — every package and security update comes from': 'Isto é Fedora, não um fork: cada pacote e atualização de segurança vem do',
@@ -228,7 +228,7 @@ const I18N = {
         'Copy the blueprint commands': 'Copiar os comandos do blueprint',
         'Copy the bootc commands': 'Copiar os comandos do bootc',
         'Copy the purpose file': 'Copiar o arquivo de propósito',
-        'Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Cadeia de camadas: quay.io/fedora/fedora-bootc:44, depois base, que se bifurca em desktop-common e de/cosmic-hyprland com os seis propósitos de desktop, e em de/headless com os appliances pbx e offline',
+        'Layer chain: quay.io/fedora/fedora-bootc:45, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Cadeia de camadas: quay.io/fedora/fedora-bootc:45, depois base, que se bifurca em desktop-common e de/cosmic-hyprland com os seis propósitos de desktop, e em de/headless com os appliances pbx e offline',
     },
     ja: {
         // Product hero, install, privacy line and footer
@@ -256,7 +256,7 @@ const I18N = {
         'before you ever boot it.': '起動する前から整っている。',
         'Build it yourself': '自分でビルド',
         'Editions': 'エディション',
-        'Based on Fedora 44': 'Fedora 44ベース',
+        'Based on Fedora 45': 'Fedora 45ベース',
         'plus two headless appliances': '＋デスクトップなしのアプライアンス2つ',
         'Image-based Fedora — transactional updates, identical on every machine, one-command rollback.': 'イメージベースのFedora — トランザクショナルな更新、全マシンで同一、コマンド1つでロールバック。',
         'This is Fedora, not a fork — every package and security update comes from': 'これはフォークではなくFedoraそのものです。すべてのパッケージとセキュリティ更新の提供元は',
@@ -334,7 +334,7 @@ const I18N = {
         'Copy the blueprint commands': 'ブループリントのコマンドをコピー',
         'Copy the bootc commands': 'bootcのコマンドをコピー',
         'Copy the purpose file': '用途ファイルをコピー',
-        'Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'レイヤーチェーン: quay.io/fedora/fedora-bootc:44、次に base。そこから desktop-common と de/cosmic-hyprland（6つのデスクトップ用途）と、de/headless（pbx と offline のアプライアンス）に分岐します',
+        'Layer chain: quay.io/fedora/fedora-bootc:45, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'レイヤーチェーン: quay.io/fedora/fedora-bootc:45、次に base。そこから desktop-common と de/cosmic-hyprland（6つのデスクトップ用途）と、de/headless（pbx と offline のアプライアンス）に分岐します',
     },
     ru: {
         // Product hero, install, privacy line and footer
@@ -362,7 +362,7 @@ const I18N = {
         'before you ever boot it.': 'ещё до первой загрузки.',
         'Build it yourself': 'Соберите сами',
         'Editions': 'Редакции',
-        'Based on Fedora 44': 'На основе Fedora 44',
+        'Based on Fedora 45': 'На основе Fedora 45',
         'plus two headless appliances': 'плюс два сервера без рабочего стола',
         'Image-based Fedora — transactional updates, identical on every machine, one-command rollback.': 'Fedora на основе образов: транзакционные обновления, идентичность на каждой машине, откат одной командой.',
         'This is Fedora, not a fork — every package and security update comes from': 'Это Fedora, а не форк: каждый пакет и каждое обновление безопасности приходит из',
@@ -440,7 +440,7 @@ const I18N = {
         'Copy the blueprint commands': 'Скопировать команды blueprint',
         'Copy the bootc commands': 'Скопировать команды bootc',
         'Copy the purpose file': 'Скопировать файл назначения',
-        'Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Цепочка слоёв: quay.io/fedora/fedora-bootc:44, затем base, который разветвляется на desktop-common с de/cosmic-hyprland (шесть назначений с рабочим столом) и на de/headless с образами pbx и offline',
+        'Layer chain: quay.io/fedora/fedora-bootc:45, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances': 'Цепочка слоёв: quay.io/fedora/fedora-bootc:45, затем base, который разветвляется на desktop-common с de/cosmic-hyprland (шесть назначений с рабочим столом) и на de/headless с образами pbx и offline',
     },
 };
 
@@ -481,10 +481,10 @@ const RICH = {
         ru: '<code>carino-offline</code> — краеугольный камень интранета: та единственная машина, от которой сеть без работающего внешнего канала по-прежнему получает имена, время, доверие, пакеты и контент. Она закреплена за той же сессией <code>headless</code>, что и <code>carino-pbx</code>, потому что это «сервер, который должен отвечать на собственных портах локальной сети раньше, чем поднимется всё остальное: DNS, NTP и HTTP — его интерфейсы, а SSH — его консоль». План, частью которого является эта машина, описан на <a href="https://offline.carino.systems/" target="_blank" rel="noopener">offline.carino.systems</a>, и та страница ссылается обратно сюда.',
     },
     '#fold-offline-2': {
-        es: 'Es una imagen y no una lista de paquetes de Carino Setup porque cinco de sus decisiones son integración de sistema que un script posterior a la instalación no puede asumir. Hay que quitarle el puerto 53 a <code>systemd-resolved</code>, que en esta base viene instalado y habilitado por preset, así que se <b>enmascara</b> en vez de deshabilitarse — y <code>/etc/resolv.conf</code>, que ahí es un enlace simbólico al directorio de ejecución de resolved, hay que reasignarlo en el mismo movimiento o la máquina se queda sin ningún resolutor. Una CA interna necesita un directorio de anclas donde la raíz del sitio aterrice de verdad, con <code>update-ca-trust extract</code> ejecutado donde surte efecto. <code>dnf</code> tiene que poder apuntar a un mirror de la LAN sin que las herramientas de paquetes de la propia máquina se queden bloqueadas en un nombre que quizá no resuelva. Y chrony tiene que seguir sirviendo la hora sin nada upstream alcanzable, lo que exige una directiva cuya ausencia pasa desapercibida durante semanas. <b>Nada de esta imagen se ha arrancado todavía</b>: el conjunto de paquetes se resolvió contra Fedora 44 y esos datos del sistema se leyeron dentro de la capa headless ya construida, pero no se ha instalado ninguna ISO.',
-        'pt-BR': 'É uma imagem, e não uma lista de pacotes do Carino Setup, porque cinco de suas decisões são integração de sistema que um script rodado depois da instalação não tem como assumir. A porta 53 precisa ser tirada do <code>systemd-resolved</code>, que nesta base vem instalado e habilitado por preset, então ele é <b>mascarado</b> em vez de desabilitado — e o <code>/etc/resolv.conf</code>, que ali é um link simbólico para o diretório de execução do resolved, precisa ser reassumido no mesmo movimento, ou a máquina fica sem resolvedor nenhum. Uma CA interna precisa de um diretório de âncoras onde a raiz do site realmente caia, com <code>update-ca-trust extract</code> executado onde faz efeito. O <code>dnf</code> precisa poder apontar para um espelho na LAN sem travar as ferramentas de pacote da própria máquina em um nome que talvez não resolva. E o chrony precisa continuar servindo hora sem nenhuma fonte upstream alcançável, o que exige uma diretiva cuja ausência fica silenciosa por semanas. <b>Nada desta imagem foi inicializado ainda</b>: o conjunto de pacotes foi resolvido contra o Fedora 44 e esses fatos do sistema foram lidos dentro da camada headless já construída, mas nenhuma ISO foi instalada.',
-        ja: 'これが Carino Setup のパッケージ一覧ではなくイメージである理由は、5つの決定が、インストール後に走るスクリプトでは引き受けられないシステム統合だからです。ポート53は <code>systemd-resolved</code> から取り上げる必要があります。このベースでは systemd-resolved がインストール済みかつ preset で有効化されているため、無効化ではなく<b>マスク</b>します。さらに <code>/etc/resolv.conf</code> はそこでは resolved の実行時ディレクトリへのシンボリックリンクなので、同時に付け替えないとリゾルバーが一つも無い状態になります。内部CAには、サイトのルート証明書が実際に置かれるアンカーディレクトリと、効果のある場所で実行される <code>update-ca-trust extract</code> が要ります。<code>dnf</code> は、解決できるとは限らないホスト名でこの箱自身のパッケージ処理を止めることなく、LAN上のミラーへ向けられる必要があります。そして chrony は、上流が一つも届かない状態でも時刻を配り続けなければならず、それには、無くても何週間も表に出ないディレクティブが1行必要です。<b>このイメージはまだ一度も起動していません</b> — パッケージ構成は Fedora 44 に対して解決し、これらのシステム上の事実はビルド済みの headless レイヤーの中で確認しましたが、ISO のインストールは行っていません。',
-        ru: 'Это образ, а не список пакетов для Carino Setup, потому что пять его решений — системная интеграция, которую скрипт, запускаемый после установки, взять на себя не может. Порт 53 приходится отбирать у <code>systemd-resolved</code>, который на этой базе установлен и включён пресетом, поэтому он <b>маскируется</b>, а не отключается — а <code>/etc/resolv.conf</code>, который там является символической ссылкой в рабочий каталог resolved, нужно переприсвоить тем же движением, иначе у машины не остаётся резолвера вообще. Внутреннему УЦ нужен каталог якорей, куда корневой сертификат площадки действительно попадает, и <code>update-ca-trust extract</code>, выполненный там, где это даёт эффект. <code>dnf</code> должен уметь смотреть на зеркало в локальной сети, не подвешивая собственный пакетный инструментарий машины на имени, которое может не разрешиться. А chrony должен продолжать раздавать время, когда наверху не доступно ничего, и для этого нужна директива, отсутствие которой молчит неделями. <b>Ничего из этого образа ещё не загружалось</b>: набор пакетов разрешён против Fedora 44, а эти системные факты прочитаны внутри уже собранного слоя headless, но ни один ISO не устанавливался.',
+        es: 'Es una imagen y no una lista de paquetes de Carino Setup porque cinco de sus decisiones son integración de sistema que un script posterior a la instalación no puede asumir. Hay que quitarle el puerto 53 a <code>systemd-resolved</code>, que en esta base viene instalado y habilitado por preset, así que se <b>enmascara</b> en vez de deshabilitarse — y <code>/etc/resolv.conf</code>, que ahí es un enlace simbólico al directorio de ejecución de resolved, hay que reasignarlo en el mismo movimiento o la máquina se queda sin ningún resolutor. Una CA interna necesita un directorio de anclas donde la raíz del sitio aterrice de verdad, con <code>update-ca-trust extract</code> ejecutado donde surte efecto. <code>dnf</code> tiene que poder apuntar a un mirror de la LAN sin que las herramientas de paquetes de la propia máquina se queden bloqueadas en un nombre que quizá no resuelva. Y chrony tiene que seguir sirviendo la hora sin nada upstream alcanzable, lo que exige una directiva cuya ausencia pasa desapercibida durante semanas. <b>Nada de esta imagen se ha arrancado todavía</b>: el conjunto de paquetes se resolvió contra Fedora 45 y esos datos del sistema se leyeron dentro de la capa headless ya construida, pero no se ha instalado ninguna ISO.',
+        'pt-BR': 'É uma imagem, e não uma lista de pacotes do Carino Setup, porque cinco de suas decisões são integração de sistema que um script rodado depois da instalação não tem como assumir. A porta 53 precisa ser tirada do <code>systemd-resolved</code>, que nesta base vem instalado e habilitado por preset, então ele é <b>mascarado</b> em vez de desabilitado — e o <code>/etc/resolv.conf</code>, que ali é um link simbólico para o diretório de execução do resolved, precisa ser reassumido no mesmo movimento, ou a máquina fica sem resolvedor nenhum. Uma CA interna precisa de um diretório de âncoras onde a raiz do site realmente caia, com <code>update-ca-trust extract</code> executado onde faz efeito. O <code>dnf</code> precisa poder apontar para um espelho na LAN sem travar as ferramentas de pacote da própria máquina em um nome que talvez não resolva. E o chrony precisa continuar servindo hora sem nenhuma fonte upstream alcançável, o que exige uma diretiva cuja ausência fica silenciosa por semanas. <b>Nada desta imagem foi inicializado ainda</b>: o conjunto de pacotes foi resolvido contra o Fedora 45 e esses fatos do sistema foram lidos dentro da camada headless já construída, mas nenhuma ISO foi instalada.',
+        ja: 'これが Carino Setup のパッケージ一覧ではなくイメージである理由は、5つの決定が、インストール後に走るスクリプトでは引き受けられないシステム統合だからです。ポート53は <code>systemd-resolved</code> から取り上げる必要があります。このベースでは systemd-resolved がインストール済みかつ preset で有効化されているため、無効化ではなく<b>マスク</b>します。さらに <code>/etc/resolv.conf</code> はそこでは resolved の実行時ディレクトリへのシンボリックリンクなので、同時に付け替えないとリゾルバーが一つも無い状態になります。内部CAには、サイトのルート証明書が実際に置かれるアンカーディレクトリと、効果のある場所で実行される <code>update-ca-trust extract</code> が要ります。<code>dnf</code> は、解決できるとは限らないホスト名でこの箱自身のパッケージ処理を止めることなく、LAN上のミラーへ向けられる必要があります。そして chrony は、上流が一つも届かない状態でも時刻を配り続けなければならず、それには、無くても何週間も表に出ないディレクティブが1行必要です。<b>このイメージはまだ一度も起動していません</b> — パッケージ構成は Fedora 45 に対して解決し、これらのシステム上の事実はビルド済みの headless レイヤーの中で確認しましたが、ISO のインストールは行っていません。',
+        ru: 'Это образ, а не список пакетов для Carino Setup, потому что пять его решений — системная интеграция, которую скрипт, запускаемый после установки, взять на себя не может. Порт 53 приходится отбирать у <code>systemd-resolved</code>, который на этой базе установлен и включён пресетом, поэтому он <b>маскируется</b>, а не отключается — а <code>/etc/resolv.conf</code>, который там является символической ссылкой в рабочий каталог resolved, нужно переприсвоить тем же движением, иначе у машины не остаётся резолвера вообще. Внутреннему УЦ нужен каталог якорей, куда корневой сертификат площадки действительно попадает, и <code>update-ca-trust extract</code>, выполненный там, где это даёт эффект. <code>dnf</code> должен уметь смотреть на зеркало в локальной сети, не подвешивая собственный пакетный инструментарий машины на имени, которое может не разрешиться. А chrony должен продолжать раздавать время, когда наверху не доступно ничего, и для этого нужна директива, отсутствие которой молчит неделями. <b>Ничего из этого образа ещё не загружалось</b>: набор пакетов разрешён против Fedora 45, а эти системные факты прочитаны внутри уже собранного слоя headless, но ни один ISO не устанавливался.',
     },
     '#fold-atomic-1': {
         es: 'El valor de un sistema hecho a propósito está en la <em>integración</em> — parámetros del kernel, enmascarado de servicios, configuración de la sesión — y en un sistema mutable esa integración se va desviando. Con bootc todo el sistema operativo es una única imagen versionada: cada instalación es idéntica, las actualizaciones son transaccionales y una que sale mal está a un <code>bootc rollback</code> de distancia.',
@@ -545,7 +545,7 @@ function applyAttrI18n() {
         b.setAttribute('aria-label', t(b.dataset.i18nAria));
     });
     const chain = document.querySelector('.chain[role="img"]');
-    if (chain) chain.setAttribute('aria-label', t('Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances'));
+    if (chain) chain.setAttribute('aria-label', t('Layer chain: quay.io/fedora/fedora-bootc:45, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances'));
 }
 
 function applyI18n() {

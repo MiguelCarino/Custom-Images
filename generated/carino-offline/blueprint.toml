@@ -7,15 +7,15 @@
 # mirrors these into the image; a blueprint has no equivalent, so the
 # classic image will NOT contain them:
 #   layer purpose:offline mirrors files/purposes/offline into / — not representable:
+#     /etc/NetworkManager/conf.d/90-carino-offline-dns.conf
 #     /etc/caddy/Caddyfile.d/carino-offline.caddyfile.example
 #     /etc/chrony.conf.d/10-carino-offline.conf
 #     /etc/motd.d/carino-offline
-#     /etc/NetworkManager/conf.d/90-carino-offline-dns.conf
-#     /usr/libexec/carino-offline-chrony-confdir
-#     /usr/libexec/carino-offline-firstboot
 #     /usr/lib/systemd/system/carino-offline-firstboot.service
 #     /usr/lib/systemd/system/kiwix-serve.service
 #     /usr/lib/tmpfiles.d/carino-offline.conf
+#     /usr/libexec/carino-offline-chrony-confdir
+#     /usr/libexec/carino-offline-firstboot
 #     /usr/share/carino-offline/carino-mirror.repo.example
 #     /usr/share/carino-offline/named.conf.example
 #     /usr/share/carino-offline/resolv.conf
@@ -40,7 +40,7 @@
 name = "carino-offline"
 description = "Intranet keystone appliance: authoritative and recursive DNS, LAN time, internal-CA trust store, an RPM mirror and offline content over HTTP, and the sneakernet media pipeline"
 version = "0.0.1"
-distro = "fedora-44"
+distro = "fedora-45"
 
 [[packages]]
 name = "nano"

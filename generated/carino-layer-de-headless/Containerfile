@@ -7,7 +7,7 @@ FROM localhost/carino-layer-base:latest
 
 LABEL org.opencontainers.image.title="carino-layer-de-headless" \
       org.opencontainers.image.description="Headless server session: console and SSH, no desktop stack at all" \
-      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
+      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:45"
 
 # Packages
 RUN dnf -y install openssh-server firewalld chrony cronie logrotate tuned policycoreutils-python-utils bash-completion tmux && dnf clean all

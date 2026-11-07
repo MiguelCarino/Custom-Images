@@ -8,7 +8,8 @@
 #
 # WHY IT EXISTS
 # -------------
-# chrony has no packaged drop-in directory on Fedora 44. Verified inside the
+# chrony has no packaged drop-in directory on Fedora 44 or 45 (re-checked
+# 2026-11-06 in fedora-bootc:45, chrony 4.9). Verified inside the
 # built carino-layer-de-headless image: the only include directive in
 # /etc/chrony.conf is `sourcedir /run/chrony-dhcp`, which takes *source* lines
 # and nothing else (the file also carries pool, driftfile, makestep, rtcsync,

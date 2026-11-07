@@ -7,7 +7,7 @@ FROM localhost/carino-layer-de-cosmic-hyprland:latest
 
 LABEL org.opencontainers.image.title="carino-gaming" \
       org.opencontainers.image.description="Gaming: gamescope, mangohud, gamemode, wine, input tooling" \
-      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
+      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:45"
 
 # Packages
 RUN dnf -y install steam-devices lutris gamescope mangohud gamemode wine winetricks antimicrox solaar libratbag-ratbagd nvtop radeontop vulkan-tools mpv htop fastfetch && dnf clean all

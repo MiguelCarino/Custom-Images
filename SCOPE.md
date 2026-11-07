@@ -37,14 +37,14 @@ A build system producing **Fedora** OS images and installable media, parameteris
 Stage 1 — abstract              Stage 2 — Fedora-specific       Stage 3 — artifacts
 ┌────────────────────┐          ┌──────────────────────┐        ┌──────────────────┐
 │ layer manifests    │          │ resolve + verify     │        │ OCI image        │
-│  · base            │─────────▶│ against F44 repos    │───────▶│ (registry)       │
+│  · base            │─────────▶│ against F45 repos    │───────▶│ (registry)       │
 │  · desktop-common  │          │ emit per backend:    │        │                  │
 │  · de/*            │          │  · Containerfile     │───────▶│ ISO              │
 │  · purpose/*       │          │  · osbuild blueprint │        │ (object storage) │
 └────────────────────┘          └──────────────────────┘        └──────────────────┘
 ```
 
-**Target: Fedora 44 only.** The distro axis is gone — the old distro tree and the
+**Target: Fedora 45 only.** The distro axis is gone — the old distro tree and the
 `fedora`/`el9`/`el10` family mechanism were archived to `legacy/config/distros/`. Since rev 4 the
 **desktop axis is fixed too** (§5): one DE layer, so an image is parameterised by purpose
 alone.
@@ -58,7 +58,7 @@ Two **separate** projects.
 | | This project (builder) | Carino Setup |
 |---|---|---|
 | **Job** | Produce Fedora ISOs and OS images | Configure an already-installed system |
-| **Distros** | Fedora 44 | Fedora, RHEL family, Debian, Ubuntu, Arch, openSUSE |
+| **Distros** | Fedora 45 | Fedora, RHEL family, Debian, Ubuntu, Arch, openSUSE |
 | **Purposes** | 8 (those needing system integration) | ~19 (any package set) |
 | **DEs** | 1 desktop layer (COSMIC + Hyprland) + a headless layer | 13 |
 | **Delivery** | Registry + ISO downloads | `bash <(curl -s https://setup.carino.systems/setup.sh)` |
@@ -189,7 +189,7 @@ cannot be made afterwards without taking the phone system down:
 
 | Decision | Why an image and not a script |
 |---|---|
-| Which PHP serves the UI | FreePBX 17 requires **8.2** and upstream says 8.3+ must not be installed. Fedora 44 ships **8.5**. The runtime comes from Remi's SCL packages under `/opt/remi/php82`, parallel to Fedora's, and Fedora's PHP is deliberately not installed at all |
+| Which PHP serves the UI | FreePBX 17 requires **8.2** and upstream says 8.3+ must not be installed. Fedora 44 and 45 ship **8.5**. The runtime comes from Remi's SCL packages under `/opt/remi/php82`, parallel to Fedora's, and Fedora's PHP is deliberately not installed at all |
 | Who owns the web root | Apache runs as `asterisk:asterisk`, matching `fwconsole chown`. As `apache:apache` FreePBX cannot install its own modules |
 | Who supervises Asterisk | `fwconsole`. `asterisk.service` is **masked**, because two supervisors racing for `asterisk.ctl` is the classic failure of FreePBX on a distro Asterisk package |
 | Where `fwconsole` lives | FreePBX installs it to `/usr/sbin`, which is read-only on bootc. `--ampsbin=/usr/local/sbin` puts it on the `/var/usrlocal` symlink instead |
@@ -206,6 +206,11 @@ feature that was never wired up until the day it is needed.
 against live Fedora 44, `remi-release-44` and `php82-php-*` 8.2.33 against Remi's F44
 repo, the FreePBX tarball URL, and a full `./build.sh build pbx` including
 `bootc container lint`, `httpd -t` and `php-fpm -t` inside the built image.
+**Fedora 45 (re-verified 2026-11-06):** every package name resolves, and Remi serves
+`php82-php-*` 8.2.35 for F45 — but Fedora 45 moves Asterisk from 18.26.4 to **23.5.0**
+with no older stream, and FreePBX 17's published support stops at Asterisk 22. The
+FreePBX 17 + Asterisk 23 pairing is **unverified** and must be tested on a booted
+machine before `carino-pbx` ships on F45.
 **Not verified: the first-boot installation itself** — `/usr/libexec/freepbx-setup` needs
 a booted machine, and it has not had one. It is left as a known-unverified step rather
 than described as working; `research/manifest-pbx.json` names the three places it is most
@@ -351,7 +356,7 @@ a published ref beginning `fedora-` reads as an official Fedora edition — a fo
 reserves for its own products (Workstation, Server, Silverblue, Kinoite) and which no
 third-party derivative in the ecosystem uses. Upstream credit moved to where machines can
 read it: `org.opencontainers.image.base.name` on every generated image, plus the visible
-"Based on Fedora 44" attribution on the site.
+"Based on Fedora 45" attribution on the site.
 
 Eight images, one backend. With the osbuild backend (§9) it would be **16 image tags total**,
 though that backend produces no artifacts today (§9b).

@@ -335,7 +335,7 @@
             <li data-i18n>An update went wrong? The whole system goes back in one command.</li>
             <li data-i18n>A phone system, or a LAN with no working internet? Two headless appliances run them.</li>
         </ul>
-        <p class="sys-line">Fedora 44 · x86-64 · bootc · AGPL-3.0</p>
+        <p class="sys-line">Fedora 45 · x86-64 · bootc · AGPL-3.0</p>
         <!-- Build first: no ISO or container is published yet, so the path that
              completes is the one a visitor lands on. -->
         <div class="tabbar install-tabs" role="tablist" aria-label="Section">
@@ -351,7 +351,7 @@
 
     <div class="rowhead">
         <h2 data-i18n>Editions</h2>
-        <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener" data-i18n>Based on Fedora 44</a>
+        <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener" data-i18n>Based on Fedora 45</a>
         <span class="depill">COSMIC + Hyprland</span>
         <span class="depill" data-i18n>plus two headless appliances</span>
         <span class="hint" data-i18n>Image-based Fedora — transactional updates, identical on every machine, one-command rollback.</span>
@@ -379,16 +379,16 @@
 
     <div class="rowhead">
         <h2 data-i18n>Build it yourself</h2>
-        <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener" data-i18n>Based on Fedora 44</a>
+        <a class="depill" href="https://fedoraproject.org/" target="_blank" rel="noopener" data-i18n>Based on Fedora 45</a>
         <span class="hint" data-i18n>Clone the repo and run four commands. Every image is a chain of bootc layers, each an OCI image built from its parent.</span>
     </div>
 
     <div class="buildwrap">
         <div class="panel">
             <h3 data-i18n>How an image is assembled</h3>
-            <div class="chain" role="img" aria-label="Layer chain: quay.io/fedora/fedora-bootc:44, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances">
+            <div class="chain" role="img" aria-label="Layer chain: quay.io/fedora/fedora-bootc:45, then base, which forks into desktop-common and de/cosmic-hyprland carrying the six desktop purposes, and de/headless carrying the pbx and offline appliances">
                 <div class="chain-inner">
-                    <div class="node upstream"><span class="nm">quay.io/fedora/fedora-bootc:44</span><span class="ds" data-i18n>upstream base</span></div>
+                    <div class="node upstream"><span class="nm">quay.io/fedora/fedora-bootc:45</span><span class="ds" data-i18n>upstream base</span></div>
                     <div class="connector"></div>
                     <div class="node"><span class="nm">base</span><span class="ds" data-i18n>hardening, common CLI tools</span></div>
                     <div class="connector"></div>
@@ -480,7 +480,7 @@
             <summary data-i18n>An offline appliance — why is that an image?</summary>
             <div class="fb">
                 <p id="fold-offline-1"><code>carino-offline</code> is the intranet keystone: the one box a LAN with no working WAN still gets names, time, trust, packages and content from. It pins the same <code>headless</code> session <code>carino-pbx</code> does, because it is "an appliance that has to answer on the LAN's own ports before anything else on the network is up: DNS, NTP and HTTP are its interfaces and SSH is its console". The plan this box is one piece of is written up at <a href="https://offline.carino.systems/" target="_blank" rel="noopener">offline.carino.systems</a>, and that page points back here.</p>
-                <p id="fold-offline-2">It is an image rather than a Carino Setup package list because five of its decisions are system integration a script run after installation cannot own. Port 53 has to be taken from <code>systemd-resolved</code>, which is installed and preset-enabled on this base, so it is <b>masked</b> rather than disabled — and <code>/etc/resolv.conf</code>, a symlink into resolved's run directory, has to be re-owned in the same breath or the box has no resolver at all. An internal CA needs an anchor directory a site root actually lands in, with <code>update-ca-trust extract</code> run where it takes effect. <code>dnf</code> has to be pointable at a LAN mirror without deadlocking the box's own tooling on a hostname that may not resolve. And chrony has to keep serving time with nothing upstream reachable, which takes one directive whose absence is silent for weeks. <b>Nothing in this image has been booted yet</b> — the package set was resolved against Fedora 44 and those system facts were read inside the built headless layer, but no ISO has been installed.</p>
+                <p id="fold-offline-2">It is an image rather than a Carino Setup package list because five of its decisions are system integration a script run after installation cannot own. Port 53 has to be taken from <code>systemd-resolved</code>, which is installed and preset-enabled on this base, so it is <b>masked</b> rather than disabled — and <code>/etc/resolv.conf</code>, a symlink into resolved's run directory, has to be re-owned in the same breath or the box has no resolver at all. An internal CA needs an anchor directory a site root actually lands in, with <code>update-ca-trust extract</code> run where it takes effect. <code>dnf</code> has to be pointable at a LAN mirror without deadlocking the box's own tooling on a hostname that may not resolve. And chrony has to keep serving time with nothing upstream reachable, which takes one directive whose absence is silent for weeks. <b>Nothing in this image has been booted yet</b> — the package set was resolved against Fedora 45 and those system facts were read inside the built headless layer, but no ISO has been installed.</p>
             </div>
         </details>
 

@@ -7,7 +7,7 @@ FROM localhost/carino-layer-de-cosmic-hyprland:latest
 
 LABEL org.opencontainers.image.title="carino-security" \
       org.opencontainers.image.description="Security work: packet capture, recon, forensics, malware triage" \
-      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
+      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:45"
 
 # Packages
 RUN dnf -y install wireshark tcpdump nmap aircrack-ng sleuthkit testdisk foremost binwalk yara radare2 python3-scapy lynis aide && dnf clean all

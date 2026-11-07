@@ -3,11 +3,11 @@
 # Chain: base
 # Build: podman build -f generated/carino-layer-base/Containerfile generated/carino-layer-base/context
 
-FROM quay.io/fedora/fedora-bootc:44
+FROM quay.io/fedora/fedora-bootc:45
 
 LABEL org.opencontainers.image.title="carino-layer-base" \
       org.opencontainers.image.description="Common base: CLI quality-of-life tools shared by every image" \
-      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
+      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:45"
 
 # Packages
 RUN dnf -y install nano vim-enhanced jq zstd unzip gnupg2 smartmontools lsof initial-setup && dnf clean all

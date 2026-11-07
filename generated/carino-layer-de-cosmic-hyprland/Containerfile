@@ -7,7 +7,7 @@ FROM localhost/carino-layer-desktop-common:latest
 
 LABEL org.opencontainers.image.title="carino-layer-de-cosmic-hyprland" \
       org.opencontainers.image.description="COSMIC desktop plus Hyprland tiling session, greeted by cosmic-greeter" \
-      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
+      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:45"
 
 # COPR repositories
 RUN dnf -y install 'dnf5-command(copr)'

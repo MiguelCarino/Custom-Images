@@ -6,7 +6,7 @@
 # UNRESOLVED — packages from repositories a blueprint cannot add for
 # itself (COPRs, repo-definition RPMs). Configure the repo host-side or
 # these packages will fail to depsolve:
-#   layer purpose:pbx installs repo-definition RPM(s): https://rpms.remirepo.net/fedora/remi-release-44.rpm
+#   layer purpose:pbx installs repo-definition RPM(s): https://rpms.remirepo.net/fedora/remi-release-45.rpm
 #     affected packages: asterisk asterisk-pjsip asterisk-odbc asterisk-voicemail asterisk-curl asterisk-fax asterisk-sounds-core-en-ulaw asterisk-sounds-core-en-g722 mariadb-server mariadb unixODBC mysql-connector-odbc httpd mod_ssl php82-php-cli php82-php-fpm php82-php-mysqlnd php82-php-mbstring php82-php-xml php82-php-gd php82-php-intl php82-php-bcmath php82-php-process php82-php-sodium php82-php-pecl-zip php82-php-opcache php82-php-pear php82-php-ldap nodejs22 nodejs22-npm sox mpg123 lame fail2ban fail2ban-firewalld sngrep tcpdump tftp-server tar
 #
 # DROPPED — static files and post-install scripts. The Containerfile path
@@ -17,11 +17,11 @@
 #     /etc/httpd/conf.d/freepbx.conf
 #     /etc/motd.d/carino-pbx
 #     /etc/opt/remi/php82/php-fpm.d/freepbx.conf
-#     /usr/libexec/freepbx-setup
 #     /usr/lib/firewalld/services/asterisk-rtp.xml
-#     /usr/lib/systemd/system/freepbx.service
 #     /usr/lib/systemd/system/freepbx-setup.service
+#     /usr/lib/systemd/system/freepbx.service
 #     /usr/lib/tmpfiles.d/carino-pbx.conf
+#     /usr/libexec/freepbx-setup
 #
 # OMITTED from [customizations.services].enabled — osbuild runs
 # `systemctl enable` during the build and a missing unit fails it.
@@ -37,9 +37,9 @@
 #   asterisk.service (layer purpose:pbx, whose static files / POST_SCRIPT are dropped)
 
 name = "carino-pbx"
-description = "Telephony appliance: Asterisk 18 with the FreePBX 17 web UI, MariaDB, Apache, PHP 8.2"
+description = "Telephony appliance: Asterisk 23 with the FreePBX 17 web UI, MariaDB, Apache, PHP 8.2"
 version = "0.0.1"
-distro = "fedora-44"
+distro = "fedora-45"
 
 [[packages]]
 name = "nano"

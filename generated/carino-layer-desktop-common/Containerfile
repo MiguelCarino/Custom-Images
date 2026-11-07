@@ -7,7 +7,7 @@ FROM localhost/carino-layer-base:latest
 
 LABEL org.opencontainers.image.title="carino-layer-desktop-common" \
       org.opencontainers.image.description="DE-agnostic desktop infrastructure: audio, portals, flatpak, fonts, browser" \
-      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:44"
+      org.opencontainers.image.base.name="quay.io/fedora/fedora-bootc:45"
 
 # Packages
 RUN dnf -y install pipewire wireplumber pipewire-alsa pipewire-pulseaudio xdg-desktop-portal xdg-desktop-portal-gtk flatpak fontconfig default-fonts-core-sans mesa-dri-drivers mesa-vulkan-drivers adwaita-icon-theme xdg-user-dirs power-profiles-daemon wl-clipboard && dnf clean all
