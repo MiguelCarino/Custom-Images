@@ -335,7 +335,7 @@
             <li data-i18n>An update went wrong? The whole system goes back in one command.</li>
             <li data-i18n>A phone system, or a LAN with no working internet? Two headless appliances run them.</li>
         </ul>
-        <p class="sys-line">Fedora 45 · x86-64 · bootc · AGPL-3.0</p>
+        <p class="sys-line">Fedora 45 · x86-64 · bootc · AGPL-3.0 · <span data-i18n>Fedora 45 testing pending</span></p>
         <!-- Build first: no ISO or container is published yet, so the path that
              completes is the one a visitor lands on. -->
         <div class="tabbar install-tabs" role="tablist" aria-label="Section">
@@ -472,7 +472,7 @@
             <summary data-i18n>The telephony image has no desktop — why?</summary>
             <div class="fb">
                 <p id="fold-pbx-1">A PBX is an appliance, not a workstation: you reach it through its web UI and over SSH, and nobody sits in front of it. So <code>carino-pbx</code> pins the <code>headless</code> session, which branches off <code>base</code> and never touches <code>desktop-common</code> — no Wayland, no PipeWire, no portals, no Flatpak, no browser. Fewer packages to patch on the one machine in the building that answers the phones.</p>
-                <p id="fold-pbx-2">One caveat stated plainly: <b>FreePBX itself is not part of the image.</b> It writes to <code>/var</code>, and a bootc image copies <code>/var</code> into the machine once at install and never again — so baking it in would freeze it at the version you first installed from. The image ships Asterisk, MariaDB, Apache and the PHP 8.2 runtime FreePBX requires as RPMs that <em>do</em> update transactionally, and FreePBX installs itself on first boot, then updates with <code>fwconsole ma upgradeall</code>. <code>bootc rollback</code> covers the OS underneath it; it does not roll back a FreePBX module upgrade.</p>
+                <p id="fold-pbx-2">One caveat stated plainly: <b>FreePBX itself is not part of the image.</b> It writes to <code>/var</code>, and a bootc image copies <code>/var</code> into the machine once at install and never again — so baking it in would freeze it at the version you first installed from. The image ships Asterisk, MariaDB, Apache and the PHP 8.2 runtime FreePBX requires as RPMs that <em>do</em> update transactionally, and FreePBX installs itself on first boot, then updates with <code>fwconsole ma upgradeall</code>. <code>bootc rollback</code> covers the OS underneath it; it does not roll back a FreePBX module upgrade. <b>Fedora 45 testing is pending:</b> Fedora 45 ships Asterisk 23.5.0 and no older stream, while FreePBX 17's published support stops at Asterisk 22, so that pairing — and the first-boot install itself — is unverified until it has run on a booted machine.</p>
             </div>
         </details>
 
